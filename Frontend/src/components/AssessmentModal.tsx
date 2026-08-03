@@ -64,7 +64,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
   const handleDownloadPDFReport = () => {
     const loanAmt = formData.projectCostCr * (1 - formData.equityPercent / 100);
     const pdfData: TeaserPDFData = {
-      fullName: applicantInfo.fullName || 'Promoter Lead',
+      fullName: applicantInfo.fullName || 'Promoter',
       mobile: applicantInfo.mobile || 'Not Provided',
       email: applicantInfo.email || 'Not Provided',
       projectName: `${formData.industry} Greenfield Project`,
@@ -75,7 +75,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
       loanRequiredCr: parseFloat(loanAmt.toFixed(2)),
       landStatus: formData.landStatus === 'owned' ? 'Owned & Registered' : formData.landStatus === 'identified' ? 'Identified / MoU' : 'Not Acquired',
       promoterExp: `${formData.promoterExpYears}+ Years Experience`,
-      description: `Targeting ${formData.targetBankType} bank financing for ${formData.industry} project in ${formData.locationState}.`,
+      description: `Targeting ${formData.targetBankType} bank financing for ${formData.industry} project in ${formData.locationState || 'India'}.`,
       feasibilityScore: result?.feasibilityScore || 85,
       bankabilityRating: result?.bankabilityGrade || 'A+',
       estimatedLoan: result?.maxLoanAmountCr || loanAmt.toFixed(2),
@@ -99,7 +99,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
   const handleSendWhatsAppDirect = () => {
     const loanAmt = formData.projectCostCr * (1 - formData.equityPercent / 100);
     const pdfData: TeaserPDFData = {
-      fullName: applicantInfo.fullName || 'Promoter Lead',
+      fullName: applicantInfo.fullName || 'Promoter',
       mobile: applicantInfo.mobile || 'Not Provided',
       email: applicantInfo.email || 'Not Provided',
       projectName: `${formData.industry} Greenfield Project`,
@@ -110,7 +110,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
       loanRequiredCr: parseFloat(loanAmt.toFixed(2)),
       landStatus: formData.landStatus === 'owned' ? 'Owned & Registered' : formData.landStatus === 'identified' ? 'Identified / MoU' : 'Not Acquired',
       promoterExp: `${formData.promoterExpYears}+ Years Experience`,
-      description: `Targeting ${formData.targetBankType} bank financing in ${formData.locationState}.`,
+      description: `Targeting ${formData.targetBankType} bank financing in ${formData.locationState || 'India'}.`,
       feasibilityScore: result?.feasibilityScore || 85,
       bankabilityRating: result?.bankabilityGrade || 'A+',
       estimatedLoan: result?.maxLoanAmountCr || loanAmt.toFixed(2),
@@ -378,7 +378,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
                   required
                   value={applicantInfo.fullName}
                   onChange={(e) => setApplicantInfo({ ...applicantInfo, fullName: e.target.value })}
-                  placeholder="Enter promoter full name"
+                  placeholder="Enter your full name"
                   className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
                 />
               </div>
@@ -390,7 +390,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
                   required
                   value={applicantInfo.mobile}
                   onChange={(e) => setApplicantInfo({ ...applicantInfo, mobile: e.target.value })}
-                  placeholder="Enter 10-digit mobile number"
+                  placeholder="Enter mobile number"
                   className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
                 />
               </div>
