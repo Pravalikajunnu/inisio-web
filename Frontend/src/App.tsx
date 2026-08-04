@@ -13,6 +13,7 @@ import { FAQSection } from './components/FAQSection';
 import { Footer } from './components/Footer';
 import { ConsultationModal } from './components/ConsultationModal';
 import { AdminLeadsModal } from './components/AdminLeadsModal';
+import { FloatingContactButtons } from './components/FloatingContactButtons';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>('home');
@@ -165,6 +166,9 @@ export default function App() {
         isOpen={adminModalOpen}
         onClose={() => setAdminModalOpen(false)}
       />
+
+      {/* Floating Call & WhatsApp Buttons */}
+      <FloatingContactButtons />
 
     </div>
   );

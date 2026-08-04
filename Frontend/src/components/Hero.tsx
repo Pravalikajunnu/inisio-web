@@ -66,7 +66,7 @@ export const Hero: React.FC<HeroProps> = ({
 
             {/* Main Title */}
             <h1 className="font-manrope text-2xl sm:text-3xl lg:text-4xl font-bold text-[#111827] leading-tight tracking-tight">
-              Turn Your <span className="text-blue-600">Greenfield Venture</span> into a Bank-Funded Enterprise
+              Turn Your <span className="text-blue-600">New Business Idea</span> into a Bank-Funded Enterprise
             </h1>
 
             {/* Subtitle - Ultra Minimalistic */}

@@ -169,6 +169,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <Calculator className="w-5 h-5 text-blue-100" />
                 <span>Start Assessment</span>
               </button>
+
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);

@@ -88,7 +88,7 @@ export const ContactSection: React.FC = () => {
                   </div>
                   <div className="space-y-0.5">
                     <span className="font-semibold text-[#111827] block">Corporate Address</span>
-                    <p className="text-[#4B5563] leading-[1.5]">Level 7, Inisio Capital Towers, Financial District, Nanakramguda, Hyderabad, Telangana - 500032</p>
+                    <p className="text-[#4B5563] leading-[1.5]">2nd Floor, Plot 24 & 25, Kakatiya Hills, Road No 9, Madhapur, Hyderabad, Telangana - 500033</p>
                   </div>
                 </div>
 

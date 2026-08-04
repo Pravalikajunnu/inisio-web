@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import { saveLeadRecord } from './leadStore';
 import { getFeasibilityTerm } from '../types';
+import { DetailedRiskProfileData } from '../components/DetailedRiskProfileForm';
 
 export interface TeaserPDFData {
   fullName: string;
@@ -28,6 +29,8 @@ export interface TeaserPDFData {
   directors?: Array<{ name: string; title: string }>;
   gstNumber?: string;
   panNumber?: string;
+  riskProfileData?: DetailedRiskProfileData;
+  riskScoreOutOf10?: number;
 }
 
 export function generateProjectTeaserPDF(data: TeaserPDFData) {
@@ -159,13 +162,17 @@ export function generateProjectTeaserPDF(data: TeaserPDFData) {
   const serviceRowH = Math.max(8, splitService.length * 4.2 + 3);
 
   checkPageBreak(serviceRowH + 6);
+  doc.setFillColor(255, 255, 255);
   doc.rect(margin, y, contentWidth, serviceRowH, 'F');
+  doc.setDrawColor(226, 232, 240);
   doc.rect(margin, y, contentWidth, serviceRowH, 'D');
 
   doc.setFont('helvetica', 'bold');
+  doc.setTextColor(15, 23, 42);
   doc.text(`Production & Supply (${data.industry})`, margin + 4, y + 4.5);
 
   doc.setFont('helvetica', 'normal');
+  doc.setTextColor(51, 65, 85);
   doc.text(splitService, margin + 55, y + 4.5);
   y += serviceRowH + 6;
 
@@ -370,7 +377,49 @@ export function generateProjectTeaserPDF(data: TeaserPDFData) {
 
   y += 8;
 
-  // 8. Preliminary Information
+  // 8. Detailed Risk Profile & Underwriting Assessment
+  if (data.riskProfileData || data.riskScoreOutOf10) {
+    drawSectionBanner('Detailed Risk Profile & Underwriting Assessment', 50);
+
+    const rp = data.riskProfileData;
+    const cibilStr = rp?.isNewToCredit ? 'New to Credit (N/A)' : (rp?.cibilScore ? `${rp.cibilScore} Score` : 'N/A');
+    const riskScoreVal = data.riskScoreOutOf10 || 8.0;
+
+    const riskGrid: Array<{ label: string; val: string }> = [
+      { label: 'Underwriting Score (out of 10)', val: `${riskScoreVal} / 10 (${riskScoreVal >= 8.5 ? 'Excellent' : riskScoreVal >= 7.0 ? 'Good' : riskScoreVal >= 5.5 ? 'Average' : 'High Risk'})` },
+      { label: 'CIBIL / Credit Score Track', val: cibilStr },
+      { label: 'Collateral Coverage %', val: rp?.collateralCoveragePct ? `${rp.collateralCoveragePct}%` : 'N/A' },
+      { label: 'Promoter Experience', val: rp?.industryExperience || data.promoterExp || 'N/A' },
+      { label: 'Educational Background', val: rp?.educationalBackground || 'N/A' },
+      { label: 'Business Constitution', val: rp?.businessConstitution || 'N/A' },
+      { label: 'Business Vintage', val: rp?.businessVintage || 'N/A' },
+      { label: 'Promoter Contribution Type', val: rp?.contributionType || 'N/A' },
+      { label: 'Management & Technical Workforce', val: rp ? `${rp.managementTeamSize || 0} Mgmt / ${rp.technicalWorkforceCount || 0} Tech Staff` : 'N/A' },
+      { label: 'Debt–Equity Ratio', val: rp?.debtEquityRatio || `${data.debtPct}:${data.eqPct}` }
+    ];
+
+    riskGrid.forEach((item, idx) => {
+      checkPageBreak(6);
+      const c = idx % 2 === 0 ? 255 : 250;
+      doc.setFillColor(c, c, c);
+      doc.rect(margin, y, contentWidth, 6, 'F');
+      doc.setDrawColor(226, 232, 240);
+      doc.rect(margin, y, contentWidth, 6, 'D');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(15, 23, 42);
+      doc.text(item.label, margin + 4, y + 4.2);
+
+      doc.setFont('helvetica', 'normal');
+      doc.text(item.val, margin + 70, y + 4.2);
+      y += 6;
+    });
+
+    y += 6;
+  }
+
+  // 9. Preliminary Information
   drawSectionBanner('Preliminary Information', 50);
 
   const prelimGrid: Array<{ label: string; val: string }> = [

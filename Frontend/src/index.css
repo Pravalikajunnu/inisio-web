@@ -6,17 +6,6 @@
   --font-manrope: 'Manrope', 'Inter', system-ui, sans-serif;
   --font-space: 'Manrope', 'Inter', system-ui, sans-serif;
   --font-stat: 'Manrope', 'Inter', system-ui, sans-serif;
-
-  --color-emerald-50: var(--c-50, #ecfdf5);
-  --color-emerald-100: var(--c-100, #d1fae5);
-  --color-emerald-200: var(--c-200, #a7f3d0);
-  --color-emerald-300: var(--c-300, #6ee7b7);
-  --color-emerald-400: var(--c-400, #34d399);
-  --color-emerald-500: var(--c-500, #10b981);
-  --color-emerald-600: var(--c-600, #059669);
-  --color-emerald-700: var(--c-700, #047857);
-  --color-emerald-800: var(--c-800, #065f46);
-  --color-emerald-900: var(--c-900, #064e3b);
 }
 
 :root, [data-theme="blue"] {

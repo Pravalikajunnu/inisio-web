@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import { INDUSTRIES } from '../data/landingData';
 import { AssessmentData, AssessmentResult, getFeasibilityTerm } from '../types';
 import { generateProjectTeaserPDF, sendLeadToWhatsApp, TeaserPDFData } from '../utils/pdfGenerator';
+import { LocationDropdowns } from './LocationDropdowns';
+import { validateIndianMobileNumber } from '../utils/validation';
+import { DetailedRiskProfileForm, DetailedRiskProfileData } from './DetailedRiskProfileForm';
+import { calculateComprehensiveRiskScore } from '../utils/underwritingScorer';
 import {
   X,
   ArrowRight,
@@ -16,7 +20,10 @@ import {
   PhoneCall,
   Clock,
   BarChart3,
-  MessageSquare
+  MessageSquare,
+  Lock,
+  Unlock,
+  AlertCircle
 } from 'lucide-react';
 
 interface AssessmentModalProps {
@@ -38,6 +45,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
     projectCostCr: 25,
     equityPercent: 25,
     landStatus: 'owned',
+    collateralStatus: 'Freehold (Clear Title)',
     promoterExpYears: 8,
     locationState: '',
     dprReady: false,
@@ -53,11 +61,21 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
   const [result, setResult] = useState<AssessmentResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
 
+  // Lock & Risk Profile State
+  const [isTeaserUnlocked, setIsTeaserUnlocked] = useState(false);
+  const [riskProfileSubmitted, setRiskProfileSubmitted] = useState(false);
+  const [riskProfileData, setRiskProfileData] = useState<DetailedRiskProfileData | null>(null);
+  const [showRiskProfile, setShowRiskProfile] = useState(false);
+
   const [applicantInfo, setApplicantInfo] = useState({
     fullName: '',
     mobile: '',
     email: ''
   });
+  const [mobileTouched, setMobileTouched] = useState(false);
+
+  const mobileValidation = validateIndianMobileNumber(applicantInfo.mobile);
+  const comprehensiveRisk = calculateComprehensiveRiskScore(riskProfileData, result?.feasibilityScore || 85);
 
   if (!isOpen) return null;
 
@@ -84,16 +102,13 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
       dscrEstimate: result?.dscrEstimate || 1.45,
       estInterestRate: result?.estInterestRate || '8.85% - 9.40%',
       strengthPoints: result?.strengthPoints,
-      keyRisks: result?.keyRisks
+      keyRisks: result?.keyRisks,
+      riskProfileData: riskProfileData || undefined,
+      riskScoreOutOf10: comprehensiveRisk.scoreOutOf10
     };
 
     // 1. Download PDF Document
     generateProjectTeaserPDF(pdfData);
-
-    // 2. Open WhatsApp Lead Notification to Admin (6302026462)
-    setTimeout(() => {
-      sendLeadToWhatsApp(pdfData, '916302026462');
-    }, 500);
   };
 
   const handleSendWhatsAppDirect = () => {
@@ -244,20 +259,12 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
               </select>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-900 block">
-                Target Project State / Location:
-              </label>
-              <select
+            <div>
+              <LocationDropdowns
                 value={formData.locationState}
-                onChange={(e) => setFormData({ ...formData, locationState: e.target.value })}
-                className="w-full p-3.5 text-sm bg-white border border-gray-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-medium cursor-pointer"
-              >
-                <option value="">-- Select Target Project State / Location --</option>
-                {['Gujarat', 'Maharashtra', 'Tamil Nadu', 'Karnataka', 'Rajasthan', 'Uttar Pradesh', 'Punjab', 'Telangana', 'Madhya Pradesh', 'Haryana', 'West Bengal', 'Odisha'].map((st) => (
-                  <option key={st} value={st}>{st}</option>
-                ))}
-              </select>
+                onChange={(loc) => setFormData({ ...formData, locationState: loc })}
+                required
+              />
             </div>
 
             <button
@@ -305,27 +312,42 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
             </div>
 
             <div className="space-y-2">
-              <div className="flex justify-between text-xs font-bold text-gray-900">
-                <span>Promoter Equity Contribution %:</span>
-                <span className="text-emerald-700 text-sm">{formData.equityPercent}% (₹{((formData.projectCostCr * formData.equityPercent) / 100).toFixed(2)} Cr)</span>
+              <div className="flex justify-between text-xs font-bold text-gray-900 leading-tight">
+                <span>How much money / equity do you have available for this project? (₹ CR):</span>
+                <span className={`text-sm font-bold ${formData.equityPercent >= 20 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                  {formData.equityPercent}% (₹{((formData.projectCostCr * formData.equityPercent) / 100).toFixed(2)} Cr)
+                </span>
               </div>
               <input
                 type="range"
-                min="15"
+                min="10"
                 max="50"
                 step="1"
                 value={formData.equityPercent}
                 onChange={(e) => setFormData({ ...formData, equityPercent: Number(e.target.value) })}
                 className="w-full accent-emerald-600 cursor-pointer"
               />
-              <p className="text-[11px] text-gray-500">
-                *PSU Bank norm usually requires min 20% to 25% promoter equity.
-              </p>
+              <div
+                className={`p-3 rounded-xl border text-xs font-semibold flex items-center justify-between gap-2 transition-all ${
+                  formData.equityPercent >= 20
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                    : 'bg-rose-50 border-rose-200 text-rose-600'
+                }`}
+              >
+                <span>
+                  {formData.equityPercent >= 20
+                    ? '✓ Capital structure meets minimum 20% equity threshold'
+                    : '⚠️ Equity is below standard 20% threshold. Please improve your margin / promoter contribution to proceed.'}
+                </span>
+                <span className="font-bold shrink-0">
+                  Equity: {formData.equityPercent}% | Debt: {100 - formData.equityPercent}%
+                </span>
+              </div>
             </div>
 
             <div className="space-y-2">
               <label className="text-xs font-bold text-gray-900 block">
-                Land Availability Status:
+                Project Land Status:
               </label>
               <div className="grid grid-cols-3 gap-2 text-xs">
                 {[
@@ -357,8 +379,17 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
                 Back
               </button>
               <button
-                onClick={() => setStep(3)}
-                className="flex-1 py-3.5 px-4 font-bold text-sm text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
+                disabled={formData.equityPercent < 20}
+                onClick={() => {
+                  if (formData.equityPercent < 20) return;
+                  setStep(3);
+                }}
+                className={`flex-1 py-3.5 px-4 font-bold text-sm rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 ${
+                  formData.equityPercent >= 20
+                    ? 'text-white bg-emerald-600 hover:bg-emerald-700 cursor-pointer'
+                    : 'text-gray-400 bg-gray-200 border border-gray-300 cursor-not-allowed opacity-75'
+                }`}
+                title={formData.equityPercent < 20 ? 'Equity is below standard 20% threshold. Please improve your margin / promoter contribution to proceed.' : ''}
               >
                 <span>Continue to Promoter Profile</span>
                 <ArrowRight className="w-4 h-4" />
@@ -389,11 +420,42 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
                   type="tel"
                   required
                   value={applicantInfo.mobile}
-                  onChange={(e) => setApplicantInfo({ ...applicantInfo, mobile: e.target.value })}
-                  placeholder="Enter mobile number"
-                  className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+                  onChange={(e) => {
+                    setApplicantInfo({ ...applicantInfo, mobile: e.target.value });
+                    setMobileTouched(true);
+                  }}
+                  onBlur={() => setMobileTouched(true)}
+                  placeholder="Enter 10-digit mobile number"
+                  maxLength={10}
+                  className={`w-full px-3.5 py-2.5 bg-white border rounded-xl text-sm outline-none transition-all ${
+                    mobileTouched && !mobileValidation.isValid
+                      ? 'border-red-500 focus:ring-2 focus:ring-red-500 bg-red-50/40 text-red-900 font-medium'
+                      : 'border-gray-300 focus:ring-2 focus:ring-emerald-500'
+                  }`}
                 />
+                {mobileTouched && !mobileValidation.isValid && (
+                  <p className="text-xs text-red-600 font-semibold mt-1">
+                    {mobileValidation.error}
+                  </p>
+                )}
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-900 block">
+                Collateral / Mortgageable Status:
+              </label>
+              <select
+                value={formData.collateralStatus || 'Freehold (Clear Title)'}
+                onChange={(e) => setFormData({ ...formData, collateralStatus: e.target.value })}
+                className="w-full p-3.5 text-sm bg-white border border-gray-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-medium text-gray-900"
+              >
+                <option value="Freehold (Clear Title)">Freehold (Clear Title)</option>
+                <option value="Leasehold (Bank Clause)">Leasehold (Bank Clause)</option>
+                <option value="Agricultural / Conversion Pending">Agricultural / Conversion Pending</option>
+                <option value="Under Mortgage / Encumbered">Under Mortgage / Encumbered</option>
+                <option value="Govt. Allotted Land">Govt. Allotted Land</option>
+              </select>
             </div>
 
             <div className="space-y-2">
@@ -446,8 +508,12 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
               </button>
               <button
                 onClick={() => {
+                  setMobileTouched(true);
                   if (!applicantInfo.fullName.trim() || !applicantInfo.mobile.trim()) {
                     alert('Please enter your Name and Mobile Number to generate report.');
+                    return;
+                  }
+                  if (!mobileValidation.isValid) {
                     return;
                   }
                   calculateAssessment();
@@ -545,15 +611,59 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
 
             </div>
 
+            {/* Proceed to Detailed Risk Assessment Call to Action */}
+            {!showRiskProfile && (
+              <div className="flex flex-col items-center justify-center p-5 bg-slate-800/90 rounded-2xl border border-slate-700/80 text-center shadow-lg my-1">
+                <p className="text-xs text-gray-300 mb-3 max-w-sm">
+                  Complete the 5-part Detailed Risk Assessment to generate your comprehensive 10-point underwriting score and unlock the downloadable Teaser PDF.
+                </p>
+                <button
+                  onClick={() => {
+                    setShowRiskProfile(true);
+                    setTimeout(() => {
+                      const el = document.getElementById('modal-risk-profile-section');
+                      if (el) {
+                        el.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }, 100);
+                  }}
+                  className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer group"
+                >
+                  <span>Proceed to Detailed Risk Assessment</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+            )}
+
+            {/* Additional Data Collection Step: Detailed Risk Profile */}
+            {showRiskProfile && (
+              <DetailedRiskProfileForm
+                isUnlocked={isTeaserUnlocked}
+                onSubmitSuccess={(data) => {
+                  setRiskProfileData(data);
+                  setRiskProfileSubmitted(true);
+                  setIsTeaserUnlocked(true);
+                }}
+                defaultEquityPercent={formData.equityPercent}
+                defaultPromoterExpYears={formData.promoterExpYears}
+                theme="dark"
+                sectionId="modal-risk-profile-section"
+              />
+            )}
+
             {/* Action CTAs */}
             <div className="pt-2 flex flex-col sm:flex-row gap-2.5">
               <button
                 onClick={handleDownloadPDFReport}
-                className="flex-1 py-3 px-3.5 font-bold text-xs sm:text-sm text-slate-950 bg-emerald-400 hover:bg-emerald-300 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-                title="Downloads PDF teaser & opens WhatsApp lead chat with admin"
+                className={`flex-1 py-3 px-3.5 font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  isTeaserUnlocked
+                    ? 'text-slate-950 bg-emerald-400 hover:bg-emerald-300'
+                    : 'text-amber-300 bg-amber-950/80 border border-amber-500/40 hover:bg-amber-900/80'
+                }`}
+                title={isTeaserUnlocked ? 'Downloads PDF teaser report' : 'Complete Detailed Risk Profile to unlock PDF'}
               >
-                <Download className="w-4 h-4" />
-                <span>Download PDF Teaser</span>
+                {isTeaserUnlocked ? <Download className="w-4 h-4" /> : <Lock className="w-4 h-4 text-amber-400" />}
+                <span>{isTeaserUnlocked ? 'Download PDF Teaser' : 'Unlock PDF Teaser'}</span>
               </button>
 
               <button

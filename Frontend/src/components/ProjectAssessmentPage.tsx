@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { generateProjectTeaserPDF, sendLeadToWhatsApp, TeaserPDFData } from '../utils/pdfGenerator';
 import { getFeasibilityTerm } from '../types';
+import { LocationDropdowns } from './LocationDropdowns';
+import { validateIndianMobileNumber } from '../utils/validation';
+import { DetailedRiskProfileForm, DetailedRiskProfileData } from './DetailedRiskProfileForm';
+import { calculateComprehensiveRiskScore } from '../utils/underwritingScorer';
 import {
   Calculator,
   CheckCircle2,
@@ -23,7 +27,11 @@ import {
   MessageSquare,
   Eye,
   Layers,
-  Check
+  Check,
+  Lock,
+  Unlock,
+  AlertCircle,
+  ShieldAlert
 } from 'lucide-react';
 
 interface ProjectAssessmentPageProps {
@@ -38,6 +46,13 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
   const [step, setStep] = useState<1 | 2 | 3 | 'results'>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [viewMode, setViewMode] = useState<'scorecard' | 'teaser'>('scorecard');
+  const [mobileTouched, setMobileTouched] = useState(false);
+
+  // Lock & Detailed Risk Profile State
+  const [isTeaserUnlocked, setIsTeaserUnlocked] = useState(false);
+  const [riskProfileSubmitted, setRiskProfileSubmitted] = useState(false);
+  const [riskProfileData, setRiskProfileData] = useState<DetailedRiskProfileData | null>(null);
+  const [showRiskProfile, setShowRiskProfile] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -55,6 +70,8 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
     mobile: '',
     email: ''
   });
+
+  const mobileValidation = validateIndianMobileNumber(formData.mobile);
 
   // Sync defaultIndustry when passed from parent
   React.useEffect(() => {
@@ -116,7 +133,12 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
         return;
       }
       if (!formData.fullName.trim() || !formData.mobile.trim() || !formData.email.trim()) {
+        setMobileTouched(true);
         alert('Please complete your name, mobile number, and email address.');
+        return;
+      }
+      if (!mobileValidation.isValid) {
+        setMobileTouched(true);
         return;
       }
       setIsSubmitting(true);
@@ -184,6 +206,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
   };
 
   const results = computeResults();
+  const comprehensiveRisk = calculateComprehensiveRiskScore(riskProfileData, results.feasibilityScore);
 
   const getPDFData = (): TeaserPDFData => ({
     fullName: formData.fullName,
@@ -205,15 +228,28 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
     eqPct: results.eqPct,
     debtPct: results.debtPct,
     dscrEstimate: 1.45,
-    estInterestRate: '8.85% - 9.40%'
+    estInterestRate: '8.85% - 9.40%',
+    riskProfileData: riskProfileData || undefined,
+    riskScoreOutOf10: comprehensiveRisk.scoreOutOf10
   });
 
   const handleDownloadTeaser = () => {
     const pdfData = getPDFData();
     generateProjectTeaserPDF(pdfData);
-    setTimeout(() => {
-      sendLeadToWhatsApp(pdfData, '916302026462');
-    }, 500);
+  };
+
+  const handleSelectTeaserTab = () => {
+    setViewMode('teaser');
+  };
+
+  const handleDownloadTeaserClick = () => {
+    if (!isTeaserUnlocked) {
+      alert('Teaser PDF download is locked. Please complete the Detailed Risk Profile form below to unlock.');
+      const el = document.getElementById('risk-profile-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    handleDownloadTeaser();
   };
 
   const handleSendWhatsAppLead = () => {
@@ -343,7 +379,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                     </div>
 
                     {/* Industries or Sector */}
-                    <div>
+                    <div className="md:col-span-2">
                       <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
                         Industries or Sector <span className="text-red-500">*</span>
                       </label>
@@ -372,23 +408,13 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                       </select>
                     </div>
 
-                    {/* Location */}
-                    <div>
-                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                        Project Location <span className="text-red-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <MapPin className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
-                        <input
-                          type="text"
-                          name="location"
-                          value={formData.location}
-                          onChange={handleInputChange}
-                          placeholder="Enter the Location"
-                          required
-                          className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-sm font-medium text-gray-900"
-                        />
-                      </div>
+                    {/* Location Selection (Side by Side Dependent Dropdowns) */}
+                    <div className="md:col-span-2">
+                      <LocationDropdowns
+                        value={formData.location}
+                        onChange={(loc) => setFormData((prev) => ({ ...prev, location: loc }))}
+                        required
+                      />
                     </div>
                   </div>
 
@@ -440,8 +466,8 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
 
                     {/* Promoter Contribution */}
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                        Promoter Equity (₹ Cr) <span className="text-red-500">*</span>
+                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 leading-tight">
+                        How much money / equity do you have available for this project? (₹ CR) <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
                         <span className="absolute left-3.5 top-3 text-sm font-bold text-gray-400">₹</span>
@@ -451,7 +477,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                           name="promoterContribCr"
                           value={formData.promoterContribCr}
                           onChange={handleInputChange}
-                          placeholder="Enter Promoter Equity (in ₹ Cr)"
+                          placeholder="Enter Equity Available (in ₹ Cr)"
                           required
                           className="w-full pl-8 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-sm font-bold text-gray-900"
                         />
@@ -460,7 +486,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
 
                     {/* Loan Amount Required */}
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 leading-tight">
                         Estimated Loan Needed (₹ Cr)
                       </label>
                       <div className="relative">
@@ -479,41 +505,93 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                   </div>
 
                   {/* Financial Ratios Preview Card */}
-                  <div className="p-4 bg-emerald-50/80 rounded-xl border border-emerald-200/60 flex flex-wrap items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">
-                        %
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-emerald-950 uppercase tracking-wide">Calculated Capital Structure</div>
-                        <div className="text-sm font-extrabold text-emerald-900">
-                          Equity: <span className="text-emerald-700">{equityPercent}%</span> | Debt: <span className="text-emerald-700">{debtPercent}%</span>
+                  {(() => {
+                    const isEquityValid = cost > 0 && contrib > 0 && parseFloat(equityPercent) >= 20;
+                    return (
+                      <>
+                        <div
+                          className={`p-4 rounded-xl border flex flex-wrap items-center justify-between gap-4 transition-all ${
+                            isEquityValid
+                              ? 'bg-emerald-50 border-emerald-200'
+                              : 'bg-rose-50 border-rose-200'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`w-10 h-10 rounded-lg text-white flex items-center justify-center font-bold text-sm ${
+                                isEquityValid ? 'bg-emerald-600' : 'bg-rose-600'
+                              }`}
+                            >
+                              %
+                            </div>
+                            <div>
+                              <div
+                                className={`text-xs font-bold uppercase tracking-wide ${
+                                  isEquityValid ? 'text-emerald-950' : 'text-rose-950'
+                                }`}
+                              >
+                                Calculated Capital Structure
+                              </div>
+                              <div
+                                className={`text-sm font-extrabold ${
+                                  isEquityValid ? 'text-emerald-900' : 'text-rose-900'
+                                }`}
+                              >
+                                Equity:{' '}
+                                <span className={isEquityValid ? 'text-emerald-700' : 'text-rose-700'}>
+                                  {equityPercent}%
+                                </span>{' '}
+                                | Debt:{' '}
+                                <span className={isEquityValid ? 'text-emerald-700' : 'text-rose-700'}>
+                                  {debtPercent}%
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div
+                            className={`text-xs px-3 py-2 rounded-lg border font-semibold flex items-center gap-1.5 ${
+                              isEquityValid
+                                ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
+                                : 'text-rose-600 bg-rose-50 border-rose-200'
+                            }`}
+                          >
+                            {isEquityValid
+                              ? '✓ Capital structure meets minimum 20% equity threshold'
+                              : '⚠️ Equity is below standard 20% threshold. Please improve your margin / promoter contribution to proceed.'}
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                    <div className="text-xs text-emerald-800 bg-white/80 px-3 py-1.5 rounded-lg border border-emerald-200 font-semibold">
-                      {parseFloat(equityPercent) >= 20 ? '✓ Meets Bank Underwriting Standard' : '⚠️ Equity below standard 20% threshold'}
-                    </div>
-                  </div>
 
-                  <div className="pt-4 flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={() => setStep(1)}
-                      className="px-5 py-2.5 text-xs font-bold text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      <span>Back</span>
-                    </button>
+                        <div className="pt-4 flex items-center justify-between">
+                          <button
+                            type="button"
+                            onClick={() => setStep(1)}
+                            className="px-5 py-2.5 text-xs font-bold text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <ArrowLeft className="w-4 h-4" />
+                            <span>Back</span>
+                          </button>
 
-                    <button
-                      type="submit"
-                      className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
-                    >
-                      <span>Proceed to Step 3</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
+                          <button
+                            type="submit"
+                            disabled={!isEquityValid}
+                            className={`px-6 py-3 font-bold text-sm rounded-xl shadow-md transition-all flex items-center gap-2 ${
+                              isEquityValid
+                                ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer'
+                                : 'bg-gray-200 text-gray-400 border border-gray-300 cursor-not-allowed opacity-75'
+                            }`}
+                            title={
+                              !isEquityValid
+                                ? 'Equity is below standard 20% threshold. Please improve your margin / promoter contribution to proceed.'
+                                : ''
+                            }
+                          >
+                            <span>Proceed to Step 3</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
 
@@ -531,10 +609,10 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Land Status */}
+                    {/* Project Land Status */}
                     <div>
                       <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                        Land Status <span className="text-red-500">*</span>
+                        Project Land Status <span className="text-red-500">*</span>
                       </label>
                       <select
                         name="landStatus"
@@ -543,7 +621,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                         required
                         className={`w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-sm font-medium ${formData.landStatus ? 'text-gray-900' : 'text-gray-400'}`}
                       >
-                        <option value="" disabled hidden>Select Land Status</option>
+                        <option value="" disabled hidden>Select Project Land Status</option>
                         <option value="Owned & Registered" className="text-gray-900">Owned & Registered</option>
                         <option value="Leased / Govt Allotted" className="text-gray-900">Leased / Govt Allotted</option>
                         <option value="MoU Signed / Under Acquisition" className="text-gray-900">MoU Signed / Under Acquisition</option>
@@ -565,9 +643,10 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                       >
                         <option value="" disabled hidden>Select Collateral Status</option>
                         <option value="Freehold (Clear Title)" className="text-gray-900">Freehold (Clear Title)</option>
-                        <option value="Leasehold (Bank Transferable)" className="text-gray-900">Leasehold (Bank Transferable)</option>
+                        <option value="Leasehold (Bank Clause)" className="text-gray-900">Leasehold (Bank Clause)</option>
                         <option value="Agricultural / Conversion Pending" className="text-gray-900">Agricultural / Conversion Pending</option>
                         <option value="Under Mortgage / Encumbered" className="text-gray-900">Under Mortgage / Encumbered</option>
+                        <option value="Govt. Allotted Land" className="text-gray-900">Govt. Allotted Land</option>
                       </select>
                     </div>
 
@@ -634,11 +713,25 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                           type="tel"
                           name="mobile"
                           value={formData.mobile}
-                          onChange={handleInputChange}
+                          onChange={(e) => {
+                            handleInputChange(e);
+                            setMobileTouched(true);
+                          }}
+                          onBlur={() => setMobileTouched(true)}
                           required
-                          placeholder="Enter mobile number"
-                          className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"
+                          placeholder="Enter 10-digit mobile number"
+                          maxLength={10}
+                          className={`w-full px-3.5 py-2.5 bg-white border rounded-xl text-sm outline-none transition-all ${
+                            mobileTouched && !mobileValidation.isValid
+                              ? 'border-red-500 focus:ring-2 focus:ring-red-500 bg-red-50/40 text-red-900 font-medium'
+                              : 'border-gray-200 focus:ring-2 focus:ring-emerald-500 text-gray-900'
+                          }`}
                         />
+                        {mobileTouched && !mobileValidation.isValid && (
+                          <p className="text-xs text-red-600 font-semibold mt-1">
+                            {mobileValidation.error}
+                          </p>
+                        )}
                       </div>
 
                       <div>
@@ -694,7 +787,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
           <div className="space-y-8 animate-in zoom-in-95 duration-500">
             {/* View Switcher Bar */}
             <div className="bg-slate-900 rounded-2xl p-2 flex items-center justify-between gap-2 border border-slate-800 shadow-xl">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => setViewMode('scorecard')}
                   className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
@@ -708,15 +801,26 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                 </button>
 
                 <button
-                  onClick={() => setViewMode('teaser')}
+                  onClick={handleSelectTeaserTab}
                   className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                     viewMode === 'teaser'
                       ? 'bg-emerald-500 text-slate-950 shadow-md'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                      : isTeaserUnlocked
+                      ? 'text-slate-300 hover:text-white hover:bg-slate-800'
+                      : 'text-amber-400/90 hover:bg-amber-500/10 border border-amber-500/30'
                   }`}
                 >
-                  <Eye className="w-4 h-4" />
+                  {isTeaserUnlocked ? (
+                    <Eye className="w-4 h-4" />
+                  ) : (
+                    <Lock className="w-4 h-4 text-amber-400" />
+                  )}
                   <span>Executive Teaser (Inisio Format)</span>
+                  {!isTeaserUnlocked && (
+                    <span className="px-1.5 py-0.5 text-[10px] bg-amber-500/20 text-amber-300 rounded font-semibold uppercase">
+                      Locked
+                    </span>
+                  )}
                 </button>
               </div>
 
@@ -730,11 +834,19 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                 </button>
 
                 <button
-                  onClick={handleDownloadTeaser}
-                  className="px-4 py-2 text-xs font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  onClick={handleDownloadTeaserClick}
+                  className={`px-4 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
+                    isTeaserUnlocked
+                      ? 'text-slate-950 bg-emerald-400 hover:bg-emerald-300'
+                      : 'text-amber-300 bg-amber-950/60 border border-amber-500/40 hover:bg-amber-900/60'
+                  }`}
                 >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Download Teaser PDF</span>
+                  {isTeaserUnlocked ? (
+                    <Download className="w-3.5 h-3.5" />
+                  ) : (
+                    <Lock className="w-3.5 h-3.5 text-amber-400" />
+                  )}
+                  <span>{isTeaserUnlocked ? 'Download Teaser PDF' : 'Unlock Teaser PDF'}</span>
                 </button>
               </div>
             </div>
@@ -820,6 +932,48 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                   </div>
                 </div>
 
+                {/* Proceed to Detailed Risk Assessment Call to Action */}
+                {!showRiskProfile && (
+                  <div className="flex flex-col items-center justify-center p-6 bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border border-slate-700/80 text-center shadow-lg my-2">
+                    <div className="max-w-md space-y-2 mb-4">
+                      <h4 className="text-base font-bold text-white font-manrope">Ready for Underwriting & Detailed Risk Scoring?</h4>
+                      <p className="text-xs text-slate-300">
+                        Enter promoter background, collateral coverage, credit track, and workforce details to generate your comprehensive 10-point underwriting rating and unlock the Executive Teaser PDF report.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowRiskProfile(true);
+                        setTimeout(() => {
+                          const el = document.getElementById('risk-profile-section');
+                          if (el) {
+                            el.scrollIntoView({ behavior: 'smooth' });
+                          }
+                        }, 100);
+                      }}
+                      className="px-8 py-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-sm sm:text-base rounded-2xl shadow-xl hover:shadow-2xl hover:shadow-emerald-600/30 transition-all flex items-center justify-center gap-3 cursor-pointer group transform hover:-translate-y-0.5 active:translate-y-0"
+                    >
+                      <span>Proceed to Detailed Risk Assessment</span>
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1.5 transition-transform" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Additional Data Collection Step: Detailed Risk Profile */}
+                {showRiskProfile && (
+                  <DetailedRiskProfileForm
+                    isUnlocked={isTeaserUnlocked}
+                    onSubmitSuccess={(data) => {
+                      setRiskProfileData(data);
+                      setRiskProfileSubmitted(true);
+                      setIsTeaserUnlocked(true);
+                    }}
+                    defaultEquityPercent={formData.equityPercent}
+                    defaultPromoterExpYears={formData.promoterExpYears}
+                    sectionId="risk-profile-section"
+                  />
+                )}
+
                 {/* Observations & Recommendations Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Key Observations */}
@@ -901,6 +1055,31 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
             ) : (
               /* EXECUTIVE PROJECT TEASER VIEW (EXACT FORMAT WITH INISIO BRANDING) */
               <div className="space-y-6 bg-slate-200/80 p-4 sm:p-8 rounded-3xl border border-gray-300">
+                {!isTeaserUnlocked && (
+                  <div className="bg-amber-500/10 border border-amber-500/30 text-amber-900 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <Lock className="w-6 h-6 text-amber-600 shrink-0" />
+                      <div>
+                        <h4 className="font-bold text-sm text-slate-900">Teaser Preview & Download Pending Risk Profile Submission</h4>
+                        <p className="text-xs text-slate-600">Please complete all 5 required sections of the Detailed Risk Profile form below to unlock & calculate your rating out of 10.</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setViewMode('scorecard');
+                        setShowRiskProfile(true);
+                        setTimeout(() => {
+                          const el = document.getElementById('risk-profile-section');
+                          if (el) el.scrollIntoView({ behavior: 'smooth' });
+                        }, 100);
+                      }}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shrink-0 transition-all cursor-pointer shadow-sm"
+                    >
+                      Fill Detailed Risk Profile
+                    </button>
+                  </div>
+                )}
+
                 {/* EXECUTIVE TEASER DOCUMENT */}
                 <div className="bg-white rounded-xl shadow-2xl p-6 sm:p-10 space-y-6 text-slate-900 border border-gray-200">
                   {/* Top Legal Header */}
@@ -1074,7 +1253,65 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                     </div>
                   </div>
 
-                  {/* Section 8: Preliminary Information */}
+                  {/* Section 8: Detailed Risk Profile & Underwriting Assessment */}
+                  {riskProfileSubmitted && (
+                    <div className="space-y-3">
+                      <div className="bg-[#0F172A] text-white px-4 py-2 font-bold text-xs sm:text-sm uppercase tracking-wide rounded-sm flex items-center justify-between">
+                        <span>Detailed Risk Profile & Underwriting Assessment</span>
+                        <span className="text-emerald-400 font-extrabold text-xs">
+                          Rating: {comprehensiveRisk.scoreOutOf10} / 10 ({comprehensiveRisk.ratingLabel})
+                        </span>
+                      </div>
+                      <div className="border border-slate-200 text-xs sm:text-sm rounded-sm overflow-hidden">
+                        <div className="grid grid-cols-2 p-2.5 border-b border-slate-100 bg-emerald-50/70">
+                          <div className="font-bold text-slate-800">Underwriting Rating (out of 10)</div>
+                          <div className="font-extrabold text-emerald-800">{comprehensiveRisk.scoreOutOf10} / 10 ({comprehensiveRisk.ratingLabel})</div>
+                        </div>
+                        <div className="grid grid-cols-2 p-2.5 border-b border-slate-100">
+                          <div className="font-bold text-slate-700">CIBIL / Credit Score Track</div>
+                          <div className="font-semibold text-slate-900">
+                            {riskProfileData?.isNewToCredit ? 'New to Credit (N/A)' : (riskProfileData?.cibilScore ? `${riskProfileData.cibilScore} Score` : 'N/A')}
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 p-2.5 border-b border-slate-100 bg-slate-50">
+                          <div className="font-bold text-slate-700">Collateral Coverage %</div>
+                          <div className="font-semibold text-slate-900">
+                            {riskProfileData?.collateralCoveragePct ? `${riskProfileData.collateralCoveragePct}%` : 'N/A'}
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 p-2.5 border-b border-slate-100">
+                          <div className="font-bold text-slate-700">Industry Experience</div>
+                          <div className="text-slate-900">{riskProfileData?.industryExperience || formData.promoterExp || 'N/A'}</div>
+                        </div>
+                        <div className="grid grid-cols-2 p-2.5 border-b border-slate-100 bg-slate-50">
+                          <div className="font-bold text-slate-700">Educational Background</div>
+                          <div className="text-slate-900">{riskProfileData?.educationalBackground || 'N/A'}</div>
+                        </div>
+                        <div className="grid grid-cols-2 p-2.5 border-b border-slate-100">
+                          <div className="font-bold text-slate-700">Business Constitution & Vintage</div>
+                          <div className="text-slate-900">
+                            {riskProfileData ? `${riskProfileData.businessConstitution} (${riskProfileData.businessVintage})` : 'N/A'}
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 p-2.5 border-b border-slate-100 bg-slate-50">
+                          <div className="font-bold text-slate-700">Promoter Contribution Type</div>
+                          <div className="text-slate-900">{riskProfileData?.contributionType || 'N/A'}</div>
+                        </div>
+                        <div className="grid grid-cols-2 p-2.5 border-b border-slate-100">
+                          <div className="font-bold text-slate-700">Management & Technical Workforce</div>
+                          <div className="text-slate-900">
+                            {riskProfileData ? `${riskProfileData.managementTeamSize} Mgmt / Directors • ${riskProfileData.technicalWorkforceCount} Tech Staff` : 'N/A'}
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 p-2.5">
+                          <div className="font-bold text-slate-700">Debt–Equity Ratio</div>
+                          <div className="font-bold text-slate-900">{riskProfileData?.debtEquityRatio || `${results.debtPct}:${results.eqPct}`}</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Section 9: Preliminary Information */}
                   <div className="space-y-3">
                     <div className="bg-[#0F172A] text-white px-4 py-2 font-bold text-xs sm:text-sm uppercase tracking-wide rounded-sm">
                       Preliminary Information
@@ -1141,12 +1378,16 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
 
               <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                 <button
-                  onClick={handleDownloadTeaser}
-                  className="flex-1 sm:flex-none px-5 py-3 text-xs font-bold text-slate-900 bg-emerald-400 hover:bg-emerald-300 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
-                  title="Downloads official bank-grade PDF teaser document"
+                  onClick={handleDownloadTeaserClick}
+                  className={`flex-1 sm:flex-none px-5 py-3 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md ${
+                    isTeaserUnlocked
+                      ? 'text-slate-900 bg-emerald-400 hover:bg-emerald-300'
+                      : 'text-amber-300 bg-amber-950/80 border border-amber-500/40 hover:bg-amber-900/80'
+                  }`}
+                  title={isTeaserUnlocked ? 'Downloads official bank-grade PDF teaser document' : 'Complete Detailed Risk Profile to unlock PDF download'}
                 >
-                  <Download className="w-4 h-4" />
-                  <span>Download Teaser PDF</span>
+                  {isTeaserUnlocked ? <Download className="w-4 h-4" /> : <Lock className="w-4 h-4 text-amber-400" />}
+                  <span>{isTeaserUnlocked ? 'Download Teaser PDF' : 'Unlock Teaser PDF'}</span>
                 </button>
 
                 <button

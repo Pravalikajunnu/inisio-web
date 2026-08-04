@@ -755,21 +755,6 @@ export const SERVICES: Service[] = [
     imageUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80'
   },
   {
-    id: 'cma_preparation',
-    name: 'CMA Data & Financial Viability',
-    tag: 'Credit Monitoring',
-    shortDesc: '10-year financial cash flow projections, DSCR calculations, and MPBF working capital ratios required by lenders.',
-    fullDesc: '10-year financial cash flow projections, DSCR calculations, and MPBF working capital ratios required by lenders.',
-    deliverables: [
-      '10-Year P&L & Cash Flow Model',
-      'Working Capital Assessment (MPBF)',
-      'DSCR, IRR & Ratio Analysis (TOL/TNW)'
-    ],
-    iconName: 'Calculator',
-    turnaroundTime: '2-3 Days',
-    imageUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=800&auto=format&fit=crop&q=80'
-  },
-  {
     id: 'loan_processing',
     name: 'Debt Syndication & Loan Advisory',
     tag: 'Debt Syndication',
@@ -785,19 +770,19 @@ export const SERVICES: Service[] = [
     imageUrl: 'https://images.unsplash.com/photo-1560520653-9e0e4c89eb11?w=800&auto=format&fit=crop&q=80'
   },
   {
-    id: 'subsidy_assistance',
-    name: 'Government Subsidy & Incentive Alignment',
-    tag: 'Govt Incentives',
-    shortDesc: 'Identify and secure central & state capital subsidies (15%-50%), PLI schemes, and interest subvention benefits.',
-    fullDesc: 'Identify and secure central & state capital subsidies (15%-50%), PLI schemes, and interest subvention benefits.',
+    id: 'vetting_sanction_letter',
+    name: 'Vetting of Sanction Letter',
+    tag: 'Debt Advisory',
+    shortDesc: 'Rigorous legal & financial vetting of bank sanction letters to identify hidden restrictive covenants, fee structures, and interest margins.',
+    fullDesc: 'Rigorous legal & financial vetting of bank sanction letters to identify hidden restrictive covenants, fee structures, and interest margins.',
     deliverables: [
-      'Central & State Scheme Eligibility Audit',
-      'Subsidy Dossier & Proposal Preparation',
-      'Nodal Agency Filing & Claim Follow-up'
+      'Clause-by-Clause Covenant & Term Audit',
+      'Interest Spread, Processing Fee & Penalty Analysis',
+      'Pre-Disbursement Compliance & Security Checklist'
     ],
     iconName: 'FileCheck',
-    turnaroundTime: 'Ongoing',
-    imageUrl: 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=800&auto=format&fit=crop&q=80'
+    turnaroundTime: '1-2 Days',
+    imageUrl: 'https://images.unsplash.com/photo-1450133064473-71024230f91b?w=800&auto=format&fit=crop&q=80'
   }
 ];
 

@@ -3,7 +3,8 @@ import {
   TrendingUp,
   MapPin,
   ShieldCheck,
-  Award
+  Award,
+  PhoneCall
 } from 'lucide-react';
 
 interface FooterProps {
@@ -92,16 +93,42 @@ export const Footer: React.FC<FooterProps> = ({
           {/* Column 4: Contact & Locations */}
           <div className="space-y-3 text-left">
             <h4 className="font-manrope font-semibold text-white text-lg tracking-tight">
-              Headquarters
+              Headquarters & Contact
             </h4>
             <div className="space-y-3 text-[15px] font-normal text-slate-400 font-inter">
               <div className="flex items-start gap-2.5">
                 <MapPin className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-                <span className="leading-[1.6]">Inisio Capital Towers, Financial District, Nanakramguda, Hyderabad, Telangana 500032</span>
+                <span className="leading-[1.6]">2nd Floor, Plot 24 & 25, Kakatiya Hills, Road No 9, Madhapur, Hyderabad, Telangana 500033</span>
               </div>
-              <div className="flex items-center gap-2 pt-1 text-emerald-400 font-semibold text-sm">
+
+              <div className="flex items-center gap-2.5 pt-1">
+                <a
+                  href="tel:+916302026462"
+                  className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors"
+                >
+                  <PhoneCall className="w-4 h-4 text-blue-400" />
+                  <span className="font-semibold text-sm">+91 63020 26462</span>
+                </a>
+              </div>
+
+              <div className="flex items-center gap-2.5">
+                <a
+                  href="https://wa.me/916302026462?text=Hello%20Inisio%20Advisory%20Team%2C%20I%20would%20like%20to%20inquire%20about%20greenfield%20project%20advisory."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors"
+                >
+                  <svg className="w-4 h-4 fill-current text-[#25D366]" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347z"/>
+                    <path d="M12 0C5.373 0 0 5.373 0 12c0 2.12.553 4.11 1.522 5.836L.055 23.513l5.833-1.528A11.936 11.936 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.932 9.932 0 01-5.067-1.39l-.364-.216-3.762.986.1-3.666-.238-.378A9.948 9.948 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
+                  </svg>
+                  <span className="font-semibold text-sm">WhatsApp +91 63020 26462</span>
+                </a>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1 text-emerald-400 font-semibold text-xs">
                 <ShieldCheck className="w-4 h-4 shrink-0" />
-                <span>Enterprise Greenfield Advisory</span>
+                <span>Enterprise Greenfield Advisory Desk</span>
               </div>
             </div>
           </div>

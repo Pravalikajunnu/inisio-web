@@ -78,6 +78,7 @@ export interface AssessmentData {
   projectCostCr: number;
   equityPercent: number;
   landStatus: 'owned' | 'leased' | 'identified' | 'not_started';
+  collateralStatus?: string;
   promoterExpYears: number;
   locationState: string;
   dprReady: boolean;
