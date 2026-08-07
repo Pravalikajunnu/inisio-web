@@ -63,53 +63,53 @@ export const Hero: React.FC<HeroProps> = ({
               className="lg:col-span-6 space-y-6 text-left flex flex-col items-start"
             >
               {/* Category Tag */}
-              <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200/80 text-blue-800 text-xs font-semibold uppercase tracking-wider shadow-2xs">
-                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-800 text-[11px] font-semibold uppercase tracking-wider shadow-2xs">
+                <Sparkles className="w-3 h-3 text-blue-600" />
                 <span>Greenfield Project Finance &amp; Advisory</span>
               </div>
 
               {/* Headline */}
-              <h1 className="font-manrope text-3xl sm:text-4xl lg:text-[2.65rem] font-bold text-[#0f172a] leading-[1.2] tracking-tight">
+              <h1 className="font-manrope text-2xl sm:text-3xl lg:text-[2.25rem] font-bold text-[#0f172a] leading-[1.25] tracking-tight">
                 Turn Your <span className="text-[#2161F5]">New Business Idea</span> into a <span className="text-[#1e293b]">Bank-Funded Enterprise</span>
               </h1>
 
               {/* Subtitle */}
-              <p className="font-inter text-sm sm:text-base text-[#475569] font-normal leading-relaxed max-w-[540px]">
+              <p className="font-inter text-xs sm:text-sm text-[#475569] font-normal leading-relaxed max-w-[480px]">
                 Evaluate project feasibility, structure bank-grade DPRs, and secure term loan sanctions for new industrial units across India.
               </p>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-1 w-full sm:w-auto">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-1 w-full sm:w-auto">
                 <button
                   onClick={onOpenAssessment}
-                  className="w-full sm:w-auto px-6 py-3.5 text-sm sm:text-base font-semibold text-white bg-[#2161F5] hover:bg-blue-700 active:bg-blue-800 rounded-xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2 group cursor-pointer touch-manipulation min-h-[48px]"
+                  className="w-full sm:w-auto px-5 py-3 text-xs sm:text-sm font-semibold text-white bg-[#2161F5] hover:bg-blue-700 active:bg-blue-800 rounded-xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2 group cursor-pointer touch-manipulation min-h-[44px]"
                 >
-                  <Calculator className="w-4.5 h-4.5 text-blue-100" />
+                  <Calculator className="w-4 h-4 text-blue-100" />
                   <span>Start Project Assessment</span>
-                  <ArrowRight className="w-4.5 h-4.5 group-hover:translate-x-0.5 transition-transform" />
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 </button>
 
                 <button
                   onClick={onOpenConsultation}
-                  className="w-full sm:w-auto px-6 py-3.5 text-sm sm:text-base font-semibold text-gray-800 bg-gray-100 hover:bg-gray-200/80 active:bg-gray-200 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer border border-gray-200/80 touch-manipulation min-h-[48px]"
+                  className="w-full sm:w-auto px-5 py-3 text-xs sm:text-sm font-semibold text-gray-800 bg-gray-100 hover:bg-gray-200/80 active:bg-gray-200 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer border border-gray-200/80 touch-manipulation min-h-[44px]"
                 >
-                  <PhoneCall className="w-4.5 h-4.5 text-[#2161F5]" />
+                  <PhoneCall className="w-4 h-4 text-[#2161F5]" />
                   <span>Book Free Advisory Call</span>
                 </button>
               </div>
 
               {/* Key Trust Signals */}
-              <div className="pt-2 flex flex-wrap items-center gap-y-2 gap-x-5 text-xs sm:text-sm font-medium text-gray-600">
+              <div className="pt-2 flex flex-wrap items-center gap-y-2 gap-x-4 text-xs font-medium text-gray-600">
                 <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span>Instant Feasibility Scorecard</span>
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span>100+ Page Bank-Ready DPR</span>
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span>Direct Bank Loan Syndication</span>
                 </span>
               </div>
