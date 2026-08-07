@@ -115,15 +115,15 @@ export const TrustNumbers: React.FC = () => {
         {/* Sub-bar with bank accreditation */}
         <div className="mt-8 pt-5 border-t border-slate-200/70 flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-slate-600">
           <div className="flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <ShieldCheck className="w-4 h-4 text-blue-600" />
             <span>Aligned with PSU & Top Private Bank Credit Committees</span>
           </div>
           <div className="flex flex-wrap items-center gap-4 text-slate-500 font-semibold uppercase text-[10px] tracking-wider">
-            <span>• State Bank of India</span>
             <span>• HDFC Bank</span>
-            <span>• Bank of Baroda</span>
             <span>• ICICI Bank</span>
+            <span>• Axis Bank</span>
             <span>• Canara Bank</span>
+            <span>• Bandhan Bank</span>
           </div>
         </div>
       </div>

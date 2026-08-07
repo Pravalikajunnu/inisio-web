@@ -40,11 +40,11 @@ export const FAQSection: React.FC<FAQSectionProps> = ({
         
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-12 space-y-4">
-          <span className="text-xs font-bold uppercase tracking-widest text-emerald-700 bg-emerald-100/70 px-3.5 py-1.5 rounded-full">
+          <span className="text-xs font-bold uppercase tracking-widest text-blue-700 bg-blue-100/70 px-3.5 py-1.5 rounded-full">
             Frequently Asked Questions
           </span>
           <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 tracking-tight">
-            Everything You Need to Know About <span className="text-emerald-600">Greenfield Loans</span>
+            Everything You Need to Know About <span className="text-blue-600">Greenfield Loans</span>
           </h2>
           <p className="text-base text-gray-600">
             Got questions about DPR preparation, bankability ratings, or term loan debt ratios? We have answers.
@@ -60,7 +60,7 @@ export const FAQSection: React.FC<FAQSectionProps> = ({
                   onClick={() => setActiveCategory(cat)}
                   className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                     activeCategory === cat
-                      ? 'bg-emerald-600 text-white shadow-xs'
+                      ? 'bg-blue-600 text-white shadow-xs'
                       : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
                   }`}
                 >
@@ -77,7 +77,7 @@ export const FAQSection: React.FC<FAQSectionProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search questions..."
-                className="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
+                className="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -91,18 +91,18 @@ export const FAQSection: React.FC<FAQSectionProps> = ({
               <div
                 key={faq.id}
                 className={`glass-card rounded-2xl transition-all overflow-hidden ${
-                  isOpen ? 'border-emerald-500 shadow-soft' : 'border-gray-200/80 hover:border-gray-300'
+                  isOpen ? 'border-blue-500 shadow-soft' : 'border-gray-200/80 hover:border-gray-300'
                 }`}
               >
                 <button
                   onClick={() => toggleFAQ(faq.id)}
                   className="w-full p-5 sm:p-6 text-left flex items-center justify-between gap-4 font-manrope font-extrabold text-base sm:text-lg text-gray-900 group cursor-pointer"
                 >
-                  <span className="group-hover:text-emerald-700 transition-colors">
+                  <span className="group-hover:text-blue-700 transition-colors">
                     {faq.question}
                   </span>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-transform duration-300 ${
-                    isOpen ? 'bg-emerald-100 text-emerald-700 rotate-180' : 'bg-gray-100 text-gray-500'
+                    isOpen ? 'bg-blue-100 text-blue-700 rotate-180' : 'bg-gray-100 text-gray-500'
                   }`}>
                     <ChevronDown className="w-4 h-4" />
                   </div>
@@ -137,7 +137,7 @@ export const FAQSection: React.FC<FAQSectionProps> = ({
         {/* Still Have Questions CTA */}
         <div className="mt-12 bg-white rounded-2xl p-6 border border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
               <MessageCircle className="w-5 h-5" />
             </div>
             <div>
@@ -148,7 +148,7 @@ export const FAQSection: React.FC<FAQSectionProps> = ({
 
           <button
             onClick={onOpenConsultation}
-            className="px-5 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors shrink-0 flex items-center gap-2"
+            className="px-5 py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shrink-0 flex items-center gap-2"
           >
             <PhoneCall className="w-4 h-4" />
             <span>Speak to a Banking Advisor</span>

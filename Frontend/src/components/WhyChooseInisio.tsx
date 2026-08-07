@@ -68,8 +68,8 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
         
         {/* 1. Header & Hero Intro */}
         <section className="max-w-[680px] mx-auto space-y-3 text-center flex flex-col items-center">
-          <div className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-wider text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200/80 uppercase">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+          <div className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-wider text-blue-800 bg-blue-50 px-3 py-1 rounded-full border border-blue-200/80 uppercase">
+            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
             <span>About Inisio</span>
           </div>
 
@@ -85,7 +85,7 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
         {/* 2. What We Do Section */}
         <section className="space-y-8">
           <div className="text-center max-w-[640px] mx-auto space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200/80">
+            <span className="text-xs font-semibold uppercase tracking-wider text-blue-800 bg-blue-50 px-3 py-1 rounded-full border border-blue-200/80">
               Core Capabilities
             </span>
             <h2 className="font-manrope text-xl sm:text-2xl lg:text-3xl font-bold text-[#111827] leading-tight tracking-tight">
@@ -100,9 +100,9 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
             {whatWeDoList.map((item, index) => (
               <div
                 key={index}
-                className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-xs hover:border-emerald-300 transition-all flex items-start gap-3.5 text-left"
+                className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-xs hover:border-blue-300 transition-all flex items-start gap-3.5 text-left"
               >
-                <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 mt-0.5">
                   <CheckCircle2 className="w-4 h-4" />
                 </div>
                 <div className="space-y-1">
@@ -121,7 +121,7 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
         {/* 3. Our Approach / Flow */}
         <section className="space-y-8">
           <div className="text-center max-w-[640px] mx-auto space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200/80">
+            <span className="text-xs font-semibold uppercase tracking-wider text-blue-800 bg-blue-50 px-3 py-1 rounded-full border border-blue-200/80">
               Structured Methodology
             </span>
             <h2 className="font-manrope text-xl sm:text-2xl lg:text-3xl font-bold text-[#111827] leading-tight tracking-tight">
@@ -136,7 +136,7 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
             {processSteps.map((step, idx) => (
               <div key={idx} className="flex flex-col items-start space-y-3 text-left">
                 <div className="flex items-center gap-2">
-                  <span className="w-8 h-8 rounded-full bg-emerald-600 text-white font-manrope font-bold text-sm flex items-center justify-center shrink-0 shadow-xs">
+                  <span className="w-8 h-8 rounded-full bg-blue-600 text-white font-manrope font-bold text-sm flex items-center justify-center shrink-0 shadow-xs">
                     {step.number}
                   </span>
                   {idx < processSteps.length - 1 && (
@@ -159,7 +159,7 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
         {/* 4. Why Businesses Choose Inisio */}
         <section className="space-y-8">
           <div className="text-center max-w-[640px] mx-auto space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200/80">
+            <span className="text-xs font-semibold uppercase tracking-wider text-blue-800 bg-blue-50 px-3 py-1 rounded-full border border-blue-200/80">
               Key Differentiators
             </span>
             <h2 className="font-manrope text-xl sm:text-2xl lg:text-3xl font-bold text-[#111827] leading-tight tracking-tight">
@@ -171,8 +171,8 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
             {whyChooseUs.map((card, idx) => {
               const IconComp = card.icon;
               return (
-                <div key={idx} className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-xs hover:border-emerald-300 transition-all flex items-start gap-4 text-left">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                <div key={idx} className="bg-white rounded-2xl border border-gray-200/80 p-5 sm:p-6 shadow-xs hover:border-blue-300 transition-all flex items-start gap-4 text-left">
+                  <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0 mt-0.5">
                     <IconComp className="w-4.5 h-4.5" />
                   </div>
                   <div className="space-y-1">
@@ -190,7 +190,7 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
         </section>
 
         {/* 5. Call-to-Action Section */}
-        <section className="bg-gradient-to-br from-emerald-950 via-slate-900 to-slate-900 text-white rounded-2xl p-6 sm:p-10 text-center border border-emerald-500/30 shadow-md">
+        <section className="bg-gradient-to-br from-blue-950 via-slate-900 to-slate-900 text-white rounded-2xl p-6 sm:p-10 text-center border border-blue-500/30 shadow-md">
           <div className="max-w-[620px] mx-auto space-y-4">
             <h2 className="font-manrope text-xl sm:text-2xl lg:text-3xl font-bold text-white leading-tight tracking-tight">
               Ready to Start Your Greenfield Project?
@@ -202,7 +202,7 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
               {onOpenAssessment && (
                 <button
                   onClick={onOpenAssessment}
-                  className="w-full sm:w-auto px-5 py-3 text-xs sm:text-sm font-semibold text-slate-950 bg-emerald-400 hover:bg-emerald-300 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                  className="w-full sm:w-auto px-5 py-3 text-xs sm:text-sm font-semibold text-slate-950 bg-blue-400 hover:bg-blue-300 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
                 >
                   <Calculator className="w-4 h-4" />
                   <span>Start Assessment</span>
@@ -214,7 +214,7 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
                   onClick={onOpenConsultation}
                   className="w-full sm:w-auto px-5 py-3 text-xs sm:text-sm font-semibold text-white bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <PhoneCall className="w-4 h-4 text-emerald-400" />
+                  <PhoneCall className="w-4 h-4 text-blue-400" />
                   <span>Book Free Advisory Call</span>
                 </button>
               )}

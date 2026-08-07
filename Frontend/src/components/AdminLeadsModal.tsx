@@ -84,7 +84,7 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
         {/* Header */}
         <div className="p-4 sm:p-6 border-b border-slate-800 bg-slate-950/80 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-400 flex items-center justify-center">
               <Users className="w-5 h-5" />
             </div>
             <div>
@@ -92,7 +92,7 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
                 <h2 className="font-manrope text-lg sm:text-xl font-bold text-white tracking-tight">
                   Admin Lead & Download Portal
                 </h2>
-                <span className="text-[11px] font-semibold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                <span className="text-[11px] font-semibold uppercase px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
                   Live Admin
                 </span>
               </div>
@@ -113,7 +113,7 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
         {/* Password Screen */}
         {!isAuthenticated ? (
           <div className="p-8 sm:p-12 text-center max-w-md mx-auto space-y-6 my-auto">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto shadow-inner">
+            <div className="w-14 h-14 rounded-2xl bg-blue-500/20 border border-blue-500/40 text-blue-400 flex items-center justify-center mx-auto shadow-inner">
               <Lock className="w-7 h-7" />
             </div>
             
@@ -132,7 +132,7 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password (inisio2026)"
-                  className="w-full px-4 py-3 bg-slate-800 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-hidden text-sm"
+                  className="w-full px-4 py-3 bg-slate-800 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-hidden text-sm"
                   autoFocus
                 />
               </div>
@@ -146,7 +146,7 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
 
               <button
                 type="submit"
-                className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                className="w-full py-3 bg-blue-500 hover:bg-blue-400 text-slate-950 font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
               >
                 <Unlock className="w-4 h-4" />
                 <span>Unlock Lead Dashboard</span>
@@ -154,7 +154,7 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
             </form>
 
             <p className="text-[11px] text-slate-500">
-              Default password: <code className="text-emerald-400 bg-slate-800 px-1.5 py-0.5 rounded">inisio2026</code>
+              Default password: <code className="text-blue-400 bg-slate-800 px-1.5 py-0.5 rounded">inisio2026</code>
             </p>
           </div>
         ) : (
@@ -168,9 +168,9 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
                 <span className="text-2xl font-bold font-manrope text-white">{leads.length}</span>
               </div>
 
-              <div className="bg-emerald-950/50 border border-emerald-500/30 p-3.5 rounded-xl space-y-1">
-                <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider block">PDF Teaser Downloads</span>
-                <span className="text-2xl font-bold font-manrope text-emerald-400">{totalDownloads}</span>
+              <div className="bg-blue-950/50 border border-blue-500/30 p-3.5 rounded-xl space-y-1">
+                <span className="text-[11px] font-semibold text-blue-400 uppercase tracking-wider block">PDF Teaser Downloads</span>
+                <span className="text-2xl font-bold font-manrope text-blue-400">{totalDownloads}</span>
               </div>
 
               <div className="bg-slate-800/80 border border-slate-700/80 p-3.5 rounded-xl space-y-1">
@@ -180,7 +180,7 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
 
               <div className="bg-slate-800/80 border border-slate-700/80 p-3.5 rounded-xl space-y-1">
                 <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Admin WhatsApp</span>
-                <span className="text-sm font-bold text-emerald-400 font-manrope truncate block">+91 63020 26462</span>
+                <span className="text-sm font-bold text-blue-400 font-manrope truncate block">+91 63020 26462</span>
               </div>
             </div>
 
@@ -195,7 +195,7 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search promoter, phone, industry..."
-                  className="w-full pl-9 pr-3 py-2 bg-slate-900 border border-slate-700 text-xs text-white rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+                  className="w-full pl-9 pr-3 py-2 bg-slate-900 border border-slate-700 text-xs text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
                 />
               </div>
 
@@ -203,19 +203,19 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
               <div className="flex items-center gap-1.5 w-full sm:w-auto">
                 <button
                   onClick={() => setFilterSource('ALL')}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${filterSource === 'ALL' ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${filterSource === 'ALL' ? 'bg-blue-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
                 >
                   All ({leads.length})
                 </button>
                 <button
                   onClick={() => setFilterSource('PDF')}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${filterSource === 'PDF' ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${filterSource === 'PDF' ? 'bg-blue-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
                 >
                   PDF Downloads ({totalDownloads})
                 </button>
                 <button
                   onClick={() => setFilterSource('FORM')}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${filterSource === 'FORM' ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${filterSource === 'FORM' ? 'bg-blue-500 text-slate-950' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
                 >
                   Inquiries ({leads.length - totalDownloads})
                 </button>
@@ -225,7 +225,7 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
               <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end">
                 <button
                   onClick={exportLeadsToCSV}
-                  className="px-3.5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  className="px-3.5 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <FileSpreadsheet className="w-4 h-4" />
                   <span>Export CSV</span>
@@ -285,7 +285,7 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
 
                           <td className="p-3">
                             <div className="font-bold text-white text-sm">{lead.fullName || 'N/A'}</div>
-                            <div className="text-emerald-400 font-mono text-[11px] font-semibold">{lead.mobile || 'N/A'}</div>
+                            <div className="text-blue-400 font-mono text-[11px] font-semibold">{lead.mobile || 'N/A'}</div>
                             {lead.email && <div className="text-slate-400 text-[10px]">{lead.email}</div>}
                           </td>
 
@@ -296,12 +296,12 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
 
                           <td className="p-3 whitespace-nowrap">
                             <div className="font-bold text-white">₹ {lead.totalCostCr} Cr</div>
-                            <div className="text-emerald-400 text-[11px]">Loan: ₹ {lead.loanRequiredCr} Cr</div>
+                            <div className="text-blue-400 text-[11px]">Loan: ₹ {lead.loanRequiredCr} Cr</div>
                           </td>
 
                           <td className="p-3 whitespace-nowrap">
                             {lead.downloadedPDF ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
                                 <FileCheck2 className="w-3.5 h-3.5" />
                                 <span>PDF Downloaded</span>
                               </span>

@@ -60,8 +60,8 @@ export const ContactSection: React.FC = () => {
         
         {/* Page Header (Centered) */}
         <div className="text-center max-w-[700px] mx-auto space-y-3">
-          <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200/80">
-            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+          <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-blue-800 bg-blue-50 px-3 py-1 rounded-full border border-blue-200/80">
+            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
             <span>Senior Advisory Desk</span>
           </div>
           <h1 className="font-manrope text-3xl sm:text-[40px] font-bold text-[#111827] leading-[1.2] tracking-tight">
@@ -84,7 +84,7 @@ export const ContactSection: React.FC = () => {
               <div className="space-y-5 text-sm sm:text-base text-[#4B5563]">
                 <div className="flex items-start gap-3.5">
                   <div className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-[#111827] shrink-0 mt-0.5">
-                    <MapPin className="w-5 h-5 text-emerald-600" />
+                    <MapPin className="w-5 h-5 text-blue-600" />
                   </div>
                   <div className="space-y-0.5">
                     <span className="font-semibold text-[#111827] block">Corporate Address</span>
@@ -94,17 +94,17 @@ export const ContactSection: React.FC = () => {
 
                 <div className="flex items-start gap-3.5">
                   <div className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-[#111827] shrink-0 mt-0.5">
-                    <PhoneCall className="w-5 h-5 text-emerald-600" />
+                    <PhoneCall className="w-5 h-5 text-blue-600" />
                   </div>
                   <div className="space-y-0.5">
                     <span className="font-semibold text-[#111827] block">Consultation Helpline</span>
-                    <a href="tel:+916302026462" className="text-emerald-700 font-semibold hover:underline">+91 63020 26462</a>
+                    <a href="tel:+916302026462" className="text-blue-700 font-semibold hover:underline">+91 63020 26462</a>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3.5">
                   <div className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-[#111827] shrink-0 mt-0.5">
-                    <Mail className="w-5 h-5 text-emerald-600" />
+                    <Mail className="w-5 h-5 text-blue-600" />
                   </div>
                   <div className="space-y-0.5">
                     <span className="font-semibold text-[#111827] block">Direct Email</span>
@@ -114,7 +114,7 @@ export const ContactSection: React.FC = () => {
 
                 <div className="flex items-start gap-3.5">
                   <div className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-[#111827] shrink-0 mt-0.5">
-                    <Clock className="w-5 h-5 text-emerald-600" />
+                    <Clock className="w-5 h-5 text-blue-600" />
                   </div>
                   <div className="space-y-0.5">
                     <span className="font-semibold text-[#111827] block">Working Hours</span>
@@ -127,7 +127,7 @@ export const ContactSection: React.FC = () => {
             {/* Confidentiality Guarantee */}
             <div className="bg-white p-6 rounded-2xl border border-gray-200/80 space-y-2 text-left">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                <ShieldCheck className="w-5 h-5 text-blue-600" />
                 <span className="font-semibold text-base text-[#111827]">100% Confidential</span>
               </div>
               <p className="text-sm text-[#6B7280]">Strict Non-Disclosure Agreement (NDA) applied for all project briefs.</p>
@@ -138,7 +138,7 @@ export const ContactSection: React.FC = () => {
           <div className="lg:col-span-7 bg-white rounded-2xl p-6 sm:p-8 border border-gray-200/80 shadow-xs text-left">
             {submitted ? (
               <div className="text-center py-12 space-y-4">
-                <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto border border-emerald-200">
+                <div className="w-16 h-16 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center mx-auto border border-blue-200">
                   <CheckCircle2 className="w-8 h-8" />
                 </div>
                 <h3 className="text-2xl font-bold text-[#111827] font-manrope">Consultation Booked Successfully!</h3>
@@ -168,7 +168,7 @@ export const ContactSection: React.FC = () => {
                       placeholder="Enter your name"
                       value={formData.fullName}
                       onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                      className="w-full px-4 py-3 text-sm bg-white border border-gray-300 rounded-xl font-normal text-[#111827] focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                      className="w-full px-4 py-3 text-sm bg-white border border-gray-300 rounded-xl font-normal text-[#111827] focus:outline-hidden focus:ring-2 focus:ring-blue-600"
                     />
                   </div>
 
@@ -181,7 +181,7 @@ export const ContactSection: React.FC = () => {
                       placeholder="Enter your email address"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-4 py-3 text-sm bg-white border border-gray-300 rounded-xl font-normal text-[#111827] focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                      className="w-full px-4 py-3 text-sm bg-white border border-gray-300 rounded-xl font-normal text-[#111827] focus:outline-hidden focus:ring-2 focus:ring-blue-600"
                     />
                   </div>
                 </div>
@@ -196,7 +196,7 @@ export const ContactSection: React.FC = () => {
                       placeholder="Enter your phone number"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="w-full px-4 py-3 text-sm bg-white border border-gray-300 rounded-xl font-normal text-[#111827] focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                      className="w-full px-4 py-3 text-sm bg-white border border-gray-300 rounded-xl font-normal text-[#111827] focus:outline-hidden focus:ring-2 focus:ring-blue-600"
                     />
                   </div>
 
@@ -207,7 +207,7 @@ export const ContactSection: React.FC = () => {
                       required
                       value={formData.projectType}
                       onChange={(e) => setFormData({ ...formData, projectType: e.target.value })}
-                      className="w-full px-4 py-3 text-sm bg-white border border-gray-300 rounded-xl font-normal text-[#111827] focus:outline-hidden focus:ring-2 focus:ring-emerald-600 cursor-pointer"
+                      className="w-full px-4 py-3 text-sm bg-white border border-gray-300 rounded-xl font-normal text-[#111827] focus:outline-hidden focus:ring-2 focus:ring-blue-600 cursor-pointer"
                     >
                       <option value="">Select Industry Sector</option>
                       {MAIN_SECTORS.map((sector) => (
@@ -227,7 +227,7 @@ export const ContactSection: React.FC = () => {
                       placeholder="Enter project budget in Cr"
                       value={formData.investmentAmount}
                       onChange={(e) => setFormData({ ...formData, investmentAmount: e.target.value })}
-                      className="w-full px-4 py-3 text-sm bg-white border border-gray-300 rounded-xl font-normal text-[#111827] focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                      className="w-full px-4 py-3 text-sm bg-white border border-gray-300 rounded-xl font-normal text-[#111827] focus:outline-hidden focus:ring-2 focus:ring-blue-600"
                     />
                   </div>
 
@@ -240,7 +240,7 @@ export const ContactSection: React.FC = () => {
                       placeholder="e.g. 18 Cr"
                       value={formData.loanRequirement}
                       onChange={(e) => setFormData({ ...formData, loanRequirement: e.target.value })}
-                      className="w-full px-4 py-3 text-sm bg-white border border-gray-300 rounded-xl font-normal text-[#111827] focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                      className="w-full px-4 py-3 text-sm bg-white border border-gray-300 rounded-xl font-normal text-[#111827] focus:outline-hidden focus:ring-2 focus:ring-blue-600"
                     />
                   </div>
                 </div>
@@ -253,14 +253,14 @@ export const ContactSection: React.FC = () => {
                     placeholder="Enter details about land status, equipment requirements, or funding timeline..."
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    className="w-full px-4 py-3 text-sm bg-white border border-gray-300 rounded-xl font-normal text-[#111827] focus:outline-hidden focus:ring-2 focus:ring-emerald-600"
+                    className="w-full px-4 py-3 text-sm bg-white border border-gray-300 rounded-xl font-normal text-[#111827] focus:outline-hidden focus:ring-2 focus:ring-blue-600"
                   />
                 </div>
 
                 {/* Submit CTA */}
                 <button
                   type="submit"
-                  className="w-full py-3.5 text-base font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2 group"
+                  className="w-full py-3.5 text-base font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2 group"
                 >
                   <Send className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
                   <span>Book Free Advisory Call</span>

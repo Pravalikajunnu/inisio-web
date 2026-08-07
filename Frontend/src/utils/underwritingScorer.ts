@@ -131,7 +131,7 @@ function getRatingObject(score: number): ComprehensiveRiskRating {
     return {
       scoreOutOf10: score,
       ratingLabel: 'Excellent (Low Risk)',
-      badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-emerald-700',
+      badgeColor: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/80 dark:text-blue-300 dark:border-blue-700',
       summaryText: 'Bankable greenfield profile with strong promoter track record, high collateral, and excellent creditworthiness.'
     };
   }
@@ -139,7 +139,7 @@ function getRatingObject(score: number): ComprehensiveRiskRating {
     return {
       scoreOutOf10: score,
       ratingLabel: 'Good (Moderate Risk)',
-      badgeColor: 'bg-teal-100 text-teal-800 border-teal-300 dark:bg-teal-950/80 dark:text-teal-300 dark:border-teal-700',
+      badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-950/80 dark:text-indigo-300 dark:border-indigo-700',
       summaryText: 'Favorable credit profile meeting standard institutional debt syndication norms.'
     };
   }

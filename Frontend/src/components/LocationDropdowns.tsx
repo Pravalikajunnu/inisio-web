@@ -105,7 +105,7 @@ export const LocationDropdowns: React.FC<LocationDropdownsProps> = ({
               value={selectedState}
               onChange={handleStateChange}
               required={required}
-              className={`w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-sm font-medium cursor-pointer ${
+              className={`w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-base sm:text-sm font-medium cursor-pointer ${
                 selectedState ? 'text-gray-900' : 'text-gray-400'
               }`}
             >
@@ -146,7 +146,7 @@ export const LocationDropdowns: React.FC<LocationDropdownsProps> = ({
               onChange={handleDistrictChange}
               disabled={!selectedState || isCustomState}
               required={required && !isCustomState}
-              className={`w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-sm font-medium ${
+              className={`w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-base sm:text-sm font-medium ${
                 !selectedState || isCustomState
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   : selectedDistrict
@@ -175,18 +175,18 @@ export const LocationDropdowns: React.FC<LocationDropdownsProps> = ({
       {/* Custom Location Input when "Other / Custom Location" is chosen */}
       {showCustomInput && (
         <div className="animate-in fade-in duration-200">
-          <label className="block text-xs font-semibold text-emerald-700 mb-1.5">
+          <label className="block text-xs font-semibold text-blue-700 mb-1.5">
             Specify Custom Location Details:
           </label>
           <div className="relative">
-            <MapPin className="w-4 h-4 text-emerald-600 absolute left-3.5 top-3.5" />
+            <MapPin className="w-4 h-4 text-blue-600 absolute left-3.5 top-3.5" />
             <input
               type="text"
               value={customLocation}
               onChange={handleCustomLocationChange}
               placeholder={isCustomState ? 'Enter full State / City details' : 'Enter District / City / Industrial Zone'}
               required={required}
-              className="w-full pl-10 pr-4 py-2.5 bg-emerald-50/50 border border-emerald-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-sm font-medium text-gray-900"
+              className="w-full pl-10 pr-4 py-2.5 bg-blue-50/50 border border-blue-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-base sm:text-sm font-medium text-gray-900"
             />
           </div>
         </div>

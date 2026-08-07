@@ -99,7 +99,7 @@ export function generateProjectTeaserPDF(data: TeaserPDFData) {
     doc.setTextColor(15, 23, 42);
     doc.text('Prepared by', pageWidth - margin, pageHeight - 11, { align: 'right' });
     doc.setFontSize(10.5);
-    doc.setTextColor(5, 150, 105); // Emerald-600
+    doc.setTextColor(37, 99, 235); // Blue-600
     doc.text('INISIO', pageWidth - margin, pageHeight - 6, { align: 'right' });
   };
 

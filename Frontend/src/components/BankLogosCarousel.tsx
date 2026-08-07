@@ -12,26 +12,10 @@ interface BankPartner {
 
 const BANK_PARTNERS: BankPartner[] = [
   {
-    id: 'sbi',
-    name: 'State Bank of India',
-    domain: 'sbi.co.in',
-    logoUrl: 'https://logo.clearbit.com/sbi.co.in',
-    fallbackSvg: (
-      <svg viewBox="0 0 180 40" className="h-8 md:h-10 w-auto">
-        <circle cx="16" cy="20" r="14" fill="#002D62" />
-        <circle cx="16" cy="20" r="5" fill="#00B1EC" />
-        <rect x="14" y="20" width="4" height="14" fill="#FFFFFF" />
-        <text x="40" y="26" fill="#002D62" fontSize="14" fontWeight="800" fontFamily="Manrope, sans-serif">
-          State Bank of India
-        </text>
-      </svg>
-    )
-  },
-  {
     id: 'hdfc',
     name: 'HDFC Bank',
     domain: 'hdfcbank.com',
-    logoUrl: 'https://logo.clearbit.com/hdfcbank.com',
+    logoUrl: 'https://res.cloudinary.com/aessymvl/image/upload/v1786090680/Screenshot_2026-08-07_134323_ykijxm.png',
     fallbackSvg: (
       <svg viewBox="0 0 160 40" className="h-8 md:h-10 w-auto">
         <rect x="0" y="4" width="32" height="32" fill="#004B8D" rx="2" />
@@ -49,7 +33,7 @@ const BANK_PARTNERS: BankPartner[] = [
     id: 'icici',
     name: 'ICICI Bank',
     domain: 'icicibank.com',
-    logoUrl: 'https://logo.clearbit.com/icicibank.com',
+    logoUrl: 'https://res.cloudinary.com/aessymvl/image/upload/v1786090681/Screenshot_2026-08-07_134337_q9idet.png',
     fallbackSvg: (
       <svg viewBox="0 0 160 40" className="h-8 md:h-10 w-auto">
         <circle cx="12" cy="12" r="4" fill="#F37021" />
@@ -65,72 +49,26 @@ const BANK_PARTNERS: BankPartner[] = [
     id: 'axis',
     name: 'Axis Bank',
     domain: 'axisbank.com',
-    logoUrl: 'https://logo.clearbit.com/axisbank.com',
+    logoUrl: 'https://res.cloudinary.com/aessymvl/image/upload/v1786090681/Screenshot_2026-08-07_134203_lblk5a.png',
     fallbackSvg: (
-      <svg viewBox="0 0 150 40" className="h-8 md:h-10 w-auto">
-        <path d="M14 4 L28 32 L18 32 L14 18 L10 32 L0 32 Z" fill="#97123A" />
-        <text x="36" y="26" fill="#97123A" fontSize="17" fontWeight="900" fontFamily="Manrope, sans-serif">
+      <svg viewBox="0 0 160 40" className="h-8 md:h-10 w-auto">
+        <path d="M 12 30 L 22 8 L 32 30 L 24 30 L 22 20 L 18 30 Z" fill="#AE285D" />
+        <text x="40" y="26" fill="#AE285D" fontSize="16" fontWeight="900" fontFamily="Manrope, sans-serif">
           AXIS BANK
         </text>
       </svg>
     )
   },
   {
-    id: 'bob',
-    name: 'Bank of Baroda',
-    domain: 'bankofbaroda.in',
-    logoUrl: 'https://logo.clearbit.com/bankofbaroda.in',
+    id: 'bandhan',
+    name: 'Bandhan Bank',
+    domain: 'bandhanbank.com',
+    logoUrl: 'https://res.cloudinary.com/aessymvl/image/upload/v1786090681/Screenshot_2026-08-07_134225_etedfs.png',
     fallbackSvg: (
       <svg viewBox="0 0 170 40" className="h-8 md:h-10 w-auto">
-        <circle cx="15" cy="20" r="14" fill="#F26522" />
-        <path d="M15 8 L15 32 M8 20 L22 20" stroke="#FFFFFF" strokeWidth="2.5" />
-        <text x="38" y="25" fill="#F26522" fontSize="14" fontWeight="900" fontFamily="Manrope, sans-serif">
-          Bank of Baroda
-        </text>
-      </svg>
-    )
-  },
-  {
-    id: 'pnb',
-    name: 'Punjab National Bank',
-    domain: 'pnbindia.in',
-    logoUrl: 'https://logo.clearbit.com/pnbindia.in',
-    fallbackSvg: (
-      <svg viewBox="0 0 180 40" className="h-8 md:h-10 w-auto">
-        <circle cx="15" cy="20" r="14" fill="#800000" />
-        <circle cx="15" cy="20" r="7" fill="#F3A01C" />
-        <text x="38" y="25" fill="#800000" fontSize="13" fontWeight="900" fontFamily="Manrope, sans-serif">
-          punjab national bank
-        </text>
-      </svg>
-    )
-  },
-  {
-    id: 'union',
-    name: 'Union Bank of India',
-    domain: 'unionbankofindia.co.in',
-    logoUrl: 'https://logo.clearbit.com/unionbankofindia.co.in',
-    fallbackSvg: (
-      <svg viewBox="0 0 170 40" className="h-8 md:h-10 w-auto">
-        <path d="M4 8 L4 22 A6 6 0 0 0 16 22 L16 8" fill="none" stroke="#E21936" strokeWidth="4" />
-        <path d="M10 8 L10 22 A6 6 0 0 0 22 22 L22 8" fill="none" stroke="#0054A6" strokeWidth="4" />
-        <text x="32" y="25" fill="#0054A6" fontSize="14" fontWeight="900" fontFamily="Manrope, sans-serif">
-          Union Bank
-        </text>
-      </svg>
-    )
-  },
-  {
-    id: 'idbi',
-    name: 'IDBI Bank',
-    domain: 'idbibank.in',
-    logoUrl: 'https://logo.clearbit.com/idbibank.in',
-    fallbackSvg: (
-      <svg viewBox="0 0 150 40" className="h-8 md:h-10 w-auto">
-        <circle cx="14" cy="20" r="12" fill="#008375" />
-        <path d="M14 12 L14 28 M8 20 L20 20" stroke="#FFFFFF" strokeWidth="3" />
-        <text x="34" y="26" fill="#008375" fontSize="17" fontWeight="900" fontFamily="Manrope, sans-serif">
-          IDBI BANK
+        <circle cx="16" cy="20" r="12" fill="#E31B23" />
+        <text x="36" y="26" fill="#002D62" fontSize="15" fontWeight="800" fontFamily="Manrope, sans-serif">
+          Bandhan Bank
         </text>
       </svg>
     )
@@ -139,13 +77,54 @@ const BANK_PARTNERS: BankPartner[] = [
     id: 'canara',
     name: 'Canara Bank',
     domain: 'canarabank.com',
-    logoUrl: 'https://logo.clearbit.com/canarabank.com',
+    logoUrl: 'https://res.cloudinary.com/aessymvl/image/upload/v1786090681/Screenshot_2026-08-07_134304_rzpzpw.png',
     fallbackSvg: (
-      <svg viewBox="0 0 160 40" className="h-8 md:h-10 w-auto">
-        <polygon points="4,28 16,8 28,28" fill="none" stroke="#00A2E8" strokeWidth="3" />
-        <polygon points="10,28 20,12 30,28" fill="none" stroke="#FFC20E" strokeWidth="3" />
-        <text x="36" y="26" fill="#00A2E8" fontSize="16" fontWeight="900" fontFamily="Manrope, sans-serif">
+      <svg viewBox="0 0 170 40" className="h-8 md:h-10 w-auto">
+        <path d="M 8 28 L 18 10 L 28 28 Z" fill="#019EEC" />
+        <text x="36" y="26" fill="#019EEC" fontSize="15" fontWeight="800" fontFamily="Manrope, sans-serif">
           Canara Bank
+        </text>
+      </svg>
+    )
+  },
+  {
+    id: 'citi',
+    name: 'Citi Bank',
+    domain: 'citibank.co.in',
+    logoUrl: 'https://res.cloudinary.com/aessymvl/image/upload/v1786090681/Screenshot_2026-08-07_134247_pg27ee.png',
+    fallbackSvg: (
+      <svg viewBox="0 0 150 40" className="h-8 md:h-10 w-auto">
+        <path d="M 8 12 Q 20 4 32 12" stroke="#E31B23" strokeWidth="4" fill="none" />
+        <text x="8" y="28" fill="#002D62" fontSize="16" fontWeight="900" fontFamily="Manrope, sans-serif">
+          citibank
+        </text>
+      </svg>
+    )
+  },
+  {
+    id: 'indianbank',
+    name: 'Indian Bank',
+    domain: 'indianbank.in',
+    logoUrl: 'https://res.cloudinary.com/aessymvl/image/upload/v1786090680/Screenshot_2026-08-07_134352_bopbdq.png',
+    fallbackSvg: (
+      <svg viewBox="0 0 170 40" className="h-8 md:h-10 w-auto">
+        <circle cx="16" cy="20" r="12" fill="#F3A01C" />
+        <text x="36" y="26" fill="#004B8D" fontSize="15" fontWeight="800" fontFamily="Manrope, sans-serif">
+          Indian Bank
+        </text>
+      </svg>
+    )
+  },
+  {
+    id: 'kotak',
+    name: 'Kotak Bank',
+    domain: 'kotak.com',
+    logoUrl: 'https://res.cloudinary.com/aessymvl/image/upload/v1786090680/Screenshot_2026-08-07_134415_imvmie.png',
+    fallbackSvg: (
+      <svg viewBox="0 0 150 40" className="h-8 md:h-10 w-auto">
+        <circle cx="16" cy="20" r="12" fill="#002D62" />
+        <text x="36" y="26" fill="#E31B23" fontSize="16" fontWeight="900" fontFamily="Manrope, sans-serif">
+          kotak
         </text>
       </svg>
     )
@@ -154,27 +133,13 @@ const BANK_PARTNERS: BankPartner[] = [
     id: 'yesbank',
     name: 'YES Bank',
     domain: 'yesbank.in',
-    logoUrl: 'https://logo.clearbit.com/yesbank.in',
+    logoUrl: 'https://res.cloudinary.com/aessymvl/image/upload/v1786090680/Screenshot_2026-08-07_134522_htp6g7.png',
     fallbackSvg: (
       <svg viewBox="0 0 140 40" className="h-8 md:h-10 w-auto">
         <rect x="0" y="6" width="28" height="28" fill="#002D62" rx="3" />
         <path d="M5 18 L12 24 L22 10" fill="none" stroke="#E31B23" strokeWidth="3.5" />
         <text x="36" y="26" fill="#002D62" fontSize="16" fontWeight="900" fontFamily="Manrope, sans-serif">
           YES <tspan fill="#E31B23">BANK</tspan>
-        </text>
-      </svg>
-    )
-  },
-  {
-    id: 'indusind',
-    name: 'IndusInd Bank',
-    domain: 'indusind.com',
-    logoUrl: 'https://logo.clearbit.com/indusind.com',
-    fallbackSvg: (
-      <svg viewBox="0 0 160 40" className="h-8 md:h-10 w-auto">
-        <path d="M2 24 Q 12 8, 24 24 Z" fill="#C8102E" />
-        <text x="32" y="26" fill="#C8102E" fontSize="15" fontWeight="900" fontFamily="Manrope, sans-serif">
-          IndusInd Bank
         </text>
       </svg>
     )
@@ -187,17 +152,17 @@ const BankLogoItem: React.FC<{ bank: BankPartner }> = ({ bank }) => {
 
   return (
     <div className="h-12 md:h-16 px-6 md:px-10 flex items-center justify-center shrink-0 transition-all duration-300 hover:scale-105 cursor-pointer">
-      {!hasError ? (
+      {!hasError && bank.logoUrl ? (
         <img
           src={bank.logoUrl}
           alt={bank.name}
           title={bank.name}
           onError={() => setHasError(true)}
-          className="h-8 md:h-12 max-w-[150px] md:max-w-[180px] w-auto object-contain grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300"
+          className="h-8 md:h-12 max-w-[160px] md:max-w-[200px] w-auto object-contain opacity-90 hover:opacity-100 transition-all duration-300"
           referrerPolicy="no-referrer"
         />
       ) : (
-        <div className="h-8 md:h-12 flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity">
+        <div className="h-8 md:h-12 flex items-center justify-center opacity-85 hover:opacity-100 transition-opacity">
           {bank.fallbackSvg}
         </div>
       )}

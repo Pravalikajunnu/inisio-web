@@ -51,7 +51,7 @@ export function ThemeSwitcher() {
         className="p-2 text-gray-700 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center gap-1.5 transition-all text-xs font-semibold cursor-pointer border border-gray-200/90 shadow-2xs"
         title="Change Website Color Palette"
       >
-        <Palette className="w-4 h-4 text-emerald-600 shrink-0" />
+        <Palette className="w-4 h-4 text-blue-600 shrink-0" />
         <span className="w-3 h-3 rounded-full inline-block border border-black/10 shrink-0" style={{ backgroundColor: activeThemeObj.bgHex }} />
         <span className="hidden xl:inline text-gray-700 font-medium">{activeThemeObj.name.split(' ')[0]}</span>
       </button>
@@ -70,7 +70,7 @@ export function ThemeSwitcher() {
                   onClick={() => changeTheme(theme.id)}
                   className={`w-full flex items-center justify-between px-2.5 py-2 text-xs rounded-xl transition-all cursor-pointer ${
                     currentTheme === theme.id
-                      ? 'bg-emerald-50 text-emerald-900 font-semibold border border-emerald-200/80'
+                      ? 'bg-blue-50 text-blue-900 font-semibold border border-blue-200/80'
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
@@ -78,7 +78,7 @@ export function ThemeSwitcher() {
                     <span className="w-3.5 h-3.5 rounded-full border border-black/10 shrink-0" style={{ backgroundColor: theme.bgHex }} />
                     <span>{theme.name}</span>
                   </div>
-                  {currentTheme === theme.id && <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
+                  {currentTheme === theme.id && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
                 </button>
               ))}
             </div>

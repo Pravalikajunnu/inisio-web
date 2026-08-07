@@ -37,14 +37,14 @@ export const Footer: React.FC<FooterProps> = ({
           {/* Column 1: Brand Info */}
           <div className="lg:col-span-2 space-y-4 text-left">
             <button onClick={() => handleNav('home')} className="flex items-center gap-2.5 text-left cursor-pointer">
-              <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold">
+              <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white font-bold">
                 <TrendingUp className="w-6 h-6 stroke-[2.5]" />
               </div>
               <div className="flex flex-col">
                 <span className="font-manrope text-2xl font-bold text-white tracking-tight">
                   Inisio
                 </span>
-                <span className="text-xs font-semibold text-emerald-400 tracking-wider uppercase -mt-0.5 font-inter">
+                <span className="text-xs font-semibold text-blue-400 tracking-wider uppercase -mt-0.5 font-inter">
                   Greenfield Advisory Platform
                 </span>
               </div>
@@ -54,8 +54,8 @@ export const Footer: React.FC<FooterProps> = ({
               Inisio is India's premier expert-led greenfield project advisory platform. We turn industrial concepts into bank-sanctioned businesses through rigorous feasibility studies, 100% compliant DPRs, and institutional debt syndication.
             </p>
 
-            <div className="pt-2 flex items-center gap-3 text-xs sm:text-sm text-emerald-400 font-semibold">
-              <Award className="w-4 h-4 text-emerald-500 shrink-0" />
+            <div className="pt-2 flex items-center gap-3 text-xs sm:text-sm text-blue-400 font-semibold">
+              <Award className="w-4 h-4 text-blue-500 shrink-0" />
               <span>Certified Member: All-India Project Finance Association</span>
             </div>
           </div>
@@ -66,12 +66,12 @@ export const Footer: React.FC<FooterProps> = ({
               Navigation
             </h4>
             <ul className="space-y-2.5 text-[15px] font-normal text-slate-400 font-inter">
-              <li><button onClick={() => handleNav('home')} className="hover:text-emerald-400 transition-colors cursor-pointer">Home</button></li>
-              <li><button onClick={() => handleNav('services')} className="hover:text-emerald-400 transition-colors cursor-pointer">Services</button></li>
-              <li><button onClick={() => handleNav('industries')} className="hover:text-emerald-400 transition-colors cursor-pointer">Industries</button></li>
-              <li><button onClick={() => handleNav('assessment')} className="hover:text-emerald-400 transition-colors cursor-pointer">Project Assessment</button></li>
-              <li><button onClick={() => handleNav('about')} className="hover:text-emerald-400 transition-colors cursor-pointer">About Us</button></li>
-              <li><button onClick={() => handleNav('contact')} className="hover:text-emerald-400 transition-colors cursor-pointer">Contact Us</button></li>
+              <li><button onClick={() => handleNav('home')} className="hover:text-blue-400 transition-colors cursor-pointer">Home</button></li>
+              <li><button onClick={() => handleNav('services')} className="hover:text-blue-400 transition-colors cursor-pointer">Services</button></li>
+              <li><button onClick={() => handleNav('industries')} className="hover:text-blue-400 transition-colors cursor-pointer">Industries</button></li>
+              <li><button onClick={() => handleNav('assessment')} className="hover:text-blue-400 transition-colors cursor-pointer">Project Assessment</button></li>
+              <li><button onClick={() => handleNav('about')} className="hover:text-blue-400 transition-colors cursor-pointer">About Us</button></li>
+              <li><button onClick={() => handleNav('contact')} className="hover:text-blue-400 transition-colors cursor-pointer">Contact Us</button></li>
             </ul>
           </div>
 
@@ -81,12 +81,12 @@ export const Footer: React.FC<FooterProps> = ({
               Advisory Stack
             </h4>
             <ul className="space-y-2.5 text-[15px] font-normal text-slate-400 font-inter">
-              <li><button onClick={onOpenConsultation} className="hover:text-emerald-400 transition-colors text-left cursor-pointer">Reality Check Advisory</button></li>
-              <li><button onClick={onOpenConsultation} className="hover:text-emerald-400 transition-colors text-left cursor-pointer">Project Feasibility (TEFR)</button></li>
-              <li><button onClick={onOpenConsultation} className="hover:text-emerald-400 transition-colors text-left cursor-pointer">Bankability Scorecard</button></li>
-              <li><button onClick={onOpenConsultation} className="hover:text-emerald-400 transition-colors text-left cursor-pointer">Bank-Grade DPR Generation</button></li>
-              <li><button onClick={onOpenConsultation} className="hover:text-emerald-400 transition-colors text-left cursor-pointer">Debt Syndication Consultancy</button></li>
-              <li><button onClick={onOpenConsultation} className="hover:text-emerald-400 transition-colors text-left cursor-pointer">Government Subsidy Alignment</button></li>
+              <li><button onClick={onOpenConsultation} className="hover:text-blue-400 transition-colors text-left cursor-pointer">Reality Check Advisory</button></li>
+              <li><button onClick={onOpenConsultation} className="hover:text-blue-400 transition-colors text-left cursor-pointer">Project Feasibility (TEFR)</button></li>
+              <li><button onClick={onOpenConsultation} className="hover:text-blue-400 transition-colors text-left cursor-pointer">Bankability Scorecard</button></li>
+              <li><button onClick={onOpenConsultation} className="hover:text-blue-400 transition-colors text-left cursor-pointer">Bank-Grade DPR Generation</button></li>
+              <li><button onClick={onOpenConsultation} className="hover:text-blue-400 transition-colors text-left cursor-pointer">Debt Syndication Consultancy</button></li>
+              <li><button onClick={onOpenConsultation} className="hover:text-blue-400 transition-colors text-left cursor-pointer">Government Subsidy Alignment</button></li>
             </ul>
           </div>
 
@@ -97,7 +97,7 @@ export const Footer: React.FC<FooterProps> = ({
             </h4>
             <div className="space-y-3 text-[15px] font-normal text-slate-400 font-inter">
               <div className="flex items-start gap-2.5">
-                <MapPin className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                <MapPin className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
                 <span className="leading-[1.6]">2nd Floor, Plot 24 & 25, Kakatiya Hills, Road No 9, Madhapur, Hyderabad, Telangana 500033</span>
               </div>
 
@@ -116,7 +116,7 @@ export const Footer: React.FC<FooterProps> = ({
                   href="https://wa.me/916302026462?text=Hello%20Inisio%20Advisory%20Team%2C%20I%20would%20like%20to%20inquire%20about%20greenfield%20project%20advisory."
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors"
+                  className="flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
                 >
                   <svg className="w-4 h-4 fill-current text-[#25D366]" viewBox="0 0 24 24">
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347z"/>
@@ -126,7 +126,7 @@ export const Footer: React.FC<FooterProps> = ({
                 </a>
               </div>
 
-              <div className="flex items-center gap-2 pt-1 text-emerald-400 font-semibold text-xs">
+              <div className="flex items-center gap-2 pt-1 text-blue-400 font-semibold text-xs">
                 <ShieldCheck className="w-4 h-4 shrink-0" />
                 <span>Enterprise Greenfield Advisory Desk</span>
               </div>
@@ -147,7 +147,7 @@ export const Footer: React.FC<FooterProps> = ({
           <div className="flex flex-wrap items-center gap-6">
             <a href="#privacy" className="hover:text-slate-400">Privacy Policy</a>
             <a href="#terms" className="hover:text-slate-400">Terms of Service</a>
-            <span className="flex items-center gap-1.5 text-emerald-500 font-semibold">
+            <span className="flex items-center gap-1.5 text-blue-400 font-semibold">
               <ShieldCheck className="w-4 h-4" /> 256-Bit Encrypted
             </span>
           </div>

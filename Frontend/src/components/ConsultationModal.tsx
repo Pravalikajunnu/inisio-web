@@ -77,11 +77,11 @@ export const ConsultationModal: React.FC<ConsultationModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-200/60 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-100/90 text-emerald-700 flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-xl bg-blue-100/90 text-blue-700 flex items-center justify-center font-bold">
               <PhoneCall className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] font-extrabold text-emerald-700 uppercase tracking-widest block font-inter">
+              <span className="text-[10px] font-extrabold text-blue-700 uppercase tracking-widest block font-inter">
                 1-on-1 Ex-Banker Session
               </span>
               <h3 className="font-manrope font-extrabold text-xl text-gray-900">
@@ -110,7 +110,7 @@ export const ConsultationModal: React.FC<ConsultationModalProps> = ({
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                   placeholder="Enter your full name"
-                  className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+                  className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
                 />
               </div>
 
@@ -122,7 +122,7 @@ export const ConsultationModal: React.FC<ConsultationModalProps> = ({
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="Enter your phone number"
-                  className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+                  className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
                 />
               </div>
 
@@ -132,7 +132,7 @@ export const ConsultationModal: React.FC<ConsultationModalProps> = ({
                   required
                   value={formData.industry}
                   onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-hidden font-medium cursor-pointer"
+                  className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-hidden font-medium cursor-pointer"
                 >
                   <option value="">Select Industry Sector</option>
                   {MAIN_SECTORS.map((sector) => (
@@ -148,27 +148,27 @@ export const ConsultationModal: React.FC<ConsultationModalProps> = ({
                   value={formData.projectCostCr}
                   onChange={(e) => setFormData({ ...formData, projectCostCr: e.target.value })}
                   placeholder="Enter project budget in Crores"
-                  className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-hidden font-medium"
+                  className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-hidden font-medium"
                 />
               </div>
             </div>
 
             <button
               type="submit"
-              className="w-full py-3.5 px-4 font-bold text-sm text-white bg-[#25D366] hover:bg-[#20bd5a] rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3.5 px-4 font-bold text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <MessageSquare className="w-5 h-5 fill-current" />
               <span>Submit & Book Free Consultation</span>
             </button>
 
             <p className="text-[11px] text-gray-400 text-center flex items-center justify-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
               <span>100% Confidential. Bound by Mutual Non-Disclosure Agreement.</span>
             </p>
           </form>
         ) : (
           <div className="text-center py-8 space-y-4 animate-in zoom-in-95">
-            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-emerald-glow">
+            <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto shadow-blue-500/20">
               <CheckCircle2 className="w-10 h-10" />
             </div>
 

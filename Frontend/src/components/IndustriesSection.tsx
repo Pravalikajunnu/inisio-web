@@ -540,7 +540,7 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                 onClick={handleBackToList}
                 className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-[#111827] font-semibold text-sm rounded-xl transition-all cursor-pointer group"
               >
-                <ArrowLeft className="w-4 h-4 text-emerald-600 group-hover:-translate-x-1 transition-transform" />
+                <ArrowLeft className="w-4 h-4 text-blue-600 group-hover:-translate-x-1 transition-transform" />
                 <span>Back to All Greenfield Sectors</span>
               </button>
             </div>
@@ -548,11 +548,11 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
             {/* Sector Header Banner */}
             <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 rounded-2xl p-6 sm:p-10 text-white border border-slate-800 shadow-md space-y-4">
               <div className="flex flex-wrap items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/20 border border-blue-500/40 text-blue-400 flex items-center justify-center shrink-0">
                   {React.createElement(activeSector.icon, { className: 'w-6 h-6' })}
                 </div>
                 <div>
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-blue-400 bg-blue-500/10 px-2.5 py-0.5 rounded-full border border-blue-500/20">
                     Comprehensive Greenfield Sector Intelligence
                   </span>
                   <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold font-manrope text-white tracking-tight mt-1">
@@ -569,19 +569,19 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-slate-800">
                 <div className="p-3 bg-slate-800/60 rounded-xl border border-slate-700/80">
                   <span className="text-[11px] font-semibold text-slate-400 block uppercase tracking-wider">Project Outlay</span>
-                  <span className="text-sm sm:text-base font-bold text-emerald-400 font-manrope">{activeSector.costRange}</span>
+                  <span className="text-sm sm:text-base font-bold text-blue-400 font-manrope">{activeSector.costRange}</span>
                 </div>
                 <div className="p-3 bg-slate-800/60 rounded-xl border border-slate-700/80">
                   <span className="text-[11px] font-semibold text-slate-400 block uppercase tracking-wider">Promoter Equity</span>
-                  <span className="text-sm sm:text-base font-bold text-emerald-400 font-manrope">{activeSector.equityNorm}</span>
+                  <span className="text-sm sm:text-base font-bold text-blue-400 font-manrope">{activeSector.equityNorm}</span>
                 </div>
                 <div className="p-3 bg-slate-800/60 rounded-xl border border-slate-700/80">
                   <span className="text-[11px] font-semibold text-slate-400 block uppercase tracking-wider">Debt Ratio</span>
-                  <span className="text-sm sm:text-base font-bold text-emerald-400 font-manrope">{activeSector.typicalDebtRatio}</span>
+                  <span className="text-sm sm:text-base font-bold text-blue-400 font-manrope">{activeSector.typicalDebtRatio}</span>
                 </div>
                 <div className="p-3 bg-slate-800/60 rounded-xl border border-slate-700/80">
                   <span className="text-[11px] font-semibold text-slate-400 block uppercase tracking-wider">Min DSCR Norm</span>
-                  <span className="text-sm sm:text-base font-bold text-emerald-400 font-manrope">{activeSector.recommendedDSCR}</span>
+                  <span className="text-sm sm:text-base font-bold text-blue-400 font-manrope">{activeSector.recommendedDSCR}</span>
                 </div>
               </div>
             </div>
@@ -595,7 +595,7 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                 {/* 1. Executive Summary & Market Dynamics */}
                 <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 space-y-4 shadow-xs">
                   <h2 className="text-xl sm:text-2xl font-bold font-manrope text-[#111827] flex items-center gap-2.5">
-                    <FileText className="w-6 h-6 text-emerald-600" />
+                    <FileText className="w-6 h-6 text-blue-600" />
                     <span>Executive Sector Overview & Feasibility Dynamics</span>
                   </h2>
                   <p className="text-base text-[#4B5563] leading-[1.7] whitespace-pre-line font-inter">
@@ -606,7 +606,7 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                 {/* 2. Key Sub-Sectors & Applications */}
                 <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 space-y-6 shadow-xs">
                   <div className="space-y-1">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-blue-800 bg-blue-50 px-2.5 py-1 rounded border border-blue-200">
                       Scope & Verticals
                     </span>
                     <h2 className="text-xl sm:text-2xl font-bold font-manrope text-[#111827]">
@@ -618,7 +618,7 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                     {activeSector.subSectors.map((sub, idx) => (
                       <div key={idx} className="p-4 bg-gray-50 rounded-xl border border-gray-200/80 space-y-1.5">
                         <div className="flex items-center gap-2 font-semibold text-[#111827] text-base">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
                           <span>{sub.name}</span>
                         </div>
                         <p className="text-sm text-[#4B5563] leading-[1.5]">
@@ -632,7 +632,7 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                 {/* 3. Capital Expenditure (Capex) Structure Breakdown */}
                 <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 space-y-6 shadow-xs">
                   <div className="space-y-1">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-blue-800 bg-blue-50 px-2.5 py-1 rounded border border-blue-200">
                       Project Cost Structure
                     </span>
                     <h2 className="text-xl sm:text-2xl font-bold font-manrope text-[#111827]">
@@ -645,16 +645,16 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                       <div key={idx} className="p-4 bg-gray-50/80 rounded-xl border border-gray-200 space-y-2">
                         <div className="flex items-center justify-between text-sm sm:text-base font-semibold text-[#111827]">
                           <span className="flex items-center gap-2">
-                            <Layers className="w-4 h-4 text-emerald-600" />
+                            <Layers className="w-4 h-4 text-blue-600" />
                             {item.category}
                           </span>
-                          <span className="text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 font-bold">
+                          <span className="text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200 font-bold">
                             {item.percentage}% of Capex
                           </span>
                         </div>
                         {/* Progress Bar */}
                         <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
-                          <div className="bg-emerald-600 h-full rounded-full" style={{ width: `${item.percentage}%` }}></div>
+                          <div className="bg-blue-600 h-full rounded-full" style={{ width: `${item.percentage}%` }}></div>
                         </div>
                         <p className="text-xs sm:text-sm text-[#6B7280]">
                           {item.detail}
@@ -667,7 +667,7 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                 {/* 4. Government Schemes & Capital Subsidies */}
                 <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 space-y-6 shadow-xs">
                   <div className="space-y-1">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-blue-800 bg-blue-50 px-2.5 py-1 rounded border border-blue-200">
                       Incentives Framework
                     </span>
                     <h2 className="text-xl sm:text-2xl font-bold font-manrope text-[#111827]">
@@ -677,12 +677,12 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
 
                   <div className="space-y-4">
                     {activeSector.subsidiesAndIncentives.map((sub, idx) => (
-                      <div key={idx} className="p-5 bg-emerald-50/40 rounded-xl border border-emerald-200/80 space-y-2">
+                      <div key={idx} className="p-5 bg-blue-50/40 rounded-xl border border-blue-200/80 space-y-2">
                         <div className="flex items-start justify-between gap-2">
-                          <h3 className="font-semibold text-emerald-950 text-base">
+                          <h3 className="font-semibold text-blue-950 text-base">
                             {sub.title}
                           </h3>
-                          <span className="text-xs font-semibold text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-md shrink-0">
+                          <span className="text-xs font-semibold text-blue-800 bg-blue-100 px-2.5 py-1 rounded-md shrink-0">
                             {sub.scheme}
                           </span>
                         </div>
@@ -697,7 +697,7 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                 {/* 5. DPR & Bankability Checklist */}
                 <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 space-y-6 shadow-xs">
                   <div className="space-y-1">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-200">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-blue-800 bg-blue-50 px-2.5 py-1 rounded border border-blue-200">
                       Bank Appraisal Deliverables
                     </span>
                     <h2 className="text-xl sm:text-2xl font-bold font-manrope text-[#111827]">
@@ -708,7 +708,7 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                   <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-[#374151]">
                     {activeSector.dprRequirements.map((req, idx) => (
                       <li key={idx} className="flex items-start gap-2.5 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                        <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                        <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                         <span className="font-medium">{req}</span>
                       </li>
                     ))}
@@ -723,7 +723,7 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                 {/* Credit Underwriting Card */}
                 <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-6 shadow-xs sticky top-24">
                   <h3 className="text-lg font-bold font-manrope text-[#111827] border-b border-gray-100 pb-3 flex items-center gap-2">
-                    <Briefcase className="w-5 h-5 text-emerald-600" />
+                    <Briefcase className="w-5 h-5 text-blue-600" />
                     <span>Lead Bank Credit Parameters</span>
                   </h3>
 
@@ -740,7 +740,7 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
 
                     <div className="space-y-1">
                       <span className="text-xs font-semibold uppercase text-gray-500">Debt Service Coverage (DSCR)</span>
-                      <p className="font-semibold text-emerald-700 text-base">{activeSector.recommendedDSCR}</p>
+                      <p className="font-semibold text-blue-700 text-base">{activeSector.recommendedDSCR}</p>
                     </div>
 
                     <div className="pt-2 border-t border-gray-100 space-y-2">
@@ -748,7 +748,7 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                       <ul className="space-y-1.5 text-xs text-[#4B5563]">
                         {activeSector.keyRiskFactors.map((rf, idx) => (
                           <li key={idx} className="flex items-start gap-1.5">
-                            <span className="text-emerald-600 font-bold">•</span>
+                            <span className="text-blue-600 font-bold">•</span>
                             <span>{rf}</span>
                           </li>
                         ))}
@@ -760,14 +760,14 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                   <div className="pt-4 border-t border-gray-100 space-y-3">
                     <button
                       onClick={() => onSelectIndustryForAssessment(activeSector.title)}
-                      className="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl transition-all shadow-xs flex items-center justify-center cursor-pointer"
+                      className="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl transition-all shadow-xs flex items-center justify-center cursor-pointer"
                     >
                       <span>Start {activeSector.shortName} Assessment</span>
                     </button>
 
                     <button
                       onClick={onOpenConsultation}
-                      className="w-full py-3 px-4 border border-gray-300 hover:border-emerald-500 text-[#111827] font-semibold text-sm rounded-xl transition-all flex items-center justify-center bg-gray-50 hover:bg-emerald-50 cursor-pointer"
+                      className="w-full py-3 px-4 border border-gray-300 hover:border-blue-500 text-[#111827] font-semibold text-sm rounded-xl transition-all flex items-center justify-center bg-gray-50 hover:bg-blue-50 cursor-pointer"
                     >
                       <span>Talk to Sector Specialist</span>
                     </button>
@@ -784,13 +784,13 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                 onClick={handleBackToList}
                 className="inline-flex items-center gap-2 px-5 py-3 bg-gray-100 hover:bg-gray-200 text-[#111827] font-semibold text-sm rounded-xl transition-all cursor-pointer"
               >
-                <ArrowLeft className="w-4 h-4 text-emerald-600" />
+                <ArrowLeft className="w-4 h-4 text-blue-600" />
                 <span>Back to All Greenfield Sectors</span>
               </button>
               
               <button
                 onClick={onOpenConsultation}
-                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl transition-all flex items-center gap-2 shadow-xs cursor-pointer"
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl transition-all flex items-center gap-2 shadow-xs cursor-pointer"
               >
                 <span>Book Advisory Session</span>
                 <ArrowRight className="w-4 h-4" />
@@ -805,8 +805,8 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
             
             {/* 1. Header & Prominent Search Input */}
             <section className="text-center max-w-[680px] mx-auto space-y-4">
-              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-800 text-xs font-semibold uppercase tracking-wider">
-                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-800 text-xs font-semibold uppercase tracking-wider">
+                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
                 <span>Greenfield Sector Directory</span>
               </div>
 
@@ -837,7 +837,7 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                   </p>
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="px-5 py-2.5 bg-emerald-600 text-white font-semibold text-sm rounded-xl hover:bg-emerald-700 transition-all cursor-pointer"
+                    className="px-5 py-2.5 bg-blue-600 text-white font-semibold text-sm rounded-xl hover:bg-blue-700 transition-all cursor-pointer"
                   >
                     View All Greenfield Sectors
                   </button>
@@ -851,17 +851,17 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                       <div
                         key={ind.id}
                         onClick={() => handleOpenDetail(ind.id)}
-                        className="bg-white rounded-2xl border border-gray-200/90 hover:border-emerald-500 hover:shadow-md transition-all duration-300 p-5 text-left flex flex-col justify-between group cursor-pointer h-full"
+                        className="bg-white rounded-2xl border border-gray-200/90 hover:border-blue-500 hover:shadow-md transition-all duration-300 p-5 text-left flex flex-col justify-between group cursor-pointer h-full"
                       >
                         {/* Top Content */}
                         <div className="space-y-2.5 pb-3">
                           {/* Icon */}
-                          <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300 shadow-2xs">
+                          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300 shadow-2xs">
                             <Icon className="w-5 h-5" />
                           </div>
 
                           {/* Full Industry Title */}
-                          <h3 className="text-base font-bold text-[#111827] font-manrope leading-tight group-hover:text-emerald-700 transition-colors whitespace-normal break-words">
+                          <h3 className="text-base font-bold text-[#111827] font-manrope leading-tight group-hover:text-blue-700 transition-colors whitespace-normal break-words">
                             {ind.title}
                           </h3>
 
@@ -875,7 +875,7 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                         <div className="space-y-2.5 pt-2.5 border-t border-gray-100 mt-auto">
                           {/* Financial Outlay & Equity Norm */}
                           <div className="flex items-center justify-between gap-2 text-[11px] font-medium text-gray-600">
-                            <span className="font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60 truncate">
+                            <span className="font-semibold text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200/60 truncate">
                               Outlay: {ind.costRange}
                             </span>
                             <span className="text-gray-500 bg-gray-50 px-2 py-0.5 rounded border border-gray-200 shrink-0">
@@ -890,10 +890,10 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                                 e.stopPropagation();
                                 handleOpenDetail(ind.id);
                               }}
-                              className="text-xs font-bold text-emerald-600 hover:text-emerald-700 font-manrope inline-flex items-center gap-1.5 transition-colors cursor-pointer group/link hover:underline"
+                              className="text-xs font-bold text-blue-600 hover:text-blue-700 font-manrope inline-flex items-center gap-1.5 transition-colors cursor-pointer group/link hover:underline"
                             >
                               <span>Read More</span>
-                              <ArrowRight className="w-3.5 h-3.5 text-emerald-600 group-hover/link:translate-x-1 transition-transform" />
+                              <ArrowRight className="w-3.5 h-3.5 text-blue-600 group-hover/link:translate-x-1 transition-transform" />
                             </button>
                           </div>
                         </div>
@@ -906,10 +906,10 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
 
             {/* 3. Global Call-to-Action Section */}
             <section className="pt-8">
-              <div className="bg-gradient-to-br from-emerald-950 via-slate-900 to-slate-900 rounded-3xl p-8 sm:p-12 text-white text-center border border-emerald-500/30 shadow-md">
+              <div className="bg-gradient-to-br from-blue-950 via-slate-900 to-slate-900 rounded-3xl p-8 sm:p-12 text-white text-center border border-blue-500/30 shadow-md">
                 <div className="max-w-[700px] mx-auto space-y-5">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold uppercase tracking-wider">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-semibold uppercase tracking-wider">
+                    <CheckCircle2 className="w-4 h-4 text-blue-400" />
                     <span>Bank-Ready Execution</span>
                   </div>
 
@@ -924,7 +924,7 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                   <div className="pt-2 flex justify-center">
                     <button
                       onClick={onOpenConsultation}
-                      className="px-6 py-3.5 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-semibold text-base rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+                      className="px-6 py-3.5 bg-blue-400 hover:bg-blue-300 text-slate-950 font-semibold text-base rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-sm"
                     >
                       <PhoneCall className="w-5 h-5 text-slate-950" />
                       <span>Book Free Consultation</span>

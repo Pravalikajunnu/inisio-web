@@ -272,11 +272,11 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       {/* Page Hero Section */}
       <section className="relative bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800 text-white pt-20 pb-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
         {/* Glowing Background Elements */}
-        <div className="absolute top-0 right-1/4 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 w-60 h-60 bg-emerald-600/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute top-0 right-1/4 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 w-60 h-60 bg-blue-600/10 rounded-full blur-2xl pointer-events-none" />
 
         <div className="max-w-3xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] font-semibold uppercase tracking-wider mb-4">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[11px] font-semibold uppercase tracking-wider mb-4">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Bank-Grade Advisory Engine</span>
           </div>
@@ -291,15 +291,15 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
 
           <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400 font-medium border-t border-slate-800/80 pt-4">
             <div className="flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
               <span>100% Confidential Evaluation</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Landmark className="w-3.5 h-3.5 text-emerald-400" />
+              <Landmark className="w-3.5 h-3.5 text-blue-400" />
               <span>RBI & PSU Bank Aligned Norms</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+              <TrendingUp className="w-3.5 h-3.5 text-blue-400" />
               <span>Instant Preliminary Report</span>
             </div>
           </div>
@@ -311,49 +311,56 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
         {step !== 'results' ? (
           <div className="bg-white rounded-2xl border border-gray-200/80 shadow-xl overflow-hidden">
             {/* Step Progress Bar Header */}
-            <div className="bg-slate-900 px-6 py-5 border-b border-slate-800 text-white">
+            <div className="bg-slate-900 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-800 text-white">
               <div className="flex items-center justify-between max-w-2xl mx-auto">
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${step >= 1 ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-400'}`}>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${step >= 1 ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
                     1
                   </div>
-                  <span className={`text-xs sm:text-sm font-semibold hidden sm:inline ${step === 1 ? 'text-emerald-400' : 'text-slate-400'}`}>
+                  <span className={`text-xs sm:text-sm font-semibold hidden sm:inline ${step === 1 ? 'text-blue-400' : 'text-slate-400'}`}>
                     Project Details
                   </span>
                 </div>
 
-                <div className={`h-0.5 flex-1 mx-3 ${step >= 2 ? 'bg-emerald-500' : 'bg-slate-800'}`} />
+                <div className={`h-0.5 flex-1 mx-2 sm:mx-3 ${step >= 2 ? 'bg-blue-600' : 'bg-slate-800'}`} />
 
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${step >= 2 ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-400'}`}>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${step >= 2 ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
                     2
                   </div>
-                  <span className={`text-xs sm:text-sm font-semibold hidden sm:inline ${step === 2 ? 'text-emerald-400' : 'text-slate-400'}`}>
+                  <span className={`text-xs sm:text-sm font-semibold hidden sm:inline ${step === 2 ? 'text-blue-400' : 'text-slate-400'}`}>
                     Financial Details
                   </span>
                 </div>
 
-                <div className={`h-0.5 flex-1 mx-3 ${step >= 3 ? 'bg-emerald-500' : 'bg-slate-800'}`} />
+                <div className={`h-0.5 flex-1 mx-2 sm:mx-3 ${step >= 3 ? 'bg-blue-600' : 'bg-slate-800'}`} />
 
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${step >= 3 ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-400'}`}>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${step >= 3 ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
                     3
                   </div>
-                  <span className={`text-xs sm:text-sm font-semibold hidden sm:inline ${step === 3 ? 'text-emerald-400' : 'text-slate-400'}`}>
+                  <span className={`text-xs sm:text-sm font-semibold hidden sm:inline ${step === 3 ? 'text-blue-400' : 'text-slate-400'}`}>
                     Additional Details
                   </span>
                 </div>
               </div>
+
+              {/* Mobile Current Step Title Indicator */}
+              <div className="sm:hidden text-center mt-2.5 pt-2 border-t border-slate-800/80">
+                <span className="text-xs font-semibold text-blue-400">
+                  Step {step} of 3: {step === 1 ? 'Project Details' : step === 2 ? 'Financial Details' : 'Readiness & Contact'}
+                </span>
+              </div>
             </div>
 
             {/* Form Content */}
-            <form onSubmit={handleNextStep} className="p-6 sm:p-10 space-y-8">
+            <form onSubmit={handleNextStep} className="p-4 sm:p-10 space-y-6 sm:space-y-8">
               {/* STEP 1: PROJECT DETAILS */}
               {step === 1 && (
                 <div className="space-y-6 animate-in fade-in duration-300">
                   <div className="border-b border-gray-100 pb-4">
-                    <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                      <Building2 className="w-5 h-5 text-emerald-600" />
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
+                      <Building2 className="w-5 h-5 text-blue-600 shrink-0" />
                       Step 1: Project Details
                     </h2>
                     <p className="text-xs text-gray-500 mt-1">
@@ -361,7 +368,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
                     {/* Project Name */}
                     <div className="md:col-span-2">
                       <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
@@ -374,7 +381,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                         onChange={handleInputChange}
                         placeholder="Enter the Project Name"
                         required
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-sm font-medium text-gray-900"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-base sm:text-sm font-medium text-gray-900"
                       />
                     </div>
 
@@ -388,7 +395,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                         value={formData.industry}
                         onChange={handleInputChange}
                         required
-                        className={`w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-sm font-medium ${
+                        className={`w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-base sm:text-sm font-medium ${
                           formData.industry ? 'text-gray-900' : 'text-gray-400'
                         }`}
                       >
@@ -421,7 +428,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                   <div className="pt-4 flex justify-end">
                     <button
                       type="submit"
-                      className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"
+                      className="w-full sm:w-auto px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer touch-manipulation"
                     >
                       <span>Proceed to Financial Details</span>
                       <ArrowRight className="w-4 h-4" />
@@ -434,8 +441,8 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
               {step === 2 && (
                 <div className="space-y-6 animate-in fade-in duration-300">
                   <div className="border-b border-gray-100 pb-4">
-                    <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                      <Landmark className="w-5 h-5 text-emerald-600" />
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
+                      <Landmark className="w-5 h-5 text-blue-600 shrink-0" />
                       Step 2: Financial Details
                     </h2>
                     <p className="text-xs text-gray-500 mt-1">
@@ -443,14 +450,14 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
                     {/* Total Project Cost */}
                     <div>
                       <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
                         Total Project Cost (₹ Cr) <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
-                        <span className="absolute left-3.5 top-3 text-sm font-bold text-gray-400">₹</span>
+                        <span className="absolute left-3.5 top-3 text-base sm:text-sm font-bold text-gray-400">₹</span>
                         <input
                           type="number"
                           step="0.1"
@@ -459,7 +466,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                           onChange={handleInputChange}
                           placeholder="Enter Total Cost (in ₹ Cr)"
                           required
-                          className="w-full pl-8 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-sm font-bold text-gray-900"
+                          className="w-full pl-8 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-base sm:text-sm font-bold text-gray-900"
                         />
                       </div>
                     </div>
@@ -470,7 +477,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                         How much money / equity do you have available for this project? (₹ CR) <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
-                        <span className="absolute left-3.5 top-3 text-sm font-bold text-gray-400">₹</span>
+                        <span className="absolute left-3.5 top-3 text-base sm:text-sm font-bold text-gray-400">₹</span>
                         <input
                           type="number"
                           step="0.1"
@@ -479,7 +486,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                           onChange={handleInputChange}
                           placeholder="Enter Equity Available (in ₹ Cr)"
                           required
-                          className="w-full pl-8 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-sm font-bold text-gray-900"
+                          className="w-full pl-8 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-base sm:text-sm font-bold text-gray-900"
                         />
                       </div>
                     </div>
@@ -490,7 +497,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                         Estimated Loan Needed (₹ Cr)
                       </label>
                       <div className="relative">
-                        <span className="absolute left-3.5 top-3 text-sm font-bold text-gray-400">₹</span>
+                        <span className="absolute left-3.5 top-3 text-base sm:text-sm font-bold text-gray-400">₹</span>
                         <input
                           type="number"
                           step="0.1"
@@ -498,7 +505,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                           value={formData.loanRequiredCr}
                           onChange={handleInputChange}
                           placeholder="Calculated automatically"
-                          className="w-full pl-8 pr-4 py-3 bg-emerald-50/50 border border-emerald-200 rounded-xl font-bold text-emerald-900 text-sm outline-none"
+                          className="w-full pl-8 pr-4 py-3 bg-blue-50/50 border border-blue-200 rounded-xl font-bold text-blue-900 text-base sm:text-sm outline-none"
                         />
                       </div>
                     </div>
@@ -510,7 +517,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                     return (
                       <>
                         <div
-                          className={`p-4 rounded-xl border flex flex-wrap items-center justify-between gap-4 transition-all ${
+                          className={`p-4 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 transition-all ${
                             isEquityValid
                               ? 'bg-emerald-50 border-emerald-200'
                               : 'bg-rose-50 border-rose-200'
@@ -518,7 +525,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                         >
                           <div className="flex items-center gap-3">
                             <div
-                              className={`w-10 h-10 rounded-lg text-white flex items-center justify-center font-bold text-sm ${
+                              className={`w-10 h-10 rounded-lg text-white flex items-center justify-center font-bold text-sm shrink-0 ${
                                 isEquityValid ? 'bg-emerald-600' : 'bg-rose-600'
                               }`}
                             >
@@ -549,10 +556,10 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                             </div>
                           </div>
                           <div
-                            className={`text-xs px-3 py-2 rounded-lg border font-semibold flex items-center gap-1.5 ${
+                            className={`text-xs px-3 py-2 rounded-lg border font-semibold flex items-center gap-1.5 w-full sm:w-auto ${
                               isEquityValid
-                                ? 'text-emerald-600 bg-emerald-50 border-emerald-200'
-                                : 'text-rose-600 bg-rose-50 border-rose-200'
+                                ? 'text-emerald-700 bg-emerald-100/80 border-emerald-300'
+                                : 'text-rose-700 bg-rose-100/80 border-rose-300'
                             }`}
                           >
                             {isEquityValid
@@ -561,11 +568,11 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                           </div>
                         </div>
 
-                        <div className="pt-4 flex items-center justify-between">
+                        <div className="pt-4 flex items-center justify-between gap-3">
                           <button
                             type="button"
                             onClick={() => setStep(1)}
-                            className="px-5 py-2.5 text-xs font-bold text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                            className="px-4 sm:px-5 py-2.5 text-xs font-bold text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer min-h-[44px] touch-manipulation"
                           >
                             <ArrowLeft className="w-4 h-4" />
                             <span>Back</span>
@@ -574,9 +581,9 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                           <button
                             type="submit"
                             disabled={!isEquityValid}
-                            className={`px-6 py-3 font-bold text-sm rounded-xl shadow-md transition-all flex items-center gap-2 ${
+                            className={`px-5 sm:px-6 py-3 font-bold text-sm rounded-xl shadow-md transition-all flex items-center gap-2 min-h-[44px] touch-manipulation ${
                               isEquityValid
-                                ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer'
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer'
                                 : 'bg-gray-200 text-gray-400 border border-gray-300 cursor-not-allowed opacity-75'
                             }`}
                             title={
@@ -599,8 +606,8 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
               {step === 3 && (
                 <div className="space-y-6 animate-in fade-in duration-300">
                   <div className="border-b border-gray-100 pb-4">
-                    <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                      <Briefcase className="w-5 h-5 text-emerald-600" />
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
+                      <Briefcase className="w-5 h-5 text-blue-600 shrink-0" />
                       Step 3: Readiness & Contact Details
                     </h2>
                     <p className="text-xs text-gray-500 mt-1">
@@ -608,7 +615,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
                     {/* Project Land Status */}
                     <div>
                       <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
@@ -619,7 +626,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                         value={formData.landStatus}
                         onChange={handleInputChange}
                         required
-                        className={`w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-sm font-medium ${formData.landStatus ? 'text-gray-900' : 'text-gray-400'}`}
+                        className={`w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-base sm:text-sm font-medium ${formData.landStatus ? 'text-gray-900' : 'text-gray-400'}`}
                       >
                         <option value="" disabled hidden>Select Project Land Status</option>
                         <option value="Owned & Registered" className="text-gray-900">Owned & Registered</option>
@@ -639,7 +646,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                         value={formData.collateralStatus}
                         onChange={handleInputChange}
                         required
-                        className={`w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-sm font-medium ${formData.collateralStatus ? 'text-gray-900' : 'text-gray-400'}`}
+                        className={`w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-base sm:text-sm font-medium ${formData.collateralStatus ? 'text-gray-900' : 'text-gray-400'}`}
                       >
                         <option value="" disabled hidden>Select Collateral Status</option>
                         <option value="Freehold (Clear Title)" className="text-gray-900">Freehold (Clear Title)</option>
@@ -660,7 +667,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                         value={formData.promoterExp}
                         onChange={handleInputChange}
                         required
-                        className={`w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-sm font-medium ${formData.promoterExp ? 'text-gray-900' : 'text-gray-400'}`}
+                        className={`w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-base sm:text-sm font-medium ${formData.promoterExp ? 'text-gray-900' : 'text-gray-400'}`}
                       >
                         <option value="" disabled hidden>Select Promoter Track Record</option>
                         <option value="10+ Years (Industry Veteran)" className="text-gray-900">10+ Years (Industry Veteran)</option>
@@ -681,15 +688,15 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                         value={formData.description}
                         onChange={handleInputChange}
                         placeholder="Provide any additional context like technical partners, expected capacity, or off-take agreements..."
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all text-sm font-medium text-gray-900"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-base sm:text-sm font-medium text-gray-900"
                       />
                     </div>
                   </div>
 
                   {/* Contact Fields Box */}
-                  <div className="p-6 bg-slate-50 rounded-2xl border border-gray-200/80 space-y-4">
+                  <div className="p-4 sm:p-6 bg-slate-50 rounded-2xl border border-gray-200/80 space-y-4">
                     <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                      <User className="w-4 h-4 text-emerald-600" />
+                      <User className="w-4 h-4 text-blue-600 shrink-0" />
                       <span>Contact & Confidential Delivery</span>
                     </h3>
 
@@ -703,7 +710,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                           onChange={handleInputChange}
                           required
                           placeholder="Enter your full name"
-                          className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"
+                          className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-base sm:text-sm outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
 
@@ -721,10 +728,10 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                           required
                           placeholder="Enter 10-digit mobile number"
                           maxLength={10}
-                          className={`w-full px-3.5 py-2.5 bg-white border rounded-xl text-sm outline-none transition-all ${
+                          className={`w-full px-3.5 py-2.5 bg-white border rounded-xl text-base sm:text-sm outline-none transition-all ${
                             mobileTouched && !mobileValidation.isValid
                               ? 'border-red-500 focus:ring-2 focus:ring-red-500 bg-red-50/40 text-red-900 font-medium'
-                              : 'border-gray-200 focus:ring-2 focus:ring-emerald-500 text-gray-900'
+                              : 'border-gray-200 focus:ring-2 focus:ring-blue-500 text-gray-900'
                           }`}
                         />
                         {mobileTouched && !mobileValidation.isValid && (
@@ -743,17 +750,17 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                           onChange={handleInputChange}
                           required
                           placeholder="Enter work email address"
-                          className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-emerald-500"
+                          className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-base sm:text-sm outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                     </div>
                   </div>
 
-                  <div className="pt-4 flex items-center justify-between">
+                  <div className="pt-4 flex items-center justify-between gap-3">
                     <button
                       type="button"
                       onClick={() => setStep(2)}
-                      className="px-5 py-2.5 text-xs font-bold text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                      className="px-4 sm:px-5 py-2.5 text-xs font-bold text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer min-h-[44px] touch-manipulation"
                     >
                       <ArrowLeft className="w-4 h-4" />
                       <span>Back</span>
@@ -762,7 +769,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="px-8 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                      className="px-6 sm:px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 min-h-[44px] touch-manipulation"
                     >
                       {isSubmitting ? (
                         <>
@@ -771,7 +778,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                         </>
                       ) : (
                         <>
-                          <Calculator className="w-4 h-4 text-emerald-100" />
+                          <Calculator className="w-4 h-4 text-blue-100" />
                           <span>Calculate Feasibility & Eligibility</span>
                           <ArrowRight className="w-4 h-4" />
                         </>
@@ -784,38 +791,38 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
           </div>
         ) : (
           /* RESULTS DASHBOARD & TEASER FORMAT SWITCHER */
-          <div className="space-y-8 animate-in zoom-in-95 duration-500">
+          <div className="space-y-6 sm:space-y-8 animate-in zoom-in-95 duration-500">
             {/* View Switcher Bar */}
-            <div className="bg-slate-900 rounded-2xl p-2 flex items-center justify-between gap-2 border border-slate-800 shadow-xl">
-              <div className="flex flex-wrap items-center gap-2">
+            <div className="bg-slate-900 rounded-2xl p-2 sm:p-2.5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 border border-slate-800 shadow-xl">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:flex items-center gap-2">
                 <button
                   onClick={() => setViewMode('scorecard')}
-                  className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                  className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer min-h-[42px] touch-manipulation ${
                     viewMode === 'scorecard'
-                      ? 'bg-emerald-500 text-slate-950 shadow-md'
+                      ? 'bg-blue-600 text-white shadow-md'
                       : 'text-slate-300 hover:text-white hover:bg-slate-800'
                   }`}
                 >
-                  <BarChart3 className="w-4 h-4" />
+                  <BarChart3 className="w-4 h-4 shrink-0" />
                   <span>Scorecard & Analytics</span>
                 </button>
 
                 <button
                   onClick={handleSelectTeaserTab}
-                  className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                  className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer min-h-[42px] touch-manipulation ${
                     viewMode === 'teaser'
-                      ? 'bg-emerald-500 text-slate-950 shadow-md'
+                      ? 'bg-blue-600 text-white shadow-md'
                       : isTeaserUnlocked
                       ? 'text-slate-300 hover:text-white hover:bg-slate-800'
                       : 'text-amber-400/90 hover:bg-amber-500/10 border border-amber-500/30'
                   }`}
                 >
                   {isTeaserUnlocked ? (
-                    <Eye className="w-4 h-4" />
+                    <Eye className="w-4 h-4 shrink-0" />
                   ) : (
-                    <Lock className="w-4 h-4 text-amber-400" />
+                    <Lock className="w-4 h-4 text-amber-400 shrink-0" />
                   )}
-                  <span>Executive Teaser (Inisio Format)</span>
+                  <span>Executive Teaser</span>
                   {!isTeaserUnlocked && (
                     <span className="px-1.5 py-0.5 text-[10px] bg-amber-500/20 text-amber-300 rounded font-semibold uppercase">
                       Locked
@@ -824,29 +831,29 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                 </button>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-slate-800/80">
                 <button
                   onClick={() => setStep(1)}
-                  className="px-3.5 py-2 text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="flex-1 md:flex-none px-3.5 py-2.5 text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer min-h-[42px] touch-manipulation"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Recalculate</span>
+                  <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                  <span>Recalculate</span>
                 </button>
 
                 <button
                   onClick={handleDownloadTeaserClick}
-                  className={`px-4 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
+                  className={`flex-1 md:flex-none px-4 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm min-h-[42px] touch-manipulation ${
                     isTeaserUnlocked
-                      ? 'text-slate-950 bg-emerald-400 hover:bg-emerald-300'
+                      ? 'text-white bg-blue-600 hover:bg-blue-700'
                       : 'text-amber-300 bg-amber-950/60 border border-amber-500/40 hover:bg-amber-900/60'
                   }`}
                 >
                   {isTeaserUnlocked ? (
-                    <Download className="w-3.5 h-3.5" />
+                    <Download className="w-3.5 h-3.5 shrink-0" />
                   ) : (
-                    <Lock className="w-3.5 h-3.5 text-amber-400" />
+                    <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                   )}
-                  <span>{isTeaserUnlocked ? 'Download Teaser PDF' : 'Unlock Teaser PDF'}</span>
+                  <span>{isTeaserUnlocked ? 'Download PDF' : 'Unlock PDF'}</span>
                 </button>
               </div>
             </div>
@@ -857,8 +864,8 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                 <div className="bg-white rounded-2xl border border-gray-200 shadow-xl p-6 sm:p-8">
                   <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-100 pb-6">
                     <div>
-                      <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
                         <span>Assessment Completed</span>
                       </div>
                       <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 font-manrope">
@@ -876,9 +883,9 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6">
                     {/* Feasibility Check */}
                     <div className="p-5 bg-slate-900 text-white rounded-2xl relative overflow-hidden flex flex-col justify-between">
-                      <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl" />
+                      <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/10 rounded-full blur-xl" />
                       <div>
-                        <div className="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                        <div className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                           <BarChart3 className="w-4 h-4" />
                           <span>Feasibility Check</span>
                         </div>
@@ -888,24 +895,24 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                       </div>
                       <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-300">
                         <span>Viability Rating</span>
-                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold">
+                        <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-bold">
                           {results.feasibilityScore >= 78 ? 'High Feasibility' : 'Moderate Feasibility'}
                         </span>
                       </div>
                     </div>
 
                     {/* Bankability Rating */}
-                    <div className="p-5 bg-gradient-to-br from-emerald-600 to-emerald-700 text-white rounded-2xl relative overflow-hidden flex flex-col justify-between shadow-lg shadow-emerald-600/20">
+                    <div className="p-5 bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-2xl relative overflow-hidden flex flex-col justify-between shadow-lg shadow-blue-600/20">
                       <div>
-                        <div className="text-xs font-bold text-emerald-100 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                        <div className="text-xs font-bold text-blue-100 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                           <Award className="w-4 h-4" />
                           <span>Bankability Rating</span>
                         </div>
                         <div className="text-4xl font-black text-white my-2 font-manrope">
-                          {results.bankabilityRating} <span className="text-lg font-normal text-emerald-200">/ 10</span>
+                          {results.bankabilityRating} <span className="text-lg font-normal text-blue-200">/ 10</span>
                         </div>
                       </div>
-                      <div className="mt-4 pt-3 border-t border-emerald-500/40 flex items-center justify-between text-xs text-emerald-100">
+                      <div className="mt-4 pt-3 border-t border-blue-500/40 flex items-center justify-between text-xs text-blue-100">
                         <span>Lender Category</span>
                         <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white font-bold">
                           Tier-1 Bankable
@@ -914,19 +921,19 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                     </div>
 
                     {/* Estimated Loan Eligibility */}
-                    <div className="p-5 bg-emerald-50 border border-emerald-200 rounded-2xl flex flex-col justify-between">
+                    <div className="p-5 bg-blue-50 border border-blue-200 rounded-2xl flex flex-col justify-between">
                       <div>
-                        <div className="text-xs font-bold text-emerald-900 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                          <Landmark className="w-4 h-4 text-emerald-700" />
+                        <div className="text-xs font-bold text-blue-900 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                          <Landmark className="w-4 h-4 text-blue-700" />
                           <span>Estimated Loan Eligibility</span>
                         </div>
-                        <div className="text-3xl font-black text-emerald-950 my-2 font-manrope">
-                          ₹ {results.estimatedLoan} <span className="text-sm font-semibold text-emerald-700">Cr</span>
+                        <div className="text-3xl font-black text-blue-950 my-2 font-manrope">
+                          ₹ {results.estimatedLoan} <span className="text-sm font-semibold text-blue-700">Cr</span>
                         </div>
                       </div>
-                      <div className="mt-4 pt-3 border-t border-emerald-200/60 flex items-center justify-between text-xs text-emerald-800">
+                      <div className="mt-4 pt-3 border-t border-blue-200/60 flex items-center justify-between text-xs text-blue-800">
                         <span>Max Debt LTV</span>
-                        <span className="font-bold text-emerald-900">{results.debtPct}% Debt Funding</span>
+                        <span className="font-bold text-blue-900">{results.debtPct}% Debt Funding</span>
                       </div>
                     </div>
                   </div>
@@ -951,7 +958,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                           }
                         }, 100);
                       }}
-                      className="px-8 py-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-sm sm:text-base rounded-2xl shadow-xl hover:shadow-2xl hover:shadow-emerald-600/30 transition-all flex items-center justify-center gap-3 cursor-pointer group transform hover:-translate-y-0.5 active:translate-y-0"
+                      className="px-8 py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-sm sm:text-base rounded-2xl shadow-xl hover:shadow-2xl hover:shadow-blue-600/30 transition-all flex items-center justify-center gap-3 cursor-pointer group transform hover:-translate-y-0.5 active:translate-y-0"
                     >
                       <span>Proceed to Detailed Risk Assessment</span>
                       <ArrowRight className="w-5 h-5 group-hover:translate-x-1.5 transition-transform" />
@@ -979,31 +986,31 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                   {/* Key Observations */}
                   <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
                     <h3 className="text-base font-bold text-gray-900 flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
-                      <FileText className="w-4 h-4 text-emerald-600" />
+                      <FileText className="w-4 h-4 text-blue-600" />
                       <span>Key Analytical Observations</span>
                     </h3>
 
                     <ul className="space-y-3 text-xs text-gray-700 font-medium">
                       <li className="flex items-start gap-2.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                         <span>
                           Promoter equity commitment of <strong>₹ {formData.promoterContribCr} Cr ({results.eqPct}%)</strong> aligns with lead banker requirements for Greenfield project debt.
                         </span>
                       </li>
                       <li className="flex items-start gap-2.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                         <span>
                           Land status (<strong>{formData.landStatus}</strong>) and Collateral status (<strong>{formData.collateralStatus}</strong>) reduce implementation delay risks.
                         </span>
                       </li>
                       <li className="flex items-start gap-2.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                         <span>
                           Promoter experience (<strong>{formData.promoterExp}</strong>) enhances credit agency rating and loan margin pricing.
                         </span>
                       </li>
                       <li className="flex items-start gap-2.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
                         <span>
                           Eligible for state-level interest subventions and capital subsidies under active industrial policies.
                         </span>
@@ -1014,13 +1021,13 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                   {/* Actionable Recommendations */}
                   <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
                     <h3 className="text-base font-bold text-gray-900 flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
-                      <Sparkles className="w-4 h-4 text-emerald-600" />
+                      <Sparkles className="w-4 h-4 text-blue-600" />
                       <span>Recommended Next Steps</span>
                     </h3>
 
                     <div className="space-y-3 text-xs">
                       <div className="p-3 bg-slate-50 rounded-xl border border-gray-200 flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                        <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
                           1
                         </div>
                         <div>
@@ -1030,7 +1037,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                       </div>
 
                       <div className="p-3 bg-slate-50 rounded-xl border border-gray-200 flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                        <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
                           2
                         </div>
                         <div>
@@ -1040,7 +1047,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                       </div>
 
                       <div className="p-3 bg-slate-50 rounded-xl border border-gray-200 flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                        <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
                           3
                         </div>
                         <div>
@@ -1073,7 +1080,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                           if (el) el.scrollIntoView({ behavior: 'smooth' });
                         }, 100);
                       }}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shrink-0 transition-all cursor-pointer shadow-sm"
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shrink-0 transition-all cursor-pointer shadow-sm"
                     >
                       Fill Detailed Risk Profile
                     </button>
@@ -1189,7 +1196,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                       </div>
                       <div className="grid grid-cols-2 p-2.5 bg-slate-50 font-bold text-slate-900">
                         <div>Total Project Cost</div>
-                        <div className="text-right font-mono text-emerald-700">{costLakhs} lakhs</div>
+                        <div className="text-right font-mono text-blue-700">{costLakhs} lakhs</div>
                       </div>
                     </div>
 
@@ -1207,7 +1214,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                       <div className="grid grid-cols-3 p-2.5 border-b border-slate-100">
                         <div className="font-bold text-slate-900">Project Term Loan</div>
                         <div className="font-mono">{loanLakhs} lakhs</div>
-                        <div className="text-right font-bold text-emerald-700">{results.debtPct}%</div>
+                        <div className="text-right font-bold text-blue-700">{results.debtPct}%</div>
                       </div>
                       <div className="grid grid-cols-3 p-2.5 border-b border-slate-100">
                         <div className="font-bold text-slate-900">Promoter Contribution</div>
@@ -1248,7 +1255,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                       </div>
                       <div className="grid grid-cols-3 p-3">
                         <div className="font-bold text-slate-900">Collateral Security</div>
-                        <div className="col-span-2 text-emerald-800 font-bold">{formData.collateralStatus || 'Freehold (Clear Title)'}</div>
+                        <div className="col-span-2 text-blue-800 font-bold">{formData.collateralStatus || 'Freehold (Clear Title)'}</div>
                       </div>
                     </div>
                   </div>
@@ -1258,14 +1265,14 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                     <div className="space-y-3">
                       <div className="bg-[#0F172A] text-white px-4 py-2 font-bold text-xs sm:text-sm uppercase tracking-wide rounded-sm flex items-center justify-between">
                         <span>Detailed Risk Profile & Underwriting Assessment</span>
-                        <span className="text-emerald-400 font-extrabold text-xs">
+                        <span className="text-blue-400 font-extrabold text-xs">
                           Rating: {comprehensiveRisk.scoreOutOf10} / 10 ({comprehensiveRisk.ratingLabel})
                         </span>
                       </div>
                       <div className="border border-slate-200 text-xs sm:text-sm rounded-sm overflow-hidden">
-                        <div className="grid grid-cols-2 p-2.5 border-b border-slate-100 bg-emerald-50/70">
+                        <div className="grid grid-cols-2 p-2.5 border-b border-slate-100 bg-blue-50/70">
                           <div className="font-bold text-slate-800">Underwriting Rating (out of 10)</div>
-                          <div className="font-extrabold text-emerald-800">{comprehensiveRisk.scoreOutOf10} / 10 ({comprehensiveRisk.ratingLabel})</div>
+                          <div className="font-extrabold text-blue-800">{comprehensiveRisk.scoreOutOf10} / 10 ({comprehensiveRisk.ratingLabel})</div>
                         </div>
                         <div className="grid grid-cols-2 p-2.5 border-b border-slate-100">
                           <div className="font-bold text-slate-700">CIBIL / Credit Score Track</div>
@@ -1347,7 +1354,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                       </div>
                       <div className="grid grid-cols-2 p-2.5 border-b border-slate-100">
                         <div className="font-bold text-slate-700">Feasibility Score</div>
-                        <div className="font-bold text-emerald-700">{getFeasibilityTerm(results.feasibilityScore)} ({results.feasibilityScore}/100)</div>
+                        <div className="font-bold text-blue-700">{getFeasibilityTerm(results.feasibilityScore)} ({results.feasibilityScore}/100)</div>
                       </div>
                       <div className="grid grid-cols-2 p-2.5">
                         <div className="font-bold text-slate-700">Bankability Grade</div>
@@ -1361,7 +1368,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                     <div>Official Teaser Preview</div>
                     <div className="text-right">
                       <div className="text-[11px] font-bold text-slate-800 uppercase">Prepared by</div>
-                      <div className="text-base font-black text-emerald-600 font-manrope">INISIO</div>
+                      <div className="text-base font-black text-blue-600 font-manrope">INISIO</div>
                       <div className="text-[11px] font-semibold text-slate-700">Greenfield Advisory</div>
                     </div>
                   </div>
@@ -1381,7 +1388,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                   onClick={handleDownloadTeaserClick}
                   className={`flex-1 sm:flex-none px-5 py-3 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md ${
                     isTeaserUnlocked
-                      ? 'text-slate-900 bg-emerald-400 hover:bg-emerald-300'
+                      ? 'text-white bg-blue-600 hover:bg-blue-700'
                       : 'text-amber-300 bg-amber-950/80 border border-amber-500/40 hover:bg-amber-900/80'
                   }`}
                   title={isTeaserUnlocked ? 'Downloads official bank-grade PDF teaser document' : 'Complete Detailed Risk Profile to unlock PDF download'}
@@ -1392,7 +1399,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
 
                 <button
                   onClick={onOpenConsultation}
-                  className="flex-1 sm:flex-none px-5 py-3 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                  className="flex-1 sm:flex-none px-5 py-3 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
                 >
                   <PhoneCall className="w-4 h-4" />
                   <span>Book Free Call</span>

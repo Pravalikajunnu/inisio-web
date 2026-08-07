@@ -87,8 +87,8 @@ export function DetailedRiskProfileForm({
     const num = parseFloat(valStr);
     if (isNaN(num)) return null;
     if (num < 50) return { label: 'Low', color: 'bg-amber-100 text-amber-800 border-amber-300' };
-    if (num <= 100) return { label: 'Moderate', color: 'bg-blue-100 text-blue-800 border-blue-300' };
-    return { label: 'Strong', color: 'bg-emerald-100 text-emerald-800 border-emerald-300' };
+    if (num <= 100) return { label: 'Moderate', color: 'bg-sky-100 text-sky-800 border-sky-300' };
+    return { label: 'Strong', color: 'bg-blue-100 text-blue-800 border-blue-300' };
   };
 
   // CIBIL Classification helper
@@ -96,8 +96,8 @@ export function DetailedRiskProfileForm({
     if (isNew) return { label: 'New to Credit', color: 'bg-indigo-100 text-indigo-800 border-indigo-300' };
     const num = parseInt(scoreStr, 10);
     if (isNaN(num)) return null;
-    if (num >= 750) return { label: 'Excellent (750+)', color: 'bg-emerald-100 text-emerald-800 border-emerald-300' };
-    if (num >= 700) return { label: 'Good (700–749)', color: 'bg-teal-100 text-teal-800 border-teal-300' };
+    if (num >= 750) return { label: 'Excellent (750+)', color: 'bg-blue-100 text-blue-800 border-blue-300' };
+    if (num >= 700) return { label: 'Good (700–749)', color: 'bg-sky-100 text-sky-800 border-sky-300' };
     if (num >= 650) return { label: 'Average (650–699)', color: 'bg-amber-100 text-amber-800 border-amber-300' };
     return { label: 'High Risk (<650)', color: 'bg-red-100 text-red-800 border-red-300' };
   };
@@ -176,7 +176,7 @@ export function DetailedRiskProfileForm({
       <div
         className={`px-6 py-4 border-b flex flex-wrap items-center justify-between gap-3 ${
           isUnlocked
-            ? 'bg-emerald-950 text-white border-emerald-800'
+            ? 'bg-blue-950 text-white border-blue-800'
             : isDark
             ? 'bg-slate-950 text-white border-slate-800'
             : 'bg-slate-900 text-white border-slate-800'
@@ -185,7 +185,7 @@ export function DetailedRiskProfileForm({
         <div className="flex items-center gap-3">
           <div
             className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold shrink-0 ${
-              isUnlocked ? 'bg-emerald-500 text-slate-950' : 'bg-amber-500 text-slate-950'
+              isUnlocked ? 'bg-blue-600 text-white' : 'bg-amber-500 text-slate-950'
             }`}
           >
             {isUnlocked ? <ShieldCheck className="w-5 h-5" /> : <Unlock className="w-5 h-5" />}
@@ -198,7 +198,7 @@ export function DetailedRiskProfileForm({
               <span
                 className={`px-2.5 py-0.5 text-[10px] font-extrabold rounded-full uppercase tracking-wider ${
                   isUnlocked
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                    ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
                     : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                 }`}
               >
@@ -224,8 +224,8 @@ export function DetailedRiskProfileForm({
         )}
 
         {successMsg && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3 text-emerald-800 text-xs font-semibold animate-in fade-in duration-200">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-center gap-3 text-blue-800 text-xs font-semibold animate-in fade-in duration-200">
+            <CheckCircle2 className="w-5 h-5 text-blue-600 shrink-0" />
             <span>{successMsg}</span>
           </div>
         )}
@@ -234,7 +234,7 @@ export function DetailedRiskProfileForm({
           {/* SECTION 1: PROMOTER PROFILE */}
           <div className={`p-5 rounded-xl border ${isDark ? 'bg-slate-800/60 border-slate-700/80' : 'bg-slate-50 border-slate-200/80'}`}>
             <div className="flex items-center gap-2.5 mb-4 border-b pb-3 border-gray-200/60 dark:border-slate-700">
-              <UserCheck className="w-5 h-5 text-emerald-500" />
+              <UserCheck className="w-5 h-5 text-blue-500" />
               <h4 className="font-bold text-sm uppercase tracking-wider text-gray-800 dark:text-gray-100">
                 👤 Section 1: Promoter Profile
               </h4>
@@ -252,7 +252,7 @@ export function DetailedRiskProfileForm({
                       key={opt}
                       className={`flex items-center justify-center p-3 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
                         formData.industryExperience === opt
-                          ? 'bg-emerald-50 border-emerald-500 text-emerald-900 ring-2 ring-emerald-500/20 dark:bg-emerald-950/60 dark:text-emerald-200 dark:border-emerald-500'
+                          ? 'bg-blue-50 border-blue-500 text-blue-900 ring-2 ring-blue-500/20 dark:bg-blue-950/60 dark:text-blue-200 dark:border-blue-500'
                           : isDark
                           ? 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
                           : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
@@ -284,8 +284,8 @@ export function DetailedRiskProfileForm({
                     !formData.educationalBackground ? 'text-gray-400 dark:text-gray-500' : ''
                   } ${
                     isDark
-                      ? 'bg-slate-900 border-slate-700 text-white focus:ring-2 focus:ring-emerald-500'
-                      : 'bg-white border-gray-200 text-gray-900 focus:ring-2 focus:ring-emerald-500'
+                      ? 'bg-slate-900 border-slate-700 text-white focus:ring-2 focus:ring-blue-500'
+                      : 'bg-white border-gray-200 text-gray-900 focus:ring-2 focus:ring-blue-500'
                   }`}
                 >
                   <option value="" disabled hidden>Select Educational Background *</option>
@@ -302,7 +302,7 @@ export function DetailedRiskProfileForm({
           {/* SECTION 2: BUSINESS INFORMATION */}
           <div className={`p-5 rounded-xl border ${isDark ? 'bg-slate-800/60 border-slate-700/80' : 'bg-slate-50 border-slate-200/80'}`}>
             <div className="flex items-center gap-2.5 mb-4 border-b pb-3 border-gray-200/60 dark:border-slate-700">
-              <Building2 className="w-5 h-5 text-emerald-500" />
+              <Building2 className="w-5 h-5 text-blue-500" />
               <h4 className="font-bold text-sm uppercase tracking-wider text-gray-800 dark:text-gray-100">
                 🏢 Section 2: Business Information
               </h4>
@@ -321,8 +321,8 @@ export function DetailedRiskProfileForm({
                     !formData.businessConstitution ? 'text-gray-400 dark:text-gray-500' : ''
                   } ${
                     isDark
-                      ? 'bg-slate-900 border-slate-700 text-white focus:ring-2 focus:ring-emerald-500'
-                      : 'bg-white border-gray-200 text-gray-900 focus:ring-2 focus:ring-emerald-500'
+                      ? 'bg-slate-900 border-slate-700 text-white focus:ring-2 focus:ring-blue-500'
+                      : 'bg-white border-gray-200 text-gray-900 focus:ring-2 focus:ring-blue-500'
                   }`}
                 >
                   <option value="" disabled hidden>Select Business Constitution *</option>
@@ -345,7 +345,7 @@ export function DetailedRiskProfileForm({
                       key={vint}
                       className={`flex items-center justify-center p-2.5 text-center rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
                         formData.businessVintage === vint
-                          ? 'bg-emerald-50 border-emerald-500 text-emerald-900 ring-2 ring-emerald-500/20 dark:bg-emerald-950/60 dark:text-emerald-200 dark:border-emerald-500'
+                          ? 'bg-blue-50 border-blue-500 text-blue-900 ring-2 ring-blue-500/20 dark:bg-blue-950/60 dark:text-blue-200 dark:border-blue-500'
                           : isDark
                           ? 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
                           : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
@@ -370,7 +370,7 @@ export function DetailedRiskProfileForm({
           {/* SECTION 3: FINANCIAL PROFILE */}
           <div className={`p-5 rounded-xl border ${isDark ? 'bg-slate-800/60 border-slate-700/80' : 'bg-slate-50 border-slate-200/80'}`}>
             <div className="flex items-center gap-2.5 mb-4 border-b pb-3 border-gray-200/60 dark:border-slate-700">
-              <Wallet className="w-5 h-5 text-emerald-500" />
+              <Wallet className="w-5 h-5 text-blue-500" />
               <h4 className="font-bold text-sm uppercase tracking-wider text-gray-800 dark:text-gray-100">
                 💰 Section 3: Financial Profile
               </h4>
@@ -388,7 +388,7 @@ export function DetailedRiskProfileForm({
                       key={ctype}
                       className={`flex items-center px-3.5 py-2.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
                         formData.contributionType === ctype
-                          ? 'bg-emerald-50 border-emerald-500 text-emerald-900 ring-2 ring-emerald-500/20 dark:bg-emerald-950/60 dark:text-emerald-200 dark:border-emerald-500'
+                          ? 'bg-blue-50 border-blue-500 text-blue-900 ring-2 ring-blue-500/20 dark:bg-blue-950/60 dark:text-blue-200 dark:border-blue-500'
                           : isDark
                           ? 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
                           : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
@@ -400,7 +400,7 @@ export function DetailedRiskProfileForm({
                         value={ctype}
                         checked={formData.contributionType === ctype}
                         onChange={(e) => setFormData({ ...formData, contributionType: e.target.value })}
-                        className="mr-2 text-emerald-600 focus:ring-emerald-500"
+                        className="mr-2 text-blue-600 focus:ring-blue-500"
                       />
                       <span>{ctype}</span>
                     </label>
@@ -431,8 +431,8 @@ export function DetailedRiskProfileForm({
                     placeholder="Enter Collateral Coverage %"
                     className={`w-full p-3 pr-8 text-xs font-bold rounded-xl border outline-none transition-all ${
                       isDark
-                        ? 'bg-slate-900 border-slate-700 text-white focus:ring-2 focus:ring-emerald-500'
-                        : 'bg-white border-gray-200 text-gray-900 focus:ring-2 focus:ring-emerald-500'
+                        ? 'bg-slate-900 border-slate-700 text-white focus:ring-2 focus:ring-blue-500'
+                        : 'bg-white border-gray-200 text-gray-900 focus:ring-2 focus:ring-blue-500'
                     }`}
                   />
                   <span className="absolute right-3 top-3 text-xs font-bold text-gray-400">%</span>
@@ -456,7 +456,7 @@ export function DetailedRiskProfileForm({
                         isDebtEquityOverridden: !prev.isDebtEquityOverridden
                       }))
                     }
-                    className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+                    className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
                   >
                     <Edit3 className="w-3 h-3" />
                     <span>{formData.isDebtEquityOverridden ? 'Reset Auto' : 'Manual Edit'}</span>
@@ -471,8 +471,8 @@ export function DetailedRiskProfileForm({
                     placeholder="Enter Debt–Equity Ratio"
                     className={`w-full p-3 text-xs font-bold rounded-xl border outline-none ${
                       isDark
-                        ? 'bg-slate-900 border-slate-700 text-white focus:ring-2 focus:ring-emerald-500'
-                        : 'bg-white border-gray-200 text-gray-900 focus:ring-2 focus:ring-emerald-500'
+                        ? 'bg-slate-900 border-slate-700 text-white focus:ring-2 focus:ring-blue-500'
+                        : 'bg-white border-gray-200 text-gray-900 focus:ring-2 focus:ring-blue-500'
                     }`}
                   />
                 ) : (
@@ -482,8 +482,8 @@ export function DetailedRiskProfileForm({
                     <span className="text-xs font-extrabold text-gray-900 dark:text-white">
                       {formData.debtEquityRatio || 'N/A'}
                     </span>
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-700">
-                      <Check className="w-3 h-3 text-emerald-600" /> Auto Calculated
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950 px-2 py-0.5 rounded-full border border-blue-300 dark:border-blue-700">
+                      <Check className="w-3 h-3 text-blue-600" /> Auto Calculated
                     </span>
                   </div>
                 )}
@@ -497,7 +497,7 @@ export function DetailedRiskProfileForm({
           {/* SECTION 4: MANAGEMENT DETAILS */}
           <div className={`p-5 rounded-xl border ${isDark ? 'bg-slate-800/60 border-slate-700/80' : 'bg-slate-50 border-slate-200/80'}`}>
             <div className="flex items-center gap-2.5 mb-4 border-b pb-3 border-gray-200/60 dark:border-slate-700">
-              <Users className="w-5 h-5 text-emerald-500" />
+              <Users className="w-5 h-5 text-blue-500" />
               <h4 className="font-bold text-sm uppercase tracking-wider text-gray-800 dark:text-gray-100">
                 👥 Section 4: Management Details
               </h4>
@@ -519,8 +519,8 @@ export function DetailedRiskProfileForm({
                     placeholder="Enter Management Team Size"
                     className={`w-full p-3 text-xs font-bold rounded-xl border outline-none transition-all ${
                       isDark
-                        ? 'bg-slate-900 border-slate-700 text-white focus:ring-2 focus:ring-emerald-500'
-                        : 'bg-white border-gray-200 text-gray-900 focus:ring-2 focus:ring-emerald-500'
+                        ? 'bg-slate-900 border-slate-700 text-white focus:ring-2 focus:ring-blue-500'
+                        : 'bg-white border-gray-200 text-gray-900 focus:ring-2 focus:ring-blue-500'
                     }`}
                   />
                 </div>
@@ -544,8 +544,8 @@ export function DetailedRiskProfileForm({
                     placeholder="Enter Technical Workforce Count"
                     className={`w-full p-3 text-xs font-bold rounded-xl border outline-none transition-all ${
                       isDark
-                        ? 'bg-slate-900 border-slate-700 text-white focus:ring-2 focus:ring-emerald-500'
-                        : 'bg-white border-gray-200 text-gray-900 focus:ring-2 focus:ring-emerald-500'
+                        ? 'bg-slate-900 border-slate-700 text-white focus:ring-2 focus:ring-blue-500'
+                        : 'bg-white border-gray-200 text-gray-900 focus:ring-2 focus:ring-blue-500'
                     }`}
                   />
                 </div>
@@ -559,7 +559,7 @@ export function DetailedRiskProfileForm({
           {/* SECTION 5: CREDIT PROFILE */}
           <div className={`p-5 rounded-xl border ${isDark ? 'bg-slate-800/60 border-slate-700/80' : 'bg-slate-50 border-slate-200/80'}`}>
             <div className="flex items-center gap-2.5 mb-4 border-b pb-3 border-gray-200/60 dark:border-slate-700">
-              <CreditCard className="w-5 h-5 text-emerald-500" />
+              <CreditCard className="w-5 h-5 text-blue-500" />
               <h4 className="font-bold text-sm uppercase tracking-wider text-gray-800 dark:text-gray-100">
                 🏦 Section 5: Credit Profile
               </h4>
@@ -591,8 +591,8 @@ export function DetailedRiskProfileForm({
                     formData.isNewToCredit
                       ? 'bg-gray-100 dark:bg-slate-800 text-gray-400 border-gray-200 dark:border-slate-700 cursor-not-allowed'
                       : isDark
-                      ? 'bg-slate-900 border-slate-700 text-white focus:ring-2 focus:ring-emerald-500'
-                      : 'bg-white border-gray-200 text-gray-900 focus:ring-2 focus:ring-emerald-500'
+                      ? 'bg-slate-900 border-slate-700 text-white focus:ring-2 focus:ring-blue-500'
+                      : 'bg-white border-gray-200 text-gray-900 focus:ring-2 focus:ring-blue-500'
                   }`}
                 />
                 <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1.5">
@@ -618,7 +618,7 @@ export function DetailedRiskProfileForm({
                         isNewToCredit: e.target.checked
                       })
                     }
-                    className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 border-gray-300"
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 border-gray-300"
                   />
                   <div className="ml-3">
                     <span className="text-xs font-bold">New to Credit / First Time Borrower</span>
@@ -645,20 +645,20 @@ export function DetailedRiskProfileForm({
               disabled={!isFormComplete && !isUnlocked}
               className={`w-full sm:w-auto px-7 py-3.5 font-extrabold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 ${
                 isFormComplete || isUnlocked
-                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow-emerald-600/20'
+                  ? 'bg-blue-600 hover:bg-blue-500 text-white cursor-pointer shadow-blue-600/20'
                   : 'bg-slate-300 dark:bg-slate-800 text-slate-500 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700 opacity-60'
               }`}
               title={!isFormComplete && !isUnlocked ? `Complete ${missingFields.length} remaining fields to enable submit` : ''}
             >
               {isUnlocked ? (
                 <>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                  <CheckCircle2 className="w-4 h-4 text-blue-200" />
                   <span>Update & Re-evaluate Risk Profile</span>
                 </>
               ) : (
                 <>
                   {isFormComplete ? (
-                    <Sparkles className="w-4 h-4 text-emerald-200" />
+                    <Sparkles className="w-4 h-4 text-blue-200" />
                   ) : (
                     <Lock className="w-4 h-4 text-slate-400" />
                   )}

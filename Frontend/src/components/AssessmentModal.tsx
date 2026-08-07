@@ -197,11 +197,11 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-emerald-glow">
+            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shadow-blue-glow">
               <Calculator className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] font-extrabold text-emerald-700 uppercase tracking-widest block">
+              <span className="text-[10px] font-extrabold text-blue-700 uppercase tracking-widest block">
                 Project Assessment Engine v4.2
               </span>
               <h3 className="font-display font-bold text-xl text-gray-900">
@@ -223,11 +223,11 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
           <div className="space-y-1.5 pt-2">
             <div className="flex justify-between text-xs font-semibold text-gray-600">
               <span>Step 0{step} of 03: {step === 1 ? 'Industry & Location' : step === 2 ? 'Capex & Equity' : 'Promoter & Bank Preferences'}</span>
-              <span className="text-emerald-700 font-bold">{Math.round((step / 3) * 100)}% Complete</span>
+              <span className="text-blue-700 font-bold">{Math.round((step / 3) * 100)}% Complete</span>
             </div>
             <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
               <div
-                className="bg-emerald-600 h-2 transition-all duration-300"
+                className="bg-blue-600 h-2 transition-all duration-300"
                 style={{ width: `${(step / 3) * 100}%` }}
               ></div>
             </div>
@@ -244,7 +244,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
               <select
                 value={formData.industry}
                 onChange={(e) => setFormData({ ...formData, industry: e.target.value })}
-                className={`w-full p-3.5 text-sm bg-white border border-gray-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-medium cursor-pointer ${
+                className={`w-full p-3.5 text-sm bg-white border border-gray-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium cursor-pointer ${
                   formData.industry ? 'text-gray-900' : 'text-gray-400'
                 }`}
               >
@@ -279,7 +279,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
                 }
                 setStep(2);
               }}
-              className="w-full py-3.5 px-4 font-bold text-sm text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3.5 px-4 font-bold text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Continue to Capex & Financials</span>
               <ArrowRight className="w-4 h-4" />
@@ -293,7 +293,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
             <div className="space-y-2">
               <div className="flex justify-between text-xs font-bold text-gray-900">
                 <span>Estimated Total Project Capex (Land + Machinery + Construction):</span>
-                <span className="text-emerald-700 text-sm">₹ {formData.projectCostCr} Crore</span>
+                <span className="text-blue-700 text-sm">₹ {formData.projectCostCr} Crore</span>
               </div>
               <input
                 type="range"
@@ -302,7 +302,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
                 step="1"
                 value={formData.projectCostCr}
                 onChange={(e) => setFormData({ ...formData, projectCostCr: Number(e.target.value) })}
-                className="w-full accent-emerald-600 cursor-pointer"
+                className="w-full accent-blue-600 cursor-pointer"
               />
               <div className="flex justify-between text-[11px] text-gray-400">
                 <span>₹3 Cr</span>
@@ -314,7 +314,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
             <div className="space-y-2">
               <div className="flex justify-between text-xs font-bold text-gray-900 leading-tight">
                 <span>How much money / equity do you have available for this project? (₹ CR):</span>
-                <span className={`text-sm font-bold ${formData.equityPercent >= 20 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                <span className={`text-sm font-bold ${formData.equityPercent >= 20 ? 'text-blue-700' : 'text-rose-700'}`}>
                   {formData.equityPercent}% (₹{((formData.projectCostCr * formData.equityPercent) / 100).toFixed(2)} Cr)
                 </span>
               </div>
@@ -325,12 +325,12 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
                 step="1"
                 value={formData.equityPercent}
                 onChange={(e) => setFormData({ ...formData, equityPercent: Number(e.target.value) })}
-                className="w-full accent-emerald-600 cursor-pointer"
+                className="w-full accent-blue-600 cursor-pointer"
               />
               <div
                 className={`p-3 rounded-xl border text-xs font-semibold flex items-center justify-between gap-2 transition-all ${
                   formData.equityPercent >= 20
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                    ? 'bg-blue-50 border-blue-200 text-blue-600'
                     : 'bg-rose-50 border-rose-200 text-rose-600'
                 }`}
               >
@@ -361,7 +361,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
                     onClick={() => setFormData({ ...formData, landStatus: ls.key as any })}
                     className={`py-2.5 px-3 font-semibold rounded-xl border text-center transition-all ${
                       formData.landStatus === ls.key
-                        ? 'bg-emerald-50 border-emerald-600 text-emerald-800 ring-1 ring-emerald-500'
+                        ? 'bg-blue-50 border-blue-600 text-blue-800 ring-1 ring-blue-500'
                         : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
                     }`}
                   >
@@ -386,7 +386,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
                 }}
                 className={`flex-1 py-3.5 px-4 font-bold text-sm rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 ${
                   formData.equityPercent >= 20
-                    ? 'text-white bg-emerald-600 hover:bg-emerald-700 cursor-pointer'
+                    ? 'text-white bg-blue-600 hover:bg-blue-700 cursor-pointer'
                     : 'text-gray-400 bg-gray-200 border border-gray-300 cursor-not-allowed opacity-75'
                 }`}
                 title={formData.equityPercent < 20 ? 'Equity is below standard 20% threshold. Please improve your margin / promoter contribution to proceed.' : ''}
@@ -410,7 +410,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
                   value={applicantInfo.fullName}
                   onChange={(e) => setApplicantInfo({ ...applicantInfo, fullName: e.target.value })}
                   placeholder="Enter your full name"
-                  className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+                  className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
                 />
               </div>
 
@@ -430,7 +430,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
                   className={`w-full px-3.5 py-2.5 bg-white border rounded-xl text-sm outline-none transition-all ${
                     mobileTouched && !mobileValidation.isValid
                       ? 'border-red-500 focus:ring-2 focus:ring-red-500 bg-red-50/40 text-red-900 font-medium'
-                      : 'border-gray-300 focus:ring-2 focus:ring-emerald-500'
+                      : 'border-gray-300 focus:ring-2 focus:ring-blue-500'
                   }`}
                 />
                 {mobileTouched && !mobileValidation.isValid && (
@@ -448,7 +448,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
               <select
                 value={formData.collateralStatus || 'Freehold (Clear Title)'}
                 onChange={(e) => setFormData({ ...formData, collateralStatus: e.target.value })}
-                className="w-full p-3.5 text-sm bg-white border border-gray-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-medium text-gray-900"
+                className="w-full p-3.5 text-sm bg-white border border-gray-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium text-gray-900"
               >
                 <option value="Freehold (Clear Title)">Freehold (Clear Title)</option>
                 <option value="Leasehold (Bank Clause)">Leasehold (Bank Clause)</option>
@@ -465,7 +465,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
               <select
                 value={formData.promoterExpYears}
                 onChange={(e) => setFormData({ ...formData, promoterExpYears: Number(e.target.value) })}
-                className="w-full p-3.5 text-sm bg-white border border-gray-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-medium"
+                className="w-full p-3.5 text-sm bg-white border border-gray-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-blue-500 font-medium"
               >
                 <option value={2}>First-time entrepreneur (&lt; 3 Years)</option>
                 <option value={5}>Experienced (3 to 7 Years)</option>
@@ -479,8 +479,8 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
               </label>
               <div className="grid grid-cols-3 gap-2 text-xs">
                 {[
-                  { key: 'PSU', label: 'PSU Banks (SBI, BoB, PNB)' },
-                  { key: 'Private', label: 'Private Banks (HDFC, ICICI)' },
+                  { key: 'PSU', label: 'PSU Banks (SBI, Canara, Indian Bank)' },
+                  { key: 'Private', label: 'Private Banks (HDFC, ICICI, Axis)' },
                   { key: 'NBFC', label: 'NBFC / Financial Inst.' }
                 ].map((bk) => (
                   <button
@@ -489,7 +489,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
                     onClick={() => setFormData({ ...formData, targetBankType: bk.key as any })}
                     className={`py-2.5 px-3 font-semibold rounded-xl border text-center transition-all ${
                       formData.targetBankType === bk.key
-                        ? 'bg-emerald-50 border-emerald-600 text-emerald-800 ring-1 ring-emerald-500'
+                        ? 'bg-blue-50 border-blue-600 text-blue-800 ring-1 ring-blue-500'
                         : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
                     }`}
                   >
@@ -519,7 +519,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
                   calculateAssessment();
                 }}
                 disabled={isCalculating}
-                className="flex-1 py-3.5 px-4 font-bold text-sm text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="flex-1 py-3.5 px-4 font-bold text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 {isCalculating ? (
                   <>
@@ -528,7 +528,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
                   </>
                 ) : (
                   <>
-                    <BarChart3 className="w-4 h-4 text-emerald-200" />
+                    <BarChart3 className="w-4 h-4 text-blue-200" />
                     <span>Generate Bankability Report</span>
                   </>
                 )}
@@ -545,13 +545,13 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
             <div className="bg-slate-900 text-white p-5 rounded-2xl border border-slate-800 space-y-4">
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div>
-                  <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest block">
+                  <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest block">
                     PROJECT ASSESSMENT SUMMARY
                   </span>
                   <h4 className="font-display font-bold text-lg text-white">{formData.industry}</h4>
                 </div>
                 <div className="text-right">
-                  <span className="text-2xl font-black text-emerald-400">{result.bankabilityGrade}</span>
+                  <span className="text-2xl font-black text-blue-400">{result.bankabilityGrade}</span>
                   <span className="text-[10px] text-gray-400 block">Bankability Rating</span>
                 </div>
               </div>
@@ -559,7 +559,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                 <div className="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
                   <span className="text-[10px] text-gray-400 block">Feasibility Check</span>
-                  <span className="text-xl font-bold text-emerald-400">{getFeasibilityTerm(result.feasibilityScore)}</span>
+                  <span className="text-xl font-bold text-blue-400">{getFeasibilityTerm(result.feasibilityScore)}</span>
                 </div>
                 <div className="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
                   <span className="text-[10px] text-gray-400 block">Eligible Term Loan</span>
@@ -567,7 +567,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
                 </div>
                 <div className="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
                   <span className="text-[10px] text-gray-400 block">Estimated DSCR</span>
-                  <span className="text-lg font-bold text-emerald-300">{result.dscrEstimate}x</span>
+                  <span className="text-lg font-bold text-blue-300">{result.dscrEstimate}x</span>
                 </div>
                 <div className="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
                   <span className="text-[10px] text-gray-400 block">Interest Rate Range</span>
@@ -579,15 +579,15 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
             {/* Strengths & Risks Breakdown */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               
-              <div className="bg-emerald-50/70 p-4 rounded-2xl border border-emerald-100 space-y-2">
-                <div className="flex items-center gap-1.5 font-bold text-emerald-900">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <div className="bg-blue-50/70 p-4 rounded-2xl border border-blue-100 space-y-2">
+                <div className="flex items-center gap-1.5 font-bold text-blue-900">
+                  <CheckCircle2 className="w-4 h-4 text-blue-600" />
                   <span>Bank Credit Strengths:</span>
                 </div>
-                <ul className="space-y-1.5 text-emerald-950">
+                <ul className="space-y-1.5 text-blue-950">
                   {result.strengthPoints.map((sp, i) => (
                     <li key={i} className="flex items-start gap-1.5">
-                      <span className="text-emerald-600">•</span>
+                      <span className="text-blue-600">•</span>
                       <span>{sp}</span>
                     </li>
                   ))}
@@ -627,7 +627,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
                       }
                     }, 100);
                   }}
-                  className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs sm:text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer group"
+                  className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-black text-xs sm:text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer group"
                 >
                   <span>Proceed to Detailed Risk Assessment</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -657,7 +657,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
                 onClick={handleDownloadPDFReport}
                 className={`flex-1 py-3 px-3.5 font-bold text-xs sm:text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   isTeaserUnlocked
-                    ? 'text-slate-950 bg-emerald-400 hover:bg-emerald-300'
+                    ? 'text-slate-950 bg-blue-400 hover:bg-blue-300'
                     : 'text-amber-300 bg-amber-950/80 border border-amber-500/40 hover:bg-amber-900/80'
                 }`}
                 title={isTeaserUnlocked ? 'Downloads PDF teaser report' : 'Complete Detailed Risk Profile to unlock PDF'}
@@ -682,7 +682,7 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
                 }}
                 className="py-3 px-3.5 font-bold text-xs sm:text-sm text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                <PhoneCall className="w-4 h-4 text-emerald-400" />
+                <PhoneCall className="w-4 h-4 text-blue-400" />
                 <span>Book Free Call</span>
               </button>
             </div>

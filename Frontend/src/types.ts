@@ -104,6 +104,17 @@ export function getFeasibilityTerm(score: number | string): 'Good' | 'Average' |
   return 'Moderate';
 }
 
+export type UserRole = 'user' | 'admin' | 'ca';
+
+export interface AuthUser {
+  email: string;
+  role: UserRole;
+  name: string;
+  avatarUrl?: string;
+  company?: string;
+  phone?: string;
+}
+
 export interface ConsultationFormData {
   fullName: string;
   email: string;
