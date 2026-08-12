@@ -73,10 +73,23 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'about', name: 'About' },
     { id: 'services', name: 'Services' },
     { id: 'industries', name: 'Industries' },
+    { id: 'blogs', name: 'Blogs' },
     { id: 'contact', name: 'Contact' }
   ];
 
   const handleNavClick = (id: string) => {
+    if (id === 'blogs') {
+      onSelectTab('home');
+      setMobileMenuOpen(false);
+      setUserDropdownOpen(false);
+      setTimeout(() => {
+        const blogsElem = document.getElementById('blogs');
+        if (blogsElem) {
+          blogsElem.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+      return;
+    }
     onSelectTab(id);
     setMobileMenuOpen(false);
     setUserDropdownOpen(false);

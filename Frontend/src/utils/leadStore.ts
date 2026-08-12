@@ -14,12 +14,36 @@ export interface LeadRecord {
   source: string;
   downloadedPDF: boolean;
   notes?: string;
+  promoterContribCr?: string | number;
+  landStatus?: string;
+  collateralStatus?: string;
+  promoterExp?: string;
 }
 
 const STORAGE_KEY = 'inisio_admin_leads_v1';
 
 // Initial dummy leads for demonstration if empty so admin dashboard looks complete on first open
 const INITIAL_LEADS: LeadRecord[] = [
+  {
+    id: 'lead-100',
+    timestamp: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
+    fullName: 'Pravalika junnu',
+    mobile: '6302026462',
+    email: 'pravalikajunnu14@gmail.com',
+    projectName: 'Hotel Greenfield Resort & Convention',
+    industry: 'Data Centers & Tech Parks',
+    location: 'Hyderabad, Telangana',
+    totalCostCr: '20',
+    loanRequiredCr: '10',
+    feasibilityScore: 90,
+    bankabilityRating: 'A+',
+    source: 'PDF Teaser Downloaded',
+    downloadedPDF: true,
+    landStatus: 'Land Owned & Registered',
+    collateralStatus: 'Prime Land & Building Mortgage',
+    promoterExp: '8+ Years Hospitality & Infrastructure',
+    notes: 'Downloaded Teaser PDF. Interested in Debt Syndication for 50% debt component.'
+  },
   {
     id: 'lead-101',
     timestamp: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
@@ -35,6 +59,9 @@ const INITIAL_LEADS: LeadRecord[] = [
     bankabilityRating: 'A+',
     source: 'PDF Teaser Downloaded',
     downloadedPDF: true,
+    landStatus: 'TSIIC / Industrial Park Allotted',
+    collateralStatus: 'Plant & Machinery Hypothecation',
+    promoterExp: '12+ Years Manufacturing',
     notes: 'Downloaded Teaser PDF. Land acquired in Dholera.'
   },
   {
@@ -52,6 +79,9 @@ const INITIAL_LEADS: LeadRecord[] = [
     bankabilityRating: 'A',
     source: 'PDF Teaser Downloaded',
     downloadedPDF: true,
+    landStatus: 'Industrial Lease Signed',
+    collateralStatus: 'Factory Premises & Fixed Assets',
+    promoterExp: '10+ Years Pharma R&D',
     notes: 'Downloaded Teaser PDF. Land identified with TSIIC.'
   },
   {
@@ -69,6 +99,9 @@ const INITIAL_LEADS: LeadRecord[] = [
     bankabilityRating: 'B+',
     source: 'Contact Form Submitted',
     downloadedPDF: false,
+    landStatus: 'Private Land Identified',
+    collateralStatus: 'Land & Personal Guarantee',
+    promoterExp: '6+ Years Auto Components',
     notes: 'Submitted contact form for TEFR valuation.'
   }
 ];

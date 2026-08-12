@@ -19,6 +19,7 @@ import { AuthModal } from './components/AuthModal';
 import { UserDashboard } from './components/UserDashboard';
 import { CADashboard } from './components/CADashboard';
 import { AdminDashboardView } from './components/AdminDashboardView';
+import { LatestBlogs } from './components/LatestBlogs';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>('home');
@@ -133,6 +134,10 @@ export default function App() {
               <BankLogosCarousel />
               <TrustNumbers />
               <Testimonials />
+              <LatestBlogs
+                onOpenAssessment={() => handleOpenAssessment()}
+                onOpenConsultation={() => setConsultationModalOpen(true)}
+              />
             </div>
           )}
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getStoredLeads, deleteLeadRecord, clearAllLeads, exportLeadsToCSV, LeadRecord } from '../utils/leadStore';
+import { UserProfileDetailModal } from './UserProfileDetailModal';
 import {
   X,
   Lock,
@@ -17,7 +18,8 @@ import {
   Sparkles,
   TrendingUp,
   FileCheck2,
-  ExternalLink
+  ExternalLink,
+  Eye
 } from 'lucide-react';
 
 interface AdminLeadsModalProps {
@@ -32,6 +34,7 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
   const [leads, setLeads] = useState<LeadRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSource, setFilterSource] = useState<'ALL' | 'PDF' | 'FORM'>('ALL');
+  const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -278,13 +281,24 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
                       );
 
                       return (
-                        <tr key={lead.id} className="hover:bg-slate-900/80 transition-colors">
+                        <tr
+                          key={lead.id}
+                          onClick={() => setSelectedLead(lead)}
+                          className="hover:bg-slate-900 transition-colors cursor-pointer group"
+                        >
                           <td className="p-3 text-slate-400 whitespace-nowrap">
                             {formattedDate}
                           </td>
 
                           <td className="p-3">
-                            <div className="font-bold text-white text-sm">{lead.fullName || 'N/A'}</div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-white text-sm group-hover:text-blue-400 transition-colors">
+                                {lead.fullName || 'N/A'}
+                              </span>
+                              <span className="text-[10px] font-semibold text-blue-300 bg-blue-950 px-1.5 py-0.2 rounded border border-blue-800 opacity-80 group-hover:opacity-100 transition-opacity">
+                                View Profile
+                              </span>
+                            </div>
                             <div className="text-blue-400 font-mono text-[11px] font-semibold">{lead.mobile || 'N/A'}</div>
                             {lead.email && <div className="text-slate-400 text-[10px]">{lead.email}</div>}
                           </td>
@@ -312,8 +326,17 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
                             )}
                           </td>
 
-                          <td className="p-3 whitespace-nowrap">
+                          <td className="p-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setSelectedLead(lead)}
+                                className="px-2.5 py-1 bg-blue-900/50 hover:bg-blue-800/80 text-blue-300 border border-blue-700/50 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                title="View Complete Profile"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>Profile</span>
+                              </button>
+
                               <a
                                 href={`https://wa.me/91${lead.mobile.replace(/[^0-9]/g, '')}?text=${waText}`}
                                 target="_blank"
@@ -374,6 +397,15 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
         )}
 
       </div>
+
+      {/* Complete User Profile Detail Modal */}
+      <UserProfileDetailModal
+        lead={selectedLead}
+        onClose={() => setSelectedLead(null)}
+        onDelete={(id) => {
+          deleteLeadRecord(id);
+        }}
+      />
     </div>
   );
 };

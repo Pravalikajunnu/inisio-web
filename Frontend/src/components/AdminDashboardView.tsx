@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getStoredLeads, deleteLeadRecord, clearAllLeads, exportLeadsToCSV, LeadRecord } from '../utils/leadStore';
+import { UserProfileDetailModal } from './UserProfileDetailModal';
 import { AuthUser } from '../types';
 import {
   ShieldCheck,
@@ -16,7 +17,9 @@ import {
   Building2,
   Sparkles,
   CheckCircle2,
-  Clock
+  Clock,
+  Eye,
+  UserCheck
 } from 'lucide-react';
 
 interface AdminDashboardViewProps {
@@ -27,6 +30,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
   const [leads, setLeads] = useState<LeadRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSource, setFilterSource] = useState<'ALL' | 'PDF' | 'FORM'>('ALL');
+  const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null);
 
   useEffect(() => {
     loadData();
@@ -206,13 +210,24 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
                   );
 
                   return (
-                    <tr key={lead.id} className="hover:bg-white transition-colors">
+                    <tr
+                      key={lead.id}
+                      onClick={() => setSelectedLead(lead)}
+                      className="hover:bg-blue-50/60 transition-colors cursor-pointer group"
+                    >
                       <td className="p-3 text-slate-500 whitespace-nowrap">
                         {formattedDate}
                       </td>
 
                       <td className="p-3">
-                        <div className="font-bold text-slate-900 text-sm">{lead.fullName || 'N/A'}</div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-slate-900 text-sm group-hover:text-blue-700 transition-colors">
+                            {lead.fullName || 'N/A'}
+                          </span>
+                          <span className="text-[10px] font-semibold text-blue-600 bg-blue-100/80 px-1.5 py-0.2 rounded opacity-80 group-hover:opacity-100 transition-opacity">
+                            View Profile
+                          </span>
+                        </div>
                         <div className="text-blue-700 font-mono text-[11px] font-semibold">{lead.mobile || 'N/A'}</div>
                         {lead.email && <div className="text-slate-500 text-[10px]">{lead.email}</div>}
                       </td>
@@ -240,8 +255,17 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
                         )}
                       </td>
 
-                      <td className="p-3 whitespace-nowrap">
+                      <td className="p-3 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setSelectedLead(lead)}
+                            className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                            title="View Complete Profile"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Profile</span>
+                          </button>
+
                           <a
                             href={`https://wa.me/91${lead.mobile.replace(/[^0-9]/g, '')}?text=${waText}`}
                             target="_blank"
@@ -300,6 +324,16 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
           </button>
         </div>
       </div>
+
+      {/* Complete User Profile Detail Modal */}
+      <UserProfileDetailModal
+        lead={selectedLead}
+        onClose={() => setSelectedLead(null)}
+        onDelete={(id) => {
+          deleteLeadRecord(id);
+          loadData();
+        }}
+      />
 
     </div>
   );

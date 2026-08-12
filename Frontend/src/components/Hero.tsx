@@ -30,6 +30,50 @@ export const Hero: React.FC<HeroProps> = ({
   const [direction, setDirection] = useState(1);
   const [isPaused, setIsPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
+  const industryScrollRef = useRef<HTMLDivElement>(null);
+
+  const industries = [
+    {
+      name: 'Manufacturing',
+      desc: 'Machinery & Expansion Loans',
+      icon: 'https://res.cloudinary.com/aessymvl/image/upload/v1786539430/icons8-manufacturing_jalqmq.gif'
+    },
+    {
+      name: 'Healthcare & Hospitals',
+      desc: 'Equipment & Facility Funding',
+      icon: 'https://res.cloudinary.com/aessymvl/image/upload/v1786539429/icons8-hospital-48_tbn0zx.png'
+    },
+    {
+      name: 'Education Institutions',
+      desc: 'Infrastructure & Campus Loans',
+      icon: 'https://res.cloudinary.com/aessymvl/image/upload/v1786539577/icons8-education-48_xhbfm7.png'
+    },
+    {
+      name: 'Agriculture & Agri-Tech',
+      desc: 'Farm & Processing Financing',
+      icon: 'https://res.cloudinary.com/aessymvl/image/upload/v1786539430/icons8-agriculture-48_aphvi5.png'
+    },
+    {
+      name: 'Construction & Real Estate',
+      desc: 'Project & Heavy Machinery',
+      icon: 'https://res.cloudinary.com/aessymvl/image/upload/v1786539429/icons8-construction-48_tcrgyv.png'
+    },
+    {
+      name: 'Solar & Renewable Energy',
+      desc: 'Green Power & Plant Financing',
+      icon: 'https://res.cloudinary.com/aessymvl/image/upload/v1786539429/icons8-solar-panel-48_nt0br0.png'
+    },
+    {
+      name: 'Logistics & Supply Chain',
+      desc: 'Fleet & Warehouse Capital',
+      icon: 'https://res.cloudinary.com/aessymvl/image/upload/v1786539429/icons8-logistics-100_fbsasn.png'
+    },
+    {
+      name: 'Retail & Commerce',
+      desc: 'Working Capital & Inventory',
+      icon: 'https://res.cloudinary.com/aessymvl/image/upload/v1786539429/icons8-retail-48_juuvwt.png'
+    }
+  ];
 
   const slides = [
     {
@@ -40,7 +84,7 @@ export const Hero: React.FC<HeroProps> = ({
       primaryBtnText: 'Check Your Eligibility',
       secondaryBtnText: 'Talk to an Expert',
       trustPoints: ['Easy Process', 'Expert Support', 'Trusted Guidance'],
-      image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=1200&q=80',
+      image: 'https://res.cloudinary.com/aessymvl/image/upload/v1786547187/ChatGPT_Image_Aug_12_2026_08_34_57_PM_hb8xi9.png',
       imageAlt: 'Indian entrepreneur meeting a financial advisor for a business loan'
     },
     {
@@ -51,7 +95,7 @@ export const Hero: React.FC<HeroProps> = ({
       primaryBtnText: 'Start Your Project',
       secondaryBtnText: 'Free Consultation',
       trustPoints: ['Project Planning', 'Document Support', 'Loan Assistance'],
-      image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1200&q=80',
+      image: 'https://res.cloudinary.com/aessymvl/image/upload/v1786536547/start_your_business_fx8g11.png',
       imageAlt: 'Young entrepreneur reviewing project plans with financial advisor'
     },
     {
@@ -62,7 +106,7 @@ export const Hero: React.FC<HeroProps> = ({
       primaryBtnText: 'Get Funding',
       secondaryBtnText: 'Contact Us',
       trustPoints: ['Business Expansion', 'Machinery Funding', 'Expert Guidance'],
-      image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=1200&q=80',
+      image: 'https://res.cloudinary.com/aessymvl/image/upload/v1786543850/Business_ootwt8.png',
       imageAlt: 'Business owner walking through factory discussing growth with consultant'
     }
   ];
@@ -115,18 +159,18 @@ export const Hero: React.FC<HeroProps> = ({
   const activeSlideData = slides[currentSlide];
 
   const slideVariants = {
-    enter: (dir: number) => ({
-      x: dir > 0 ? '100%' : '-100%',
-      opacity: 0
-    }),
-    center: {
-      x: 0,
-      opacity: 1
+    enter: {
+      opacity: 0,
+      y: 6,
     },
-    exit: (dir: number) => ({
-      x: dir < 0 ? '100%' : '-100%',
-      opacity: 0
-    })
+    center: {
+      opacity: 1,
+      y: 0,
+    },
+    exit: {
+      opacity: 0,
+      y: -6,
+    }
   };
 
   const simpleProcessSteps = [
@@ -153,51 +197,47 @@ export const Hero: React.FC<HeroProps> = ({
   ];
 
   return (
-    <div id="home" className="bg-white text-slate-900 pt-20 sm:pt-24 pb-16 font-inter">
+    <div id="home" className="bg-white text-slate-900 pt-16 sm:pt-18 pb-8 font-inter">
       
       {/* HERO SLIDER SECTION */}
       <section 
-        className="relative overflow-hidden bg-gradient-to-b from-blue-50/60 via-white to-white py-8 sm:py-12 lg:py-16"
+        className="relative overflow-hidden bg-white pt-0 pb-2"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Subtle Background Pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:3rem_3rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-30 pointer-events-none" />
-
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           
           {/* Main Slide Card */}
-          <div className="relative min-h-[480px] sm:min-h-[500px] flex items-center overflow-hidden">
-            <AnimatePresence custom={direction} mode="wait">
+          <div className="grid grid-cols-1 grid-rows-1 relative items-center">
+            <AnimatePresence mode="popLayout">
               <motion.div
                 key={activeSlideData.id}
-                custom={direction}
                 variants={slideVariants}
                 initial="enter"
                 animate="center"
                 exit="exit"
-                transition={{ duration: 0.45, ease: [0.25, 1, 0.5, 1] }}
-                className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center"
+                transition={{ duration: 0.35, ease: 'easeInOut' }}
+                className="col-start-1 row-start-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center"
               >
                 
                 {/* LEFT CONTENT */}
                 <div className="lg:col-span-6 space-y-5 text-left">
                   
                   {/* Category / Badge */}
-                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-100/80 border border-blue-200 text-blue-700 text-xs font-bold tracking-wide">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100/80 border border-blue-200 text-blue-700 text-xs font-semibold tracking-wide">
                     <Sparkles className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                     <span>{activeSlideData.badge}</span>
                   </div>
 
                   {/* Headline */}
-                  <h1 className="font-manrope text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 leading-[1.15] tracking-tight">
+                  <h1 className="font-manrope text-3xl sm:text-4xl lg:text-5xl font-semibold text-slate-900 leading-[1.18] tracking-tight">
                     {activeSlideData.headline}
                   </h1>
 
                   {/* Description */}
-                  <p className="text-base sm:text-lg text-slate-600 font-normal leading-relaxed max-w-xl">
+                  <p className="text-base sm:text-lg text-slate-700 font-medium leading-relaxed max-w-xl">
                     {activeSlideData.description}
                   </p>
 
@@ -205,7 +245,7 @@ export const Hero: React.FC<HeroProps> = ({
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
                     <button
                       onClick={onOpenAssessment}
-                      className="px-6 py-3.5 text-sm sm:text-base font-bold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer min-h-[48px]"
+                      className="px-6 py-3.5 text-sm sm:text-base font-bold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer min-h-[48px]"
                     >
                       <Calculator className="w-4 h-4 text-blue-100" />
                       <span>{activeSlideData.primaryBtnText}</span>
@@ -222,10 +262,10 @@ export const Hero: React.FC<HeroProps> = ({
                   </div>
 
                   {/* 3 Trust Points */}
-                  <div className="pt-3 border-t border-slate-200/80 flex flex-wrap items-center gap-y-2 gap-x-6 text-xs sm:text-sm font-semibold text-slate-700">
+                  <div className="pt-3 border-t border-slate-200/80 flex flex-wrap items-center gap-y-2 gap-x-6 text-xs font-medium text-slate-600">
                     {activeSlideData.trustPoints.map((point, idx) => (
                       <div key={idx} className="flex items-center gap-1.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                         <span>{point}</span>
                       </div>
                     ))}
@@ -235,33 +275,20 @@ export const Hero: React.FC<HeroProps> = ({
 
                 {/* RIGHT IMAGE */}
                 <div className="lg:col-span-6 flex justify-center">
-                  <div className="relative w-full max-w-[560px] rounded-2xl sm:rounded-3xl overflow-hidden bg-white shadow-2xl border border-slate-100 p-2">
+                  <div className="relative w-full max-w-[560px] rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-50/80 shadow-xl border border-slate-200/80 p-2 sm:p-3 flex items-center justify-center">
                     <img
                       src={activeSlideData.image}
                       alt={activeSlideData.imageAlt}
                       loading="eager"
-                      className="w-full h-[280px] sm:h-[360px] lg:h-[380px] object-cover rounded-xl sm:rounded-2xl"
+                      referrerPolicy="no-referrer"
+                      className="w-full h-[280px] sm:h-[360px] lg:h-[390px] object-contain rounded-xl sm:rounded-2xl"
                       onError={(e) => {
                         // Fallback to high quality unsplash image if network glitches
                         (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=1200&q=80';
                       }}
                     />
                     
-                    {/* Floating Trust Badge on Image */}
-                    <div className="absolute bottom-5 left-5 right-5 bg-white/95 backdrop-blur-md p-3.5 rounded-xl border border-slate-200/80 shadow-lg flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0">
-                          <Building2 className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <div className="text-xs font-bold text-slate-900">Direct Bank Financing</div>
-                          <div className="text-[11px] text-slate-500 font-medium">95%+ Loan Approval Rate</div>
-                        </div>
-                      </div>
-                      <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-[11px] font-bold rounded-full">
-                        Verified
-                      </span>
-                    </div>
+
 
                   </div>
                 </div>
@@ -270,57 +297,85 @@ export const Hero: React.FC<HeroProps> = ({
             </AnimatePresence>
           </div>
 
-          {/* SLIDER CONTROLS: Arrow Buttons & Dots */}
-          <div className="mt-8 flex items-center justify-between border-t border-slate-200 pt-6">
-            
-            {/* Slide Indicator Dots */}
-            <div className="flex items-center gap-2">
-              {slides.map((slide, idx) => (
-                <button
-                  key={slide.id}
-                  onClick={() => goToSlide(idx)}
-                  className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-                    currentSlide === idx ? 'w-8 bg-blue-600' : 'w-2.5 bg-slate-300 hover:bg-slate-400'
-                  }`}
-                  aria-label={`Go to slide ${idx + 1}`}
-                />
+          {/* Side Bracket Navigation Arrows */}
+          <button
+            onClick={handlePrev}
+            className="absolute left-0 sm:left-1 lg:-left-2 top-1/2 -translate-y-1/2 z-20 p-1.5 text-slate-500 hover:text-blue-600 transition-all cursor-pointer hover:scale-110 active:scale-95"
+            aria-label="Previous Slide"
+          >
+            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 stroke-2" />
+          </button>
+
+          <button
+            onClick={handleNext}
+            className="absolute right-0 sm:right-1 lg:-right-2 top-1/2 -translate-y-1/2 z-20 p-1.5 text-slate-500 hover:text-blue-600 transition-all cursor-pointer hover:scale-110 active:scale-95"
+            aria-label="Next Slide"
+          >
+            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 stroke-2" />
+          </button>
+
+        </div>
+      </section>
+
+      {/* INDUSTRIES / SECTORS CAROUSEL */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 sm:mt-8">
+        <div className="mb-6 text-center max-w-2xl mx-auto space-y-2">
+          <span className="text-xs font-semibold uppercase tracking-wider text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+            Sectors & Industries
+          </span>
+          <h2 className="font-manrope text-xl sm:text-2xl lg:text-3xl font-semibold text-slate-900 tracking-tight">
+            Loans Customized for Every Industry
+          </h2>
+        </div>
+
+        {/* Carousel Container with Continuous Motion */}
+        <div className="relative overflow-hidden group/carousel py-2">
+          {/* Edge Blur / Fade overlays for premium finish */}
+          <div className="absolute left-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+
+          <div
+            ref={industryScrollRef}
+            className="flex gap-6 sm:gap-8 overflow-x-auto scrollbar-none scroll-smooth pb-4 pt-2 px-1 -mx-1"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {/* Duplicated list to create infinite smooth continuous loop */}
+            <div className="flex gap-6 sm:gap-8 animate-marquee shrink-0">
+              {[...industries, ...industries, ...industries].map((ind, index) => (
+                <div
+                  key={index}
+                  onClick={onOpenAssessment}
+                  className="flex-none w-24 sm:w-28 flex flex-col items-center text-center cursor-pointer group"
+                >
+                  {/* Clean, compact rounded light blue icon container */}
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-[#f0f5ff] hover:bg-[#e6f0ff] border border-blue-100/70 flex items-center justify-center p-3.5 shadow-2xs group-hover:shadow-md group-hover:-translate-y-1 transition-all duration-300">
+                    <img
+                      src={ind.icon}
+                      alt={ind.name}
+                      referrerPolicy="no-referrer"
+                      className="w-10 h-10 sm:w-12 sm:h-12 object-contain group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+
+                  {/* Title centered below box */}
+                  <h3 className="mt-2.5 font-manrope text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors leading-tight max-w-[110px]">
+                    {ind.name}
+                  </h3>
+                </div>
               ))}
-              <span className="text-xs font-bold text-slate-500 ml-2 font-mono">
-                0{currentSlide + 1} / 0{slides.length}
-              </span>
             </div>
-
-            {/* Prev / Next Arrows */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handlePrev}
-                className="p-2.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 shadow-xs transition-colors cursor-pointer"
-                aria-label="Previous Slide"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <button
-                onClick={handleNext}
-                className="p-2.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 shadow-xs transition-colors cursor-pointer"
-                aria-label="Next Slide"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
-
           </div>
-
         </div>
       </section>
 
 
       {/* HOW INISIO HELPS YOU GET A LOAN (Simple Everyday English) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 space-y-10">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 sm:mt-12 space-y-8">
         <div className="text-center max-w-2xl mx-auto space-y-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+          <span className="text-xs font-semibold uppercase tracking-wider text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
             How Inisio Helps You
           </span>
-          <h2 className="font-manrope text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          <h2 className="font-manrope text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
             Getting a Bank Business Loan Made Simple
           </h2>
           <p className="text-sm text-slate-600">
@@ -355,61 +410,64 @@ export const Hero: React.FC<HeroProps> = ({
       </section>
 
 
-      {/* WHY CHOOSE INISIO (Simple Comparison) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-16">
-        <div className="bg-slate-900 rounded-3xl p-6 sm:p-10 text-white shadow-xl space-y-8">
+      {/* WHY CHOOSE INISIO (Simple Comparison - Light Theme) */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 sm:mt-16">
+        <div className="bg-gradient-to-b from-blue-50/70 to-slate-50 rounded-3xl p-6 sm:p-10 border border-blue-100 shadow-sm space-y-8">
           <div className="text-center max-w-xl mx-auto space-y-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-400 bg-blue-950 px-3 py-1 rounded-full border border-blue-800">
+            <span className="text-xs font-semibold uppercase tracking-wider text-blue-700 bg-white px-3 py-1 rounded-full border border-blue-200 shadow-2xs">
               Why Apply With Inisio
             </span>
-            <h2 className="font-manrope text-2xl sm:text-3xl font-bold text-white tracking-tight">
+            <h2 className="font-manrope text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
               Higher Approval. Zero Stress.
             </h2>
-            <p className="text-xs sm:text-sm text-slate-300">
+            <p className="text-xs sm:text-sm text-slate-600">
               See why thousands of business owners trust Inisio for bank loans.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Without Inisio */}
-            <div className="bg-slate-800/80 rounded-2xl p-6 border border-slate-700/80 space-y-3 text-left">
-              <div className="flex items-center gap-2 text-rose-400 font-bold text-xs uppercase tracking-wider">
+            <div className="bg-white/90 rounded-2xl p-6 border border-rose-200/80 shadow-xs space-y-3 text-left">
+              <div className="flex items-center gap-2 text-rose-600 font-bold text-xs uppercase tracking-wider">
                 <XCircle className="w-4 h-4 text-rose-500" />
                 <span>Applying On Your Own</span>
               </div>
-              <ul className="space-y-2.5 text-xs sm:text-sm text-slate-300 leading-relaxed">
+              <ul className="space-y-2.5 text-xs sm:text-sm text-slate-700 leading-relaxed">
                 <li className="flex items-start gap-2">
-                  <span className="text-rose-400 font-bold">•</span>
+                  <span className="text-rose-500 font-bold">•</span>
                   <span>High risk of bank loan rejection due to missing or wrongly formatted documents.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-rose-400 font-bold">•</span>
+                  <span className="text-rose-500 font-bold">•</span>
                   <span>Confusing bank questions, unexpected delays, and multiple branch visits.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-rose-400 font-bold">•</span>
+                  <span className="text-rose-500 font-bold">•</span>
                   <span>Missed government subsidies and lower interest rate schemes.</span>
                 </li>
               </ul>
             </div>
 
             {/* With Inisio */}
-            <div className="bg-blue-950/80 rounded-2xl p-6 border border-blue-700/80 space-y-3 text-left">
-              <div className="flex items-center gap-2 text-blue-300 font-bold text-xs uppercase tracking-wider">
-                <CheckCircle2 className="w-4 h-4 text-blue-400" />
+            <div className="bg-white rounded-2xl p-6 border-2 border-blue-500/80 shadow-xs space-y-3 text-left relative overflow-hidden">
+              <div className="absolute top-0 right-0 bg-blue-600 text-white text-[10px] font-bold px-3 py-0.5 rounded-bl-lg uppercase tracking-wider">
+                Recommended
+              </div>
+              <div className="flex items-center gap-2 text-blue-700 font-bold text-xs uppercase tracking-wider">
+                <CheckCircle2 className="w-4 h-4 text-blue-600" />
                 <span>Applying With Inisio</span>
               </div>
-              <ul className="space-y-2.5 text-xs sm:text-sm text-slate-200 leading-relaxed">
+              <ul className="space-y-2.5 text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
                 <li className="flex items-start gap-2">
-                  <span className="text-blue-400 font-bold">•</span>
+                  <span className="text-blue-600 font-bold">•</span>
                   <span>95%+ approval success with bank-approved formatting and expert preparation.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-blue-400 font-bold">•</span>
+                  <span className="text-blue-600 font-bold">•</span>
                   <span>Dedicated loan advisor handles your application from start to finish.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-blue-400 font-bold">•</span>
+                  <span className="text-blue-600 font-bold">•</span>
                   <span>Maximized loan sanction amount with complete advice on bank schemes.</span>
                 </li>
               </ul>
@@ -419,7 +477,7 @@ export const Hero: React.FC<HeroProps> = ({
           <div className="pt-2 text-center">
             <button
               onClick={onOpenAssessment}
-              className="px-8 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm rounded-xl shadow-md transition-all inline-flex items-center gap-2 cursor-pointer"
+              className="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all inline-flex items-center gap-2 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
             >
               <Calculator className="w-4 h-4" />
               <span>Check Your Business Loan Eligibility Now</span>

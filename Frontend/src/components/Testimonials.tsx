@@ -52,13 +52,13 @@ export const Testimonials: React.FC = () => {
   const currentItem = filteredTestimonials[currentIndex] || TESTIMONIALS[0];
 
   return (
-    <section id="testimonials" className="py-16 sm:py-20 bg-slate-50/50 border-t border-slate-200/80 relative">
+    <section id="testimonials" className="pt-12 sm:pt-16 pb-8 sm:pb-10 bg-slate-50/50 border-t border-slate-200/80 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Minimalist Header */}
         <div className="text-center max-w-2xl mx-auto mb-10 space-y-3">
           <span className="text-xs font-semibold uppercase tracking-wider text-blue-800 bg-blue-50 px-3.5 py-1 rounded-full border border-blue-200/80">
-            Client Success Carousel
+            Client Success
           </span>
           <h2 className="font-manrope text-2xl sm:text-3xl lg:text-4xl font-bold text-[#111827] tracking-tight">
             Bank-Sanctioned Greenfield Case Studies
@@ -183,7 +183,7 @@ export const Testimonials: React.FC = () => {
         </div>
 
         {/* Minimal Turnaround Badge */}
-        <div className="mt-10 text-center max-w-xl mx-auto">
+        <div className="mt-6 text-center max-w-xl mx-auto">
           <div className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-50/80 rounded-2xl border border-blue-100 text-xs text-blue-900 font-semibold">
             <Award className="w-4 h-4 text-blue-600 shrink-0" />
             <span>Average Credit Approval Turnaround Time: 28 Days</span>
