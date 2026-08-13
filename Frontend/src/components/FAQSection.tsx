@@ -43,10 +43,10 @@ export const FAQSection: React.FC<FAQSectionProps> = ({
           <span className="text-xs font-bold uppercase tracking-widest text-blue-700 bg-blue-100/70 px-3.5 py-1.5 rounded-full">
             Frequently Asked Questions
           </span>
-          <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold text-gray-900 tracking-tight">
+          <h2 className="font-display text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
             Everything You Need to Know About <span className="text-blue-600">Greenfield Loans</span>
           </h2>
-          <p className="text-base text-gray-600">
+          <p className="text-xs sm:text-sm text-gray-600">
             Got questions about DPR preparation, bankability ratings, or term loan debt ratios? We have answers.
           </p>
 
@@ -96,7 +96,7 @@ export const FAQSection: React.FC<FAQSectionProps> = ({
               >
                 <button
                   onClick={() => toggleFAQ(faq.id)}
-                  className="w-full p-5 sm:p-6 text-left flex items-center justify-between gap-4 font-manrope font-extrabold text-base sm:text-lg text-gray-900 group cursor-pointer"
+                  className="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 font-manrope font-bold text-sm sm:text-base text-gray-900 group cursor-pointer"
                 >
                   <span className="group-hover:text-blue-700 transition-colors">
                     {faq.question}

@@ -219,7 +219,7 @@ export const Hero: React.FC<HeroProps> = ({
                 animate="center"
                 exit="exit"
                 transition={{ duration: 0.35, ease: 'easeInOut' }}
-                className="col-start-1 row-start-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center"
+                className="col-start-1 row-start-1 w-full grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 items-center"
               >
                 
                 {/* LEFT CONTENT */}
@@ -232,12 +232,12 @@ export const Hero: React.FC<HeroProps> = ({
                   </div>
 
                   {/* Headline */}
-                  <h1 className="font-manrope text-3xl sm:text-4xl lg:text-5xl font-semibold text-slate-900 leading-[1.18] tracking-tight">
+                  <h1 className="font-manrope text-2xl sm:text-3xl lg:text-4xl font-semibold text-slate-900 leading-[1.18] tracking-tight">
                     {activeSlideData.headline}
                   </h1>
 
                   {/* Description */}
-                  <p className="text-base sm:text-lg text-slate-700 font-medium leading-relaxed max-w-xl">
+                  <p className="text-sm sm:text-base text-slate-700 font-medium leading-relaxed max-w-xl">
                     {activeSlideData.description}
                   </p>
 
@@ -245,7 +245,7 @@ export const Hero: React.FC<HeroProps> = ({
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
                     <button
                       onClick={onOpenAssessment}
-                      className="px-6 py-3.5 text-sm sm:text-base font-bold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer min-h-[48px]"
+                      className="px-5 py-3 text-xs sm:text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer min-h-[44px]"
                     >
                       <Calculator className="w-4 h-4 text-blue-100" />
                       <span>{activeSlideData.primaryBtnText}</span>
@@ -254,7 +254,7 @@ export const Hero: React.FC<HeroProps> = ({
 
                     <button
                       onClick={onOpenConsultation}
-                      className="px-6 py-3.5 text-sm sm:text-base font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer border border-slate-200 min-h-[48px]"
+                      className="px-5 py-3 text-xs sm:text-sm font-bold text-slate-800 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer border border-slate-200 min-h-[44px]"
                     >
                       <PhoneCall className="w-4 h-4 text-blue-600" />
                       <span>{activeSlideData.secondaryBtnText}</span>
@@ -274,8 +274,8 @@ export const Hero: React.FC<HeroProps> = ({
                 </div>
 
                 {/* RIGHT IMAGE */}
-                <div className="lg:col-span-6 flex justify-center">
-                  <div className="relative w-full max-w-[560px] rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-50/80 shadow-xl border border-slate-200/80 p-2 sm:p-3 flex items-center justify-center">
+                <div className="lg:col-span-6 flex justify-start">
+                  <div className="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-50/80 shadow-xl border border-slate-200/80 p-2 sm:p-3 flex items-center justify-center">
                     <img
                       src={activeSlideData.image}
                       alt={activeSlideData.imageAlt}
@@ -323,7 +323,7 @@ export const Hero: React.FC<HeroProps> = ({
           <span className="text-xs font-semibold uppercase tracking-wider text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
             Sectors & Industries
           </span>
-          <h2 className="font-manrope text-xl sm:text-2xl lg:text-3xl font-semibold text-slate-900 tracking-tight">
+          <h2 className="font-manrope text-lg sm:text-xl lg:text-2xl font-semibold text-slate-900 tracking-tight">
             Loans Customized for Every Industry
           </h2>
         </div>
@@ -375,10 +375,10 @@ export const Hero: React.FC<HeroProps> = ({
           <span className="text-xs font-semibold uppercase tracking-wider text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
             How Inisio Helps You
           </span>
-          <h2 className="font-manrope text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
+          <h2 className="font-manrope text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight">
             Getting a Bank Business Loan Made Simple
           </h2>
-          <p className="text-sm text-slate-600">
+          <p className="text-xs sm:text-sm text-slate-600">
             We handle the hard work so you can get loan approval from top banks without hassle.
           </p>
         </div>
@@ -417,7 +417,7 @@ export const Hero: React.FC<HeroProps> = ({
             <span className="text-xs font-semibold uppercase tracking-wider text-blue-700 bg-white px-3 py-1 rounded-full border border-blue-200 shadow-2xs">
               Why Apply With Inisio
             </span>
-            <h2 className="font-manrope text-2xl sm:text-3xl font-semibold text-slate-900 tracking-tight">
+            <h2 className="font-manrope text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight">
               Higher Approval. Zero Stress.
             </h2>
             <p className="text-xs sm:text-sm text-slate-600">

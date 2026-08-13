@@ -46,10 +46,10 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({
             <Sparkles className="w-3.5 h-3.5 text-blue-600" />
             <span>Greenfield & Corporate Advisory</span>
           </div>
-          <h2 className="font-manrope text-xl sm:text-2xl lg:text-3xl font-bold text-[#111827] leading-tight tracking-tight">
+          <h2 className="font-manrope text-lg sm:text-xl font-bold text-[#111827] leading-tight tracking-tight">
             Our Services
           </h2>
-          <p className="font-inter text-sm sm:text-base text-[#4B5563] leading-relaxed">
+          <p className="font-inter text-xs sm:text-sm text-[#4B5563] leading-relaxed">
             Holistic, bankable financial advisory tailored to meet promoters’ growth and capital objectives.
           </p>
         </div>
@@ -108,7 +108,7 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({
         {/* Bottom Banner */}
         <div className="bg-gradient-to-r from-blue-950 via-slate-900 to-slate-900 text-white rounded-2xl p-6 sm:p-10 shadow-md border border-blue-700/50 text-center">
           <div className="max-w-[620px] mx-auto space-y-3">
-            <h3 className="font-manrope text-xl sm:text-2xl font-bold text-white leading-tight">
+            <h3 className="font-manrope text-lg sm:text-xl font-bold text-white leading-tight">
               Need End-to-End Banking & Debt Syndication Support?
             </h3>
             <p className="font-inter text-xs sm:text-sm text-blue-100 leading-relaxed">

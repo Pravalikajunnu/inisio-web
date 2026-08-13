@@ -555,7 +555,7 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-blue-400 bg-blue-500/10 px-2.5 py-0.5 rounded-full border border-blue-500/20">
                     Comprehensive Greenfield Sector Intelligence
                   </span>
-                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold font-manrope text-white tracking-tight mt-1">
+                  <h1 className="text-lg sm:text-xl lg:text-2xl font-bold font-manrope text-white tracking-tight mt-1">
                     {activeSector.title}
                   </h1>
                 </div>
@@ -810,11 +810,11 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                 <span>Greenfield Sector Directory</span>
               </div>
 
-              <h1 className="text-2xl sm:text-3xl lg:text-[34px] font-bold text-[#111827] tracking-tight font-manrope leading-tight">
+              <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight font-manrope leading-tight">
                 Explore Greenfield Industries & Sector Intelligence
               </h1>
 
-              <p className="text-sm sm:text-base text-[#4B5563] font-inter leading-relaxed max-w-[600px] mx-auto">
+              <p className="text-xs sm:text-sm text-[#4B5563] font-inter leading-relaxed max-w-[600px] mx-auto">
                 Select an industry sector to explore comprehensive greenfield project descriptions, financial parameters, government subsidy frameworks, and bankability criteria.
               </p>
             </section>
@@ -822,7 +822,7 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
             {/* 2. Industry Cards Grid */}
             <section className="space-y-6 text-left">
               <div className="flex flex-wrap items-center justify-between gap-4 pb-2 border-b border-gray-200">
-                <h2 className="text-xl sm:text-2xl font-bold text-[#111827] font-manrope">
+                <h2 className="text-lg sm:text-xl font-bold text-[#111827] font-manrope">
                   All Greenfield Sectors
                 </h2>
                 <span className="text-sm text-[#6B7280]">
@@ -913,22 +913,22 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                     <span>Bank-Ready Execution</span>
                   </div>
 
-                  <h2 className="text-2xl sm:text-[36px] font-bold text-white font-manrope tracking-tight leading-[1.2]">
+                  <h2 className="text-xl sm:text-2xl font-bold text-white font-manrope tracking-tight leading-[1.2]">
                     Ready to Build Your Greenfield Project?
                   </h2>
 
-                  <p className="text-base sm:text-[18px] text-slate-300 font-inter leading-[1.6]">
+                  <p className="text-xs sm:text-sm text-slate-300 font-inter leading-[1.6]">
                     Speak with our experts to evaluate your project, prepare a bank-ready DPR, and receive complete funding guidance.
                   </p>
 
                   <div className="pt-2 flex justify-center">
                     <button
                       onClick={onOpenConsultation}
-                      className="px-6 py-3.5 bg-blue-400 hover:bg-blue-300 text-slate-950 font-semibold text-base rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+                      className="px-5 py-3 bg-blue-400 hover:bg-blue-300 text-slate-950 font-semibold text-xs sm:text-sm rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-sm"
                     >
-                      <PhoneCall className="w-5 h-5 text-slate-950" />
+                      <PhoneCall className="w-4 h-4 text-slate-950" />
                       <span>Book Free Consultation</span>
-                      <ArrowRight className="w-5 h-5" />
+                      <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>
                 </div>

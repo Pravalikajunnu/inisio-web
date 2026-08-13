@@ -64,10 +64,10 @@ export const ContactSection: React.FC = () => {
             <Sparkles className="w-3.5 h-3.5 text-blue-600" />
             <span>Senior Advisory Desk</span>
           </div>
-          <h1 className="font-manrope text-3xl sm:text-[40px] font-bold text-[#111827] leading-[1.2] tracking-tight">
+          <h1 className="font-manrope text-xl sm:text-2xl font-bold text-[#111827] leading-[1.2] tracking-tight">
             Book Your Free Advisory Call
           </h1>
-          <p className="font-inter text-base sm:text-[18px] text-[#4B5563] leading-[1.6]">
+          <p className="font-inter text-xs sm:text-sm text-[#4B5563] leading-[1.6]">
             Discuss your greenfield project feasibility, capital requirements, and bank loan syndication with our senior advisory team.
           </p>
         </div>

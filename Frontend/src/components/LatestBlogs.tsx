@@ -241,7 +241,7 @@ export const LatestBlogs: React.FC<LatestBlogsProps> = ({
           <span className="text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-3.5 py-1 rounded-full border border-blue-200">
             Advisory Insights &amp; Articles
           </span>
-          <h2 className="font-manrope text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 tracking-tight">
+          <h2 className="font-manrope text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
             Latest Blogs &amp; Financial Guides
           </h2>
           <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">

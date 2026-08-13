@@ -145,7 +145,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <TrendingUp className="w-4.5 h-4.5 sm:w-5 sm:h-5 stroke-[2.5]" />
               </div>
               <div className="flex flex-col">
-                <span className="font-manrope text-xl sm:text-2xl font-bold tracking-tight text-[#111827] flex items-center gap-1 leading-tight">
+                <span className="font-manrope text-lg sm:text-xl font-bold tracking-tight text-[#111827] flex items-center gap-1 leading-tight">
                   Inisio
                 </span>
                 <span className="text-[9px] sm:text-[10px] font-semibold text-blue-700 tracking-wider uppercase -mt-0.5 font-inter whitespace-nowrap">
@@ -155,7 +155,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             {/* Desktop Navigation Links */}
-            <nav className="hidden lg:flex items-center gap-1 font-inter font-medium text-base">
+            <nav className="hidden lg:flex items-center gap-1 font-inter font-medium text-xs sm:text-sm">
               {navLinks.map((link) => {
                 const isActive = activeTab === link.id;
 

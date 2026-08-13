@@ -60,7 +60,7 @@ export const Testimonials: React.FC = () => {
           <span className="text-xs font-semibold uppercase tracking-wider text-blue-800 bg-blue-50 px-3.5 py-1 rounded-full border border-blue-200/80">
             Client Success
           </span>
-          <h2 className="font-manrope text-2xl sm:text-3xl lg:text-4xl font-bold text-[#111827] tracking-tight">
+          <h2 className="font-manrope text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
             Bank-Sanctioned Greenfield Case Studies
           </h2>
           <p className="font-inter text-xs sm:text-sm text-[#4B5563]">
@@ -115,7 +115,7 @@ export const Testimonials: React.FC = () => {
               </div>
 
               {/* Minimalist Quote */}
-              <p className="font-inter text-base sm:text-lg text-gray-800 font-medium leading-relaxed italic">
+              <p className="font-inter text-sm sm:text-base text-gray-800 font-medium leading-relaxed italic">
                 "{currentItem.quote}"
               </p>
 
