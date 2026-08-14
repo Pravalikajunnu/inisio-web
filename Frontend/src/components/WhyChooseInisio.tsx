@@ -643,7 +643,7 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
             </div>
 
             <h2 className="font-manrope text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
-              Looking for a Business Loan?
+              Looking for a Project Loan?
             </h2>
 
             <p className="font-inter text-sm sm:text-base text-slate-300 leading-relaxed max-w-lg mx-auto">

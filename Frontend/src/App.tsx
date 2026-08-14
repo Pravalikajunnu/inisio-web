@@ -5,6 +5,7 @@ import { Hero } from './components/Hero';
 import { TrustNumbers } from './components/TrustNumbers';
 import { BankLogosCarousel } from './components/BankLogosCarousel';
 import { Testimonials } from './components/Testimonials';
+import { ProjectActionCards } from './components/ProjectActionCards';
 import { IndustriesSection } from './components/IndustriesSection';
 import { ServicesSection } from './components/ServicesSection';
 import { ContactSection } from './components/ContactSection';
@@ -133,6 +134,10 @@ export default function App() {
               />
               <BankLogosCarousel />
               <TrustNumbers />
+              <ProjectActionCards
+                onOpenAssessment={() => handleOpenAssessment()}
+                onOpenConsultation={() => setConsultationModalOpen(true)}
+              />
               <Testimonials />
               <LatestBlogs
                 onOpenAssessment={() => handleOpenAssessment()}

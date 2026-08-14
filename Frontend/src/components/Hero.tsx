@@ -79,19 +79,19 @@ export const Hero: React.FC<HeroProps> = ({
     {
       id: 'slide-1',
       badge: 'Easy & Fast Business Financing',
-      headline: 'Need a Business Loan?',
-      description: 'We help you get the right business loan.',
+      headline: 'Need a Project Loan?',
+      description: 'We help you get the right project loan.',
       primaryBtnText: 'Check Your Eligibility',
       secondaryBtnText: 'Talk to an Expert',
       trustPoints: ['Easy Process', 'Expert Support', 'Trusted Guidance'],
       image: 'https://res.cloudinary.com/aessymvl/image/upload/v1786547187/ChatGPT_Image_Aug_12_2026_08_34_57_PM_hb8xi9.png',
-      imageAlt: 'Indian entrepreneur meeting a financial advisor for a business loan'
+      imageAlt: 'Indian entrepreneur meeting a financial advisor for a project loan'
     },
     {
       id: 'slide-2',
       badge: 'Turn Your Idea Into Reality',
       headline: 'Start Your Business',
-      description: "We'll help you prepare everything you need to apply for a business loan.",
+      description: "We'll help you prepare everything you need to apply for a project loan.",
       primaryBtnText: 'Start Your Project',
       secondaryBtnText: 'Free Consultation',
       trustPoints: ['Project Planning', 'Document Support', 'Loan Assistance'],
@@ -177,7 +177,7 @@ export const Hero: React.FC<HeroProps> = ({
     {
       icon: Calculator,
       title: '1. Check Eligibility',
-      description: 'Quickly find out how much business loan you can get from top banks in just 2 minutes.'
+      description: 'Quickly find out how much project loan you can get from top banks in just 2 minutes.'
     },
     {
       icon: FileCheck,
@@ -376,7 +376,7 @@ export const Hero: React.FC<HeroProps> = ({
             How Inisio Helps You
           </span>
           <h2 className="font-manrope text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight">
-            Getting a Bank Business Loan Made Simple
+            Getting a Bank Project Loan Made Simple
           </h2>
           <p className="text-xs sm:text-sm text-slate-600">
             We handle the hard work so you can get loan approval from top banks without hassle.
@@ -480,7 +480,7 @@ export const Hero: React.FC<HeroProps> = ({
               className="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all inline-flex items-center gap-2 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
             >
               <Calculator className="w-4 h-4" />
-              <span>Check Your Business Loan Eligibility Now</span>
+              <span>Check Your Project Loan Eligibility Now</span>
             </button>
           </div>
 
