@@ -730,28 +730,6 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
   selectedIndustryName
 }) => {
   const [activeSectorId, setActiveSectorId] = useState<string | null>(null);
-  const [expandedCardIds, setExpandedCardIds] = useState<Set<string>>(new Set());
-  const [cardActiveTab, setCardActiveTab] = useState<Record<string, 'financials' | 'revenue' | 'compliance'>>({});
-
-  const toggleExpandCard = (id: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    setExpandedCardIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
-
-  const setTabForCard = (id: string, tab: 'financials' | 'revenue' | 'compliance', e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCardActiveTab((prev) => ({ ...prev, [id]: tab }));
-    // Auto expand card if collapsed
-    setExpandedCardIds((prev) => new Set(prev).add(id));
-  };
 
   // Auto-select if selectedIndustryName is passed
   useEffect(() => {
@@ -1175,197 +1153,76 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4.5 items-start">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-stretch">
                 {DETAILED_INDUSTRIES.map((ind) => {
                     const Icon = ind.icon;
-                    const isExpanded = expandedCardIds.has(ind.id);
-                    const currentTab = cardActiveTab[ind.id] || 'financials';
 
                     return (
                       <div
                         key={ind.id}
-                        className="bg-white rounded-2xl border border-slate-200/90 hover:border-blue-500/80 shadow-2xs hover:shadow-md transition-all duration-200 p-4 text-left flex flex-col justify-between group"
+                        className="bg-white rounded-2xl border border-slate-200/90 hover:border-blue-500/80 shadow-2xs hover:shadow-md transition-all duration-200 p-5 text-left flex flex-col justify-between group"
                       >
                         {/* Top Content */}
-                        <div className="space-y-3">
+                        <div className="space-y-3.5">
                           {/* Header: Icon, Category Pill, Outlay Badge */}
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-200 shadow-2xs">
-                                <Icon className="w-4.5 h-4.5" />
-                              </div>
-                              <div className="min-w-0">
-                                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wide bg-blue-50/90 px-1.5 py-0.5 rounded border border-blue-100/70 inline-block">
-                                  {ind.shortName}
-                                </span>
-                              </div>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-200 shadow-2xs">
+                              <Icon className="w-5 h-5" />
                             </div>
-                            <span className="text-[11px] font-bold text-blue-700 bg-blue-50/80 px-2 py-0.5 rounded-md border border-blue-200/70 shrink-0 font-manrope">
+                            <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100 font-manrope">
                               {ind.financialMetrics.typicalProjectCost}
                             </span>
                           </div>
 
                           {/* Industry Title */}
                           <div>
-                            <h3 className="text-sm sm:text-[15px] font-bold text-slate-900 font-manrope leading-snug group-hover:text-blue-700 transition-colors line-clamp-1">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
+                              {ind.shortName}
+                            </span>
+                            <h3 className="text-base font-bold text-slate-900 font-manrope leading-snug group-hover:text-blue-600 transition-colors">
                               {ind.title}
                             </h3>
-                            {/* Brief Description - concise 2-line clamp */}
-                            <p className="text-xs text-slate-500 font-inter leading-relaxed line-clamp-2 mt-1 min-h-[32px]">
-                              {ind.description}
-                            </p>
                           </div>
 
                           {/* Financial Parameters Quick Compact Matrix */}
-                          <div className="grid grid-cols-3 gap-1.5 p-2 bg-slate-50/90 rounded-xl border border-slate-200/70 text-center">
-                            <div className="px-1">
-                              <span className="text-[9px] font-semibold text-slate-400 block uppercase tracking-wider">Bank Debt</span>
-                              <span className="text-[11px] font-bold text-slate-800 block truncate">{ind.financialMetrics.expectedBankFunding}</span>
+                          <div className="grid grid-cols-3 gap-2 pt-1">
+                            <div className="p-2 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                              <span className="text-[10px] text-slate-400 font-medium block">Bank Debt</span>
+                              <span className="text-xs font-bold text-slate-800 font-manrope">
+                                {ind.financialMetrics.expectedBankFunding.replace(' Bank Debt', '').replace(' Debt', '')}
+                              </span>
                             </div>
-                            <div className="px-1 border-x border-slate-200/60">
-                              <span className="text-[9px] font-semibold text-slate-400 block uppercase tracking-wider">Est. ROI</span>
-                              <span className="text-[11px] font-bold text-purple-700 block truncate">{ind.financialMetrics.estimatedROI}</span>
+                            <div className="p-2 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                              <span className="text-[10px] text-slate-400 font-medium block">Est. ROI</span>
+                              <span className="text-xs font-bold text-purple-700 font-manrope">
+                                {ind.financialMetrics.estimatedROI.replace(' p.a.', '')}
+                              </span>
                             </div>
-                            <div className="px-1">
-                              <span className="text-[9px] font-semibold text-slate-400 block uppercase tracking-wider">Payback</span>
-                              <span className="text-[11px] font-bold text-emerald-700 block truncate">{ind.financialMetrics.paybackPeriod}</span>
+                            <div className="p-2 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                              <span className="text-[10px] text-slate-400 font-medium block">Payback</span>
+                              <span className="text-xs font-bold text-emerald-700 font-manrope">
+                                {ind.financialMetrics.paybackPeriod}
+                              </span>
                             </div>
-                          </div>
-
-                          {/* Interactive Compact Micro-Tabs */}
-                          <div className="pt-1">
-                            {/* Tab Selectors */}
-                            <div className="flex items-center gap-1 p-0.5 bg-slate-100 rounded-lg">
-                              <button
-                                onClick={(e) => setTabForCard(ind.id, 'financials', e)}
-                                className={`flex-1 py-1 px-1.5 rounded-md text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer truncate ${
-                                  isExpanded && currentTab === 'financials'
-                                    ? 'bg-white text-blue-600 shadow-2xs'
-                                    : 'text-slate-600 hover:text-slate-900'
-                                }`}
-                              >
-                                Financials
-                              </button>
-                              <button
-                                onClick={(e) => setTabForCard(ind.id, 'revenue', e)}
-                                className={`flex-1 py-1 px-1.5 rounded-md text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer truncate ${
-                                  isExpanded && currentTab === 'revenue'
-                                    ? 'bg-white text-emerald-600 shadow-2xs'
-                                    : 'text-slate-600 hover:text-slate-900'
-                                }`}
-                              >
-                                Revenue
-                              </button>
-                              <button
-                                onClick={(e) => setTabForCard(ind.id, 'compliance', e)}
-                                className={`flex-1 py-1 px-1.5 rounded-md text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer truncate ${
-                                  isExpanded && currentTab === 'compliance'
-                                    ? 'bg-white text-blue-600 shadow-2xs'
-                                    : 'text-slate-600 hover:text-slate-900'
-                                }`}
-                              >
-                                Approvals
-                              </button>
-                            </div>
-
-                            {/* Accordion Content Panel */}
-                            <AnimatePresence>
-                              {isExpanded && (
-                                <motion.div
-                                  initial={{ opacity: 0, height: 0 }}
-                                  animate={{ opacity: 1, height: 'auto' }}
-                                  exit={{ opacity: 0, height: 0 }}
-                                  transition={{ duration: 0.15 }}
-                                  className="overflow-hidden"
-                                >
-                                  <div className="pt-2">
-                                    {/* Tab 1: Detailed Financial Parameters */}
-                                    {currentTab === 'financials' && (
-                                      <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-[11px] space-y-1.5">
-                                        <div className="grid grid-cols-2 gap-1.5">
-                                          <div>
-                                            <span className="text-slate-400 text-[9px] uppercase font-bold block">Promoter Margin:</span>
-                                            <span className="font-semibold text-slate-800">{ind.financialMetrics.promoterContribution}</span>
-                                          </div>
-                                          <div>
-                                            <span className="text-slate-400 text-[9px] uppercase font-bold block">Min DSCR:</span>
-                                            <span className="font-semibold text-blue-700">{ind.financialMetrics.dscr}</span>
-                                          </div>
-                                          <div>
-                                            <span className="text-slate-400 text-[9px] uppercase font-bold block">Break-Even:</span>
-                                            <span className="font-semibold text-slate-800">{ind.financialMetrics.breakEvenPeriod}</span>
-                                          </div>
-                                          <div>
-                                            <span className="text-slate-400 text-[9px] uppercase font-bold block">Repayment:</span>
-                                            <span className="font-semibold text-slate-800">{ind.repaymentTenure}</span>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    )}
-
-                                    {/* Tab 2: Key Revenue Drivers */}
-                                    {currentTab === 'revenue' && (
-                                      <div className="p-2.5 bg-emerald-50/40 rounded-xl border border-emerald-200/80 space-y-1 text-[11px]">
-                                        <ul className="space-y-1 text-slate-700">
-                                          {ind.revenueDrivers.slice(0, 3).map((rd, rIdx) => (
-                                            <li key={rIdx} className="flex items-start gap-1">
-                                              <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0 mt-0.5" />
-                                              <div className="line-clamp-2">
-                                                <strong className="text-slate-900">{rd.title}: </strong>
-                                                <span className="text-slate-600">{rd.description}</span>
-                                              </div>
-                                            </li>
-                                          ))}
-                                        </ul>
-                                      </div>
-                                    )}
-
-                                    {/* Tab 3: Required Compliance & Approvals */}
-                                    {currentTab === 'compliance' && (
-                                      <div className="p-2.5 bg-blue-50/40 rounded-xl border border-blue-200/80 space-y-1 text-[11px]">
-                                        <ul className="space-y-1 text-slate-700">
-                                          {ind.complianceAndApprovals.flatMap((c) => c.approvals).slice(0, 3).map((app, aIdx) => (
-                                            <li key={aIdx} className="flex items-start gap-1">
-                                              <ShieldCheck className="w-3 h-3 text-blue-600 shrink-0 mt-0.5" />
-                                              <span className="line-clamp-1">{app}</span>
-                                            </li>
-                                          ))}
-                                        </ul>
-                                      </div>
-                                    )}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
                           </div>
                         </div>
 
                         {/* Bottom Actions */}
-                        <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                        <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between gap-2">
                           <button
-                            onClick={(e) => toggleExpandCard(ind.id, e)}
-                            className="text-[11px] font-bold text-slate-500 hover:text-slate-800 inline-flex items-center gap-0.5 cursor-pointer transition-colors"
+                            onClick={() => handleOpenDetail(ind.id)}
+                            className="text-xs font-bold text-slate-600 hover:text-blue-600 font-manrope inline-flex items-center gap-1 transition-colors cursor-pointer py-1.5 px-2 rounded-lg hover:bg-slate-50"
                           >
-                            <span>{isExpanded ? 'Hide Details' : 'Quick Details'}</span>
-                            {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                            <span>Sector Details</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
                           </button>
 
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              onClick={() => handleOpenDetail(ind.id)}
-                              className="text-[11px] font-bold text-blue-600 hover:text-blue-700 font-manrope inline-flex items-center gap-0.5 transition-colors cursor-pointer py-1 px-2 rounded hover:bg-blue-50"
-                            >
-                              <span>Know More</span>
-                              <ArrowRight className="w-3 h-3" />
-                            </button>
-
-                            <button
-                              onClick={() => onSelectIndustryForAssessment(ind.title)}
-                              className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-manrope font-bold text-xs rounded-lg transition-all cursor-pointer shadow-2xs"
-                            >
-                              Check Eligibility
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => onSelectIndustryForAssessment(ind.title)}
+                            className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-manrope font-bold text-xs rounded-xl transition-all cursor-pointer shadow-2xs"
+                          >
+                            Check Eligibility
+                          </button>
                         </div>
                       </div>
                     );

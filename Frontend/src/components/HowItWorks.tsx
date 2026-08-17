@@ -191,17 +191,17 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
         {/* ========================================================================= */}
         {/* 1. Hero Section */}
         {/* ========================================================================= */}
-        <section className="text-center max-w-4xl mx-auto space-y-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-xs font-bold uppercase tracking-wider shadow-2xs">
+        <section className="text-center max-w-3xl mx-auto space-y-4">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-[11px] font-semibold uppercase tracking-wider shadow-2xs">
             <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
             <span>Project Loan Advisory Platform (Not a Bank)</span>
           </div>
 
-          <h1 className="font-manrope text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-[1.2]">
-            Your Step-by-Step Journey to a <span className="text-blue-600">Successful Project Loan</span>
+          <h1 className="font-manrope text-2xl sm:text-3xl lg:text-4xl font-semibold text-slate-900 tracking-tight leading-snug">
+            Your Step-by-Step Journey to a <span className="text-blue-600 font-bold">Successful Project Loan</span>
           </h1>
 
-          <p className="font-inter text-base sm:text-lg text-slate-600 leading-relaxed max-w-3xl mx-auto">
+          <p className="font-inter text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl mx-auto font-normal">
             From your business idea to project loan sanction and fund disbursement, Inisio guides you through every stage with expert advisory, bank-ready documentation, and complete project finance support.
           </p>
 

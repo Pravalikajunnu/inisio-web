@@ -3,7 +3,6 @@ import {
   TrendingUp,
   MapPin,
   ShieldCheck,
-  Award,
   PhoneCall
 } from 'lucide-react';
 
@@ -53,11 +52,6 @@ export const Footer: React.FC<FooterProps> = ({
             <p className="text-[15px] font-normal text-slate-400 font-inter leading-[1.6] max-w-sm">
               Inisio is India's premier expert-led greenfield project advisory platform. We turn industrial concepts into bank-sanctioned businesses through rigorous feasibility studies, 100% compliant DPRs, and institutional debt syndication.
             </p>
-
-            <div className="pt-2 flex items-center gap-3 text-xs sm:text-sm text-blue-400 font-semibold">
-              <Award className="w-4 h-4 text-blue-500 shrink-0" />
-              <span>Certified Member: All-India Project Finance Association</span>
-            </div>
           </div>
 
           {/* Column 2: Quick Links */}
@@ -86,7 +80,6 @@ export const Footer: React.FC<FooterProps> = ({
               <li><button onClick={onOpenConsultation} className="hover:text-blue-400 transition-colors text-left cursor-pointer">Bankability Scorecard</button></li>
               <li><button onClick={onOpenConsultation} className="hover:text-blue-400 transition-colors text-left cursor-pointer">Bank-Grade DPR Generation</button></li>
               <li><button onClick={onOpenConsultation} className="hover:text-blue-400 transition-colors text-left cursor-pointer">Debt Syndication Consultancy</button></li>
-              <li><button onClick={onOpenConsultation} className="hover:text-blue-400 transition-colors text-left cursor-pointer">Government Subsidy Alignment</button></li>
             </ul>
           </div>
 
@@ -98,7 +91,7 @@ export const Footer: React.FC<FooterProps> = ({
             <div className="space-y-3 text-[15px] font-normal text-slate-400 font-inter">
               <div className="flex items-start gap-2.5">
                 <MapPin className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-                <span className="leading-[1.6]">2nd Floor, Plot 24 & 25, Kakatiya Hills, Road No 9, Madhapur, Hyderabad, Telangana 500033</span>
+                <span className="leading-[1.6]">2nd Floor, Plot 24 & 25, Kakatiya Hills, Road No 9, Madhapur, Hyderabad, Telangana 500081</span>
               </div>
 
               <div className="flex items-center gap-2.5 pt-1">

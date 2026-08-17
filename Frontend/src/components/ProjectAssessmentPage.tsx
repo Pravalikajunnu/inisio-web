@@ -78,6 +78,24 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
     setFormData((prev) => ({ ...prev, industry: defaultIndustry || '' }));
   }, [defaultIndustry]);
 
+  // Auto-fill logged in user info
+  React.useEffect(() => {
+    try {
+      const stored = localStorage.getItem('inisio_active_user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        if (u.email) {
+          setFormData(prev => ({
+            ...prev,
+            fullName: prev.fullName || u.name || '',
+            mobile: prev.mobile || u.phone || '',
+            email: prev.email || u.email || ''
+          }));
+        }
+      }
+    } catch (e) {}
+  }, []);
+
   // Calculate numbers dynamically
   const cost = parseFloat(formData.totalCostCr) || 0;
   const contrib = parseFloat(formData.promoterContribCr) || 0;

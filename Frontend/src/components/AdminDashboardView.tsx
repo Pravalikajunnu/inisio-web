@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { getStoredLeads, deleteLeadRecord, clearAllLeads, exportLeadsToCSV, LeadRecord } from '../utils/leadStore';
+import { getAdminNotifications, AdminNotification } from '../utils/notificationStore';
 import { UserProfileDetailModal } from './UserProfileDetailModal';
+import { AdminNotificationCenter } from './AdminNotificationCenter';
 import { AuthUser } from '../types';
 import {
   ShieldCheck,
@@ -19,7 +21,10 @@ import {
   CheckCircle2,
   Clock,
   Eye,
-  UserCheck
+  UserCheck,
+  Bell,
+  Activity,
+  Edit3
 } from 'lucide-react';
 
 interface AdminDashboardViewProps {
@@ -83,6 +88,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
+            <AdminNotificationCenter />
             <button
               onClick={exportLeadsToCSV}
               className="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer"

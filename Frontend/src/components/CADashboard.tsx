@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AuthUser } from '../types';
+import { AdminNotificationCenter } from './AdminNotificationCenter';
 import {
   Briefcase,
   FileCheck,
@@ -111,6 +112,7 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
+            <AdminNotificationCenter />
             <div className="px-4 py-2.5 bg-purple-900/80 border border-purple-500/40 rounded-xl text-xs font-bold text-purple-200 flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-purple-400" />
               <span>CA License: FCA / ICAI #847201</span>

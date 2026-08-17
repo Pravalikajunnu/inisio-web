@@ -58,6 +58,25 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
     }
   }, [defaultIndustry]);
 
+  // Auto-fill applicant details if logged in
+  React.useEffect(() => {
+    if (isOpen) {
+      try {
+        const stored = localStorage.getItem('inisio_active_user');
+        if (stored) {
+          const u = JSON.parse(stored);
+          if (u.email) {
+            setApplicantInfo(prev => ({
+              fullName: prev.fullName || u.name || '',
+              mobile: prev.mobile || u.phone || '',
+              email: prev.email || u.email || ''
+            }));
+          }
+        }
+      } catch (e) {}
+    }
+  }, [isOpen]);
+
   const [result, setResult] = useState<AssessmentResult | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
 

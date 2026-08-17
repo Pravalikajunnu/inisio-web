@@ -113,6 +113,7 @@ export interface AuthUser {
   avatarUrl?: string;
   company?: string;
   phone?: string;
+  token?: string;
 }
 
 export interface ConsultationFormData {

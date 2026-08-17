@@ -27,6 +27,7 @@ export default function App() {
   const [consultationModalOpen, setConsultationModalOpen] = useState(false);
   const [adminModalOpen, setAdminModalOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authInitialMode, setAuthInitialMode] = useState<'login' | 'signup' | 'forgot-password'>('login');
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
     const saved = localStorage.getItem('inisio_active_user');
     if (saved) {
@@ -40,6 +41,11 @@ export default function App() {
   });
 
   const [selectedIndustryForAssessment, setSelectedIndustryForAssessment] = useState<string>('');
+
+  const handleOpenAuth = (mode: 'login' | 'signup' | 'forgot-password' = 'login') => {
+    setAuthInitialMode(mode);
+    setAuthModalOpen(true);
+  };
 
   useEffect(() => {
     // Check if URL has #admin or ?admin
@@ -120,7 +126,7 @@ export default function App() {
           selectedIndustryName={selectedIndustryForAssessment}
           onSelectIndustry={handleSelectIndustryFromNav}
           currentUser={currentUser}
-          onOpenAuth={() => setAuthModalOpen(true)}
+          onOpenAuth={handleOpenAuth}
           onLogout={handleLogout}
         />
 
@@ -244,6 +250,7 @@ export default function App() {
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
         onLoginSuccess={handleLoginSuccess}
+        initialMode={authInitialMode}
       />
 
       <ConsultationModal
