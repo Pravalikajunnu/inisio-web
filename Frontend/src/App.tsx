@@ -7,10 +7,10 @@ import { BankLogosCarousel } from './components/BankLogosCarousel';
 import { Testimonials } from './components/Testimonials';
 import { ProjectActionCards } from './components/ProjectActionCards';
 import { IndustriesSection } from './components/IndustriesSection';
-import { ServicesSection } from './components/ServicesSection';
 import { ContactSection } from './components/ContactSection';
 import { ProjectAssessmentPage } from './components/ProjectAssessmentPage';
 import { WhyChooseInisio } from './components/WhyChooseInisio';
+import { HowItWorks } from './components/HowItWorks';
 import { FAQSection } from './components/FAQSection';
 import { Footer } from './components/Footer';
 import { ConsultationModal } from './components/ConsultationModal';
@@ -177,19 +177,20 @@ export default function App() {
             </div>
           )}
 
-          {activeTab === 'about' && (
+          {activeTab === 'how-it-works' && (
             <div className="animate-in fade-in duration-300">
-              <WhyChooseInisio
-                onOpenAssessment={() => handleOpenAssessment()}
+              <HowItWorks
                 onOpenConsultation={() => setConsultationModalOpen(true)}
+                onOpenAssessment={() => handleOpenAssessment()}
+                onNavigateToContact={() => handleSelectTab('contact')}
               />
             </div>
           )}
 
-          {activeTab === 'services' && (
+          {activeTab === 'about' && (
             <div className="animate-in fade-in duration-300">
-              <ServicesSection
-                onSelectServiceForAssessment={(serviceName) => handleOpenAssessment(serviceName)}
+              <WhyChooseInisio
+                onOpenAssessment={() => handleOpenAssessment()}
                 onOpenConsultation={() => setConsultationModalOpen(true)}
               />
             </div>

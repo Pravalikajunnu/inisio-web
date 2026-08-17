@@ -4,7 +4,6 @@ import { TESTIMONIALS } from '../data/landingData';
 import {
   Star,
   Building2,
-  MapPin,
   TrendingUp,
   Award,
   ChevronLeft,
@@ -121,12 +120,10 @@ export const Testimonials: React.FC = () => {
 
               {/* Promoter Author Info */}
               <div className="pt-4 border-t border-gray-100 flex items-center justify-between flex-wrap gap-4 font-inter">
-                <div className="flex items-center gap-3.5">
-                  <img
-                    src={currentItem.avatar}
-                    alt={currentItem.name}
-                    className="w-11 h-11 rounded-full object-cover ring-2 ring-blue-500/30 shrink-0"
-                  />
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200/80 text-blue-700 font-manrope font-bold text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                    {currentItem.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()}
+                  </div>
                   <div>
                     <h4 className="font-manrope font-bold text-sm text-gray-900">
                       {currentItem.name}
@@ -135,11 +132,6 @@ export const Testimonials: React.FC = () => {
                       {currentItem.title}, <span className="font-semibold text-gray-700">{currentItem.company}</span>
                     </p>
                   </div>
-                </div>
-
-                <div className="text-right text-xs text-gray-500 flex items-center gap-1 font-medium bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200/60">
-                  <MapPin className="w-3.5 h-3.5 text-blue-600" />
-                  <span>{currentItem.location}</span>
                 </div>
               </div>
             </motion.div>
