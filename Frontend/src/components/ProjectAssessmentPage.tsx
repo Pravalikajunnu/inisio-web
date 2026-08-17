@@ -993,8 +993,8 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                       setRiskProfileSubmitted(true);
                       setIsTeaserUnlocked(true);
                     }}
-                    defaultEquityPercent={formData.equityPercent}
-                    defaultPromoterExpYears={formData.promoterExpYears}
+                    defaultEquityPercent={parseFloat(equityPercent) || 25}
+                    defaultPromoterExpYears={parseInt(formData.promoterExp, 10) || undefined}
                     sectionId="risk-profile-section"
                   />
                 )}
