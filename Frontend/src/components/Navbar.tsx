@@ -287,7 +287,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Mobile Hamburger Toggle & Assess / Login Button */}
             <div className="flex items-center gap-2 lg:hidden">
               <button
-                onClick={() => onOpenAuth()}
+                onClick={onOpenAuth}
                 className="p-2 text-slate-700 bg-slate-100 rounded-xl flex items-center justify-center min-w-[40px] min-h-[40px]"
                 title="Login"
               >
