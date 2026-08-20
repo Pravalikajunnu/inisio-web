@@ -3,35 +3,41 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Disable buffering so queries fail-fast or fallback immediately instead of hanging for 10s
+mongoose.set('bufferCommands', false);
+
 let cachedConnection = null;
+
+export const isDBConnected = () => {
+  return Boolean(mongoose.connection && mongoose.connection.readyState === 1);
+};
 
 export const connectDB = async () => {
   if (cachedConnection && mongoose.connection.readyState === 1) {
     return cachedConnection;
   }
 
-  const uri = process.env.MONGODB_URI || 'mongodb+srv://pravalikajunnu14_db_user:neEAtLI68mw0aUAP@cluster0.t7kby6b.mongodb.net/inisio?retryWrites=true&w=majority';
+  const uri = process.env.MONGODB_URI;
 
   if (!uri) {
-    console.error('❌ MONGODB_URI environment variable is missing.');
-    throw new Error('MONGODB_URI is not defined in environment variables');
+    console.warn('⚠️ MONGODB_URI not provided. Running in resilient in-memory storage mode.');
+    return null;
   }
 
   try {
     const conn = await mongoose.connect(uri, {
       maxPoolSize: 10,
       minPoolSize: 2,
-      serverSelectionTimeoutMS: 8000,
-      socketTimeoutMS: 45000,
-      connectTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 4000,
+      socketTimeoutMS: 20000,
+      connectTimeoutMS: 4000,
     });
 
     cachedConnection = conn;
     console.log(`✅ MongoDB Connected Successfully: ${conn.connection.host}`);
     return conn;
   } catch (error) {
-    console.error(`❌ MongoDB Connection Error: ${error.message}`);
-    // Do not terminate process immediately in dev/preview mode, allow graceful retry
+    console.warn(`⚠️ MongoDB Connection not established (${error.message}). Resilient in-memory storage active.`);
     return null;
   }
 };
@@ -48,3 +54,4 @@ export const getConnectionStatus = () => {
 };
 
 export default connectDB;
+

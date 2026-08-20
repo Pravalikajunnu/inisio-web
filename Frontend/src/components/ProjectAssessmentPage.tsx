@@ -5,16 +5,14 @@ import { LocationDropdowns } from './LocationDropdowns';
 import { validateIndianMobileNumber } from '../utils/validation';
 import { DetailedRiskProfileForm, DetailedRiskProfileData } from './DetailedRiskProfileForm';
 import { calculateComprehensiveRiskScore } from '../utils/underwritingScorer';
+import { updateLeadRecord, saveLeadRecord } from '../utils/leadStore';
 import {
   Calculator,
   CheckCircle2,
   ArrowRight,
   ArrowLeft,
   Building2,
-  MapPin,
   Landmark,
-  ShieldCheck,
-  TrendingUp,
   FileText,
   PhoneCall,
   Download,
@@ -23,38 +21,51 @@ import {
   Briefcase,
   User,
   Award,
-  BarChart3,
-  MessageSquare,
-  Eye,
+  ShieldCheck,
+  Building,
+  Users2,
+  CreditCard,
   Layers,
   Check,
-  Lock,
-  Unlock,
   AlertCircle,
-  ShieldAlert
+  Save,
+  ChevronLeft,
+  LayoutDashboard
 } from 'lucide-react';
 
 interface ProjectAssessmentPageProps {
   onOpenConsultation: () => void;
   defaultIndustry?: string;
+  editingProject?: any;
+  onFinishEditing?: () => void;
+  onNavigateToDashboard?: () => void;
 }
+
+type AssessmentStage =
+  | 1
+  | 2
+  | 3
+  | 'feasibility_result'
+  | 'collect_bankability'
+  | 'bankability_result';
 
 export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
   onOpenConsultation,
-  defaultIndustry = ''
+  defaultIndustry = '',
+  editingProject,
+  onFinishEditing,
+  onNavigateToDashboard
 }) => {
-  const [step, setStep] = useState<1 | 2 | 3 | 'results'>(1);
+  const [stage, setStage] = useState<AssessmentStage>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [viewMode, setViewMode] = useState<'scorecard' | 'teaser'>('scorecard');
   const [mobileTouched, setMobileTouched] = useState(false);
+  const [step2Error, setStep2Error] = useState('');
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState('');
 
-  // Lock & Detailed Risk Profile State
-  const [isTeaserUnlocked, setIsTeaserUnlocked] = useState(false);
-  const [riskProfileSubmitted, setRiskProfileSubmitted] = useState(false);
+  // Stage 2 Inputs: Risk Profile Data for Bankability Rating
   const [riskProfileData, setRiskProfileData] = useState<DetailedRiskProfileData | null>(null);
-  const [showRiskProfile, setShowRiskProfile] = useState(false);
 
-  // Form State
+  // Stage 1 Form State: Initial 3 Steps (All blank by default - no forced pre-selection)
   const [formData, setFormData] = useState({
     projectName: '',
     industry: defaultIndustry || '',
@@ -73,13 +84,91 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
 
   const mobileValidation = validateIndianMobileNumber(formData.mobile);
 
-  // Sync defaultIndustry when passed from parent
+  // Pre-fill inputs when editing a project
   React.useEffect(() => {
-    setFormData((prev) => ({ ...prev, industry: defaultIndustry || '' }));
-  }, [defaultIndustry]);
+    let activeUser: any = null;
+    try {
+      const stored = localStorage.getItem('inisio_active_user');
+      if (stored) activeUser = JSON.parse(stored);
+    } catch (e) {}
 
-  // Auto-fill logged in user info
+    if (editingProject) {
+      const contactFullName = 
+        editingProject.fullName || 
+        editingProject.name || 
+        editingProject.applicantName || 
+        editingProject.contactName || 
+        activeUser?.name || 
+        '';
+
+      const contactMobile = 
+        editingProject.mobile || 
+        editingProject.phone || 
+        editingProject.applicantMobile || 
+        editingProject.contactPhone || 
+        activeUser?.phone || 
+        '';
+
+      const contactEmail = 
+        editingProject.email || 
+        editingProject.applicantEmail || 
+        editingProject.contactEmail || 
+        activeUser?.email || 
+        '';
+
+      setFormData({
+        projectName: editingProject.projectName || '',
+        industry: editingProject.industry || defaultIndustry || '',
+        location: editingProject.location || '',
+        totalCostCr: String(editingProject.totalCostCr || ''),
+        promoterContribCr: String(editingProject.promoterContribCr || ''),
+        loanRequiredCr: String(editingProject.loanRequiredCr || ''),
+        landStatus: editingProject.landStatus || '',
+        collateralStatus: editingProject.collateralStatus || '',
+        promoterExp: editingProject.promoterExp || '',
+        description: editingProject.notes || editingProject.description || '',
+        fullName: contactFullName,
+        mobile: contactMobile,
+        email: contactEmail
+      });
+
+      // Pre-fill Underwriting / Bankability Risk Profile
+      const projCost = parseFloat(String(editingProject.totalCostCr)) || 10;
+      const projContrib = parseFloat(String(editingProject.promoterContribCr)) || (projCost * 0.25);
+      const projEqPct = projCost > 0 ? Math.round((projContrib / projCost) * 100) : 25;
+      const projDebtPct = 100 - projEqPct;
+
+      if (editingProject.riskProfileData) {
+        setRiskProfileData(editingProject.riskProfileData);
+      } else {
+        setRiskProfileData({
+          industryExperience: editingProject.promoterExp || '6 to 10 Years',
+          educationalBackground: 'Post Graduate (Master\'s / MBA)',
+          businessConstitution: 'Private Limited Company',
+          businessVintage: '4 to 7 Years',
+          contributionType: editingProject.landStatus?.toLowerCase().includes('owned') ? 'Combination of Cash & Land' : 'Cash / Bank Balance',
+          collateralCoveragePct: '110',
+          debtEquityRatio: `${projDebtPct}:${projEqPct}`,
+          managementTeamSize: '5',
+          technicalWorkforceCount: '15',
+          cibilScore: '785',
+          isNewToCredit: false
+        });
+      }
+    } else if (defaultIndustry) {
+      setFormData((prev) => ({
+        ...prev,
+        industry: defaultIndustry,
+        fullName: prev.fullName || activeUser?.name || '',
+        mobile: prev.mobile || activeUser?.phone || '',
+        email: prev.email || activeUser?.email || ''
+      }));
+    }
+  }, [editingProject, defaultIndustry]);
+
+  // Auto-fill logged in user info if available and not editing
   React.useEffect(() => {
+    if (editingProject) return;
     try {
       const stored = localStorage.getItem('inisio_active_user');
       if (stored) {
@@ -94,23 +183,25 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
         }
       }
     } catch (e) {}
-  }, []);
+  }, [editingProject]);
 
   // Calculate numbers dynamically
   const cost = parseFloat(formData.totalCostCr) || 0;
   const contrib = parseFloat(formData.promoterContribCr) || 0;
   const equityPercent = cost > 0 ? ((contrib / cost) * 100).toFixed(1) : '0';
   const debtPercent = cost > 0 ? (((cost - contrib) / cost) * 100).toFixed(1) : '0';
+  const isEquityEligible = cost > 0 && parseFloat(equityPercent) >= 20;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => {
       const updated = { ...prev, [name]: value };
       if (name === 'totalCostCr' || name === 'promoterContribCr') {
+        setStep2Error('');
         const updatedCost = parseFloat(name === 'totalCostCr' ? value : prev.totalCostCr) || 0;
         const updatedContrib = parseFloat(name === 'promoterContribCr' ? value : prev.promoterContribCr) || 0;
         if (updatedCost > 0) {
-          updated.loanRequiredCr = Math.max(0, updatedCost - updatedContrib).toString();
+          updated.loanRequiredCr = Math.max(0, updatedCost - updatedContrib).toFixed(2);
         } else {
           updated.loanRequiredCr = '';
         }
@@ -121,38 +212,46 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
 
   const handleNextStep = (e: React.FormEvent) => {
     e.preventDefault();
-    if (step === 1) {
+    setStep2Error('');
+
+    if (stage === 1) {
       if (!formData.projectName.trim() || !formData.industry || !formData.location.trim()) {
-        alert('Please enter Project Name, select Industry, and enter Location to continue.');
+        alert('Please enter your Project Name, select Industry, and choose Location to continue.');
         return;
       }
-      setStep(2);
-    } else if (step === 2) {
+      setStage(2);
+      window.scrollTo({ top: 120, behavior: 'smooth' });
+    } else if (stage === 2) {
       if (!formData.totalCostCr || parseFloat(formData.totalCostCr) <= 0) {
-        alert('Please enter a valid Total Project Cost.');
+        setStep2Error('Please enter a valid Total Project Cost in ₹ Crores.');
         return;
       }
       if (formData.promoterContribCr === '' || parseFloat(formData.promoterContribCr) < 0) {
-        alert('Please enter the Promoter Equity contribution.');
+        setStep2Error('Please enter how much money you have for the project in your hand (Promoter Equity).');
         return;
       }
-      setStep(3);
-    } else if (step === 3) {
+      if (!isEquityEligible) {
+        setStep2Error(`Promoter equity contribution is ${equityPercent}%, which is below the minimum required 20% for bank financing. Please increase promoter equity to proceed.`);
+        return;
+      }
+      setStage(3);
+      window.scrollTo({ top: 120, behavior: 'smooth' });
+    } else if (stage === 3) {
       if (!formData.landStatus) {
-        alert('Please select the Land Status.');
+        alert('Please select Land Status.');
         return;
       }
       if (!formData.collateralStatus) {
-        alert('Please select the Collateral / Mortgageable Status.');
+        alert('Please select Collateral Status.');
         return;
       }
       if (!formData.promoterExp) {
-        alert('Please select the Promoter Track Record.');
+        alert('Please select Promoter Track Record.');
         return;
       }
       if (!formData.fullName.trim() || !formData.mobile.trim() || !formData.email.trim()) {
         setMobileTouched(true);
-        alert('Please complete your name, mobile number, and email address.');
+        alert('Please enter your full name, mobile number, and email address.');
         return;
       }
       if (!mobileValidation.isValid) {
@@ -162,9 +261,9 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       setIsSubmitting(true);
       setTimeout(() => {
         setIsSubmitting(false);
-        setStep('results');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 1200);
+        setStage('feasibility_result');
+        window.scrollTo({ top: 120, behavior: 'smooth' });
+      }, 800);
     }
   };
 
@@ -192,7 +291,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       baseBankability += 0.5;
     }
 
-    // Collateral status check
+    // Collateral check
     if (formData.collateralStatus.includes('Freehold')) {
       baseFeasibility += 6;
       baseBankability += 0.6;
@@ -226,7 +325,9 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
   const results = computeResults();
   const comprehensiveRisk = calculateComprehensiveRiskScore(riskProfileData, results.feasibilityScore);
 
+  // Map all inputs into the PDF payload (using ONLY user-provided information)
   const getPDFData = (): TeaserPDFData => ({
+    // Step 1 Feasibility Inputs
     fullName: formData.fullName,
     mobile: formData.mobile,
     email: formData.email,
@@ -241,12 +342,14 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
     promoterExp: formData.promoterExp,
     description: formData.description,
     feasibilityScore: results.feasibilityScore,
-    bankabilityRating: results.bankabilityRating,
+    bankabilityRating: riskProfileData ? String(comprehensiveRisk.scoreOutOf10) : results.bankabilityRating,
     estimatedLoan: results.estimatedLoan,
     eqPct: results.eqPct,
     debtPct: results.debtPct,
     dscrEstimate: 1.45,
     estInterestRate: '8.85% - 9.40%',
+
+    // Step 2 Bankability Underwriting Inputs
     riskProfileData: riskProfileData || undefined,
     riskScoreOutOf10: comprehensiveRisk.scoreOutOf10
   });
@@ -256,26 +359,93 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
     generateProjectTeaserPDF(pdfData);
   };
 
-  const handleSelectTeaserTab = () => {
-    setViewMode('teaser');
-  };
-
-  const handleDownloadTeaserClick = () => {
-    if (!isTeaserUnlocked) {
-      alert('Teaser PDF download is locked. Please complete the Detailed Risk Profile form below to unlock.');
-      const el = document.getElementById('risk-profile-section');
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
+  const handleSaveProjectEdits = () => {
+    if (!formData.projectName.trim()) {
+      alert('Please enter your Project Name before saving.');
       return;
     }
-    handleDownloadTeaser();
+    const computed = computeResults();
+    const activeBankability = riskProfileData ? String(comprehensiveRisk.scoreOutOf10) : String(computed.bankabilityRating);
+    const updatedPayload = {
+      projectName: formData.projectName,
+      industry: formData.industry,
+      location: formData.location,
+      totalCostCr: formData.totalCostCr,
+      promoterContribCr: formData.promoterContribCr,
+      loanRequiredCr: formData.loanRequiredCr,
+      landStatus: formData.landStatus,
+      collateralStatus: formData.collateralStatus,
+      promoterExp: formData.promoterExp,
+      notes: formData.description,
+      fullName: formData.fullName,
+      mobile: formData.mobile,
+      email: formData.email,
+      feasibilityScore: computed.feasibilityScore,
+      bankabilityRating: activeBankability,
+      riskProfileData: riskProfileData || undefined
+    };
+
+    if (editingProject?.id) {
+      updateLeadRecord(editingProject.id, updatedPayload, formData.fullName || 'Promoter');
+    } else {
+      saveLeadRecord({
+        ...updatedPayload,
+        source: 'Project Assessment Form',
+        downloadedPDF: false
+      });
+    }
+
+    setSaveSuccessMessage('Project details updated successfully!');
+    setTimeout(() => {
+      if (onNavigateToDashboard) {
+        onNavigateToDashboard();
+      } else if (onFinishEditing) {
+        onFinishEditing();
+      }
+    }, 1200);
   };
 
-  const handleSendWhatsAppLead = () => {
-    const pdfData = getPDFData();
-    sendLeadToWhatsApp(pdfData, '916302026462');
+  const handleGoToDashboard = () => {
+    // Save project if not already saved
+    const computed = computeResults();
+    const activeBankability = riskProfileData ? String(comprehensiveRisk.scoreOutOf10) : String(computed.bankabilityRating);
+    const payload = {
+      projectName: formData.projectName || 'Greenfield Project',
+      industry: formData.industry,
+      location: formData.location,
+      totalCostCr: formData.totalCostCr,
+      promoterContribCr: formData.promoterContribCr,
+      loanRequiredCr: formData.loanRequiredCr,
+      landStatus: formData.landStatus,
+      collateralStatus: formData.collateralStatus,
+      promoterExp: formData.promoterExp,
+      notes: formData.description,
+      fullName: formData.fullName,
+      mobile: formData.mobile,
+      email: formData.email,
+      feasibilityScore: computed.feasibilityScore,
+      bankabilityRating: activeBankability,
+      riskProfileData: riskProfileData || undefined
+    };
+
+    if (editingProject?.id) {
+      updateLeadRecord(editingProject.id, payload, formData.fullName || 'Promoter');
+    } else {
+      saveLeadRecord({
+        ...payload,
+        source: 'Project Assessment Flow',
+        downloadedPDF: false
+      });
+    }
+
+    if (onNavigateToDashboard) {
+      onNavigateToDashboard();
+    } else if (onFinishEditing) {
+      onFinishEditing();
+    }
   };
 
-  // Cost breakdowns for Teaser view
+  // Cost numbers
   const costLakhs = (cost * 100).toFixed(2);
   const loanCr = parseFloat(formData.loanRequiredCr) || (cost * (results.debtPct / 100));
   const loanLakhs = (loanCr * 100).toFixed(2);
@@ -286,110 +456,147 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
   const civilLakhs = (parseFloat(costLakhs) * 0.30).toFixed(2);
 
   return (
-    <div className="min-h-screen bg-slate-50/70 pb-16">
-      {/* Page Hero Section */}
-      <section className="relative bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800 text-white pt-20 pb-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
-        {/* Glowing Background Elements */}
-        <div className="absolute top-0 right-1/4 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 w-60 h-60 bg-blue-600/10 rounded-full blur-2xl pointer-events-none" />
-
-        <div className="max-w-3xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[11px] font-semibold uppercase tracking-wider mb-4">
+    <div className="min-h-screen bg-slate-50/70 pb-20">
+      {/* Header Banner */}
+      <section className="bg-slate-900 text-white pt-20 pb-10 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[11px] font-semibold uppercase tracking-wider mb-3">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Bank-Grade Advisory Engine</span>
+            <span>{editingProject ? 'Edit Project Assessment' : 'Project Evaluation'}</span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight font-manrope leading-tight mb-3">
-            Greenfield Project Assessment
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-manrope">
+            {editingProject ? `Edit: ${formData.projectName || editingProject.projectName}` : 'Greenfield Project Assessment'}
           </h1>
-
-          <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto font-inter leading-relaxed mb-6">
-            Evaluate your project's feasibility, bankability, and estimated loan eligibility through a simple, structured assessment.
+          <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto mt-2">
+            {editingProject
+              ? 'Update your project parameters, cost structure, land and risk inputs, and re-evaluate underwriting scores.'
+              : 'Calculate your project feasibility, underwriting bankability score, and sample executive teaser.'}
           </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400 font-medium border-t border-slate-800/80 pt-4">
-            <div className="flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
-              <span>100% Confidential Evaluation</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Landmark className="w-3.5 h-3.5 text-blue-400" />
-              <span>RBI & PSU Bank Aligned Norms</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <TrendingUp className="w-3.5 h-3.5 text-blue-400" />
-              <span>Instant Preliminary Report</span>
-            </div>
-          </div>
         </div>
       </section>
 
-      {/* Main Assessment Container */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 relative z-20">
-        {step !== 'results' ? (
-          <div className="bg-white rounded-2xl border border-gray-200/80 shadow-xl overflow-hidden">
-            {/* Step Progress Bar Header */}
-            <div className="bg-slate-900 px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-800 text-white">
-              <div className="flex items-center justify-between max-w-2xl mx-auto">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${step >= 1 ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
-                    1
-                  </div>
-                  <span className={`text-xs sm:text-sm font-semibold hidden sm:inline ${step === 1 ? 'text-blue-400' : 'text-slate-400'}`}>
-                    Project Details
-                  </span>
-                </div>
+      {/* Main Container */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-4 relative z-20 space-y-6">
 
-                <div className={`h-0.5 flex-1 mx-2 sm:mx-3 ${step >= 2 ? 'bg-blue-600' : 'bg-slate-800'}`} />
-
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${step >= 2 ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
-                    2
-                  </div>
-                  <span className={`text-xs sm:text-sm font-semibold hidden sm:inline ${step === 2 ? 'text-blue-400' : 'text-slate-400'}`}>
-                    Financial Details
-                  </span>
-                </div>
-
-                <div className={`h-0.5 flex-1 mx-2 sm:mx-3 ${step >= 3 ? 'bg-blue-600' : 'bg-slate-800'}`} />
-
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${step >= 3 ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
-                    3
-                  </div>
-                  <span className={`text-xs sm:text-sm font-semibold hidden sm:inline ${step === 3 ? 'text-blue-400' : 'text-slate-400'}`}>
-                    Additional Details
-                  </span>
-                </div>
+        {/* Editing Mode Banner */}
+        {editingProject && (
+          <div className="bg-blue-600 text-white px-5 py-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                <Sparkles className="w-4 h-4 text-white" />
               </div>
-
-              {/* Mobile Current Step Title Indicator */}
-              <div className="sm:hidden text-center mt-2.5 pt-2 border-t border-slate-800/80">
-                <span className="text-xs font-semibold text-blue-400">
-                  Step {step} of 3: {step === 1 ? 'Project Details' : step === 2 ? 'Financial Details' : 'Readiness & Contact'}
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-wider text-blue-200 block">
+                  Interactive Assessment Editing
                 </span>
+                <p className="text-xs font-semibold text-white">
+                  Editing project parameters for <strong>{formData.projectName || editingProject.projectName}</strong>
+                </p>
               </div>
             </div>
 
-            {/* Form Content */}
-            <form onSubmit={handleNextStep} className="p-4 sm:p-10 space-y-6 sm:space-y-8">
+            <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={handleSaveProjectEdits}
+                className="flex-1 sm:flex-none px-4 py-2 bg-white text-blue-700 hover:bg-blue-50 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Check className="w-3.5 h-3.5 stroke-[3]" />
+                <span>Save Updates</span>
+              </button>
+
+              {onFinishEditing && (
+                <button
+                  type="button"
+                  onClick={onFinishEditing}
+                  className="px-3.5 py-2 bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs rounded-xl transition-colors cursor-pointer"
+                >
+                  Back to Dashboard
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Save Success Toast Banner */}
+        {saveSuccessMessage && (
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-800 font-bold flex items-center gap-2.5 shadow-sm animate-in fade-in">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+            <span>{saveSuccessMessage} Returning to your dashboard...</span>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* STAGE 1: STEPS 1, 2, 3 FORM                                                */}
+        {/* ========================================================================= */}
+        {(stage === 1 || stage === 2 || stage === 3) && (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden animate-in fade-in duration-300">
+            {/* Steps Progress */}
+            <div className="bg-slate-900 px-4 sm:px-6 py-4 border-b border-slate-800 text-white">
+              <div className="flex items-center justify-between max-w-2xl mx-auto">
+                <button
+                  type="button"
+                  onClick={() => setStage(1)}
+                  className="flex items-center gap-2 text-left group cursor-pointer"
+                >
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs transition-colors ${stage >= 1 ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                    1
+                  </div>
+                  <span className={`text-xs font-semibold ${stage === 1 ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'}`}>
+                    Project Details
+                  </span>
+                </button>
+
+                <div className={`h-0.5 flex-1 mx-2 sm:mx-3 ${stage >= 2 ? 'bg-blue-600' : 'bg-slate-800'}`} />
+
+                <button
+                  type="button"
+                  onClick={() => setStage(2)}
+                  className="flex items-center gap-2 text-left group cursor-pointer"
+                >
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs transition-colors ${stage >= 2 ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                    2
+                  </div>
+                  <span className={`text-xs font-semibold ${stage === 2 ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'}`}>
+                    Financial Details
+                  </span>
+                </button>
+
+                <div className={`h-0.5 flex-1 mx-2 sm:mx-3 ${stage >= 3 ? 'bg-blue-600' : 'bg-slate-800'}`} />
+
+                <button
+                  type="button"
+                  onClick={() => setStage(3)}
+                  className="flex items-center gap-2 text-left group cursor-pointer"
+                >
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs transition-colors ${stage >= 3 ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                    3
+                  </div>
+                  <span className={`text-xs font-semibold ${stage === 3 ? 'text-blue-400' : 'text-slate-400 group-hover:text-slate-200'}`}>
+                    Readiness &amp; Contact
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleNextStep} className="p-4 sm:p-8 space-y-6">
               {/* STEP 1: PROJECT DETAILS */}
-              {step === 1 && (
-                <div className="space-y-6 animate-in fade-in duration-300">
-                  <div className="border-b border-gray-100 pb-4">
-                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
-                      <Building2 className="w-5 h-5 text-blue-600 shrink-0" />
+              {stage === 1 && (
+                <div className="space-y-5 animate-in fade-in duration-300">
+                  <div className="border-b border-gray-100 pb-3">
+                    <h2 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
+                      <Building2 className="w-5 h-5 text-blue-600" />
                       Step 1: Project Details
                     </h2>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Tell us about your proposed greenfield venture.
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Enter your project name, industry sector, and location.
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
-                    {/* Project Name */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2">
-                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
                         Project Name <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -397,43 +604,48 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                         name="projectName"
                         value={formData.projectName}
                         onChange={handleInputChange}
-                        placeholder="Enter the Project Name"
+                        placeholder="Enter your project name (e.g. Bionex CNG, Solar Power Plant)"
                         required
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-base sm:text-sm font-medium text-gray-900"
+                        className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-xs font-medium text-gray-900"
                       />
                     </div>
 
-                    {/* Industries or Sector */}
                     <div className="md:col-span-2">
-                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                        Industries or Sector <span className="text-red-500">*</span>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        Industry / Sector <span className="text-red-500">*</span>
                       </label>
                       <select
                         name="industry"
                         value={formData.industry}
                         onChange={handleInputChange}
                         required
-                        className={`w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-base sm:text-sm font-medium ${
+                        className={`w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-xs font-medium ${
                           formData.industry ? 'text-gray-900' : 'text-gray-400'
                         }`}
                       >
-                        <option value="" disabled hidden>Select Industry or Sector</option>
-                        <option value="Renewable Energy & CBG / Bio-Gas" className="text-gray-900">Renewable Energy & CBG / Bio-Gas</option>
-                        <option value="Solar & Wind Power Infrastructure" className="text-gray-900">Solar & Wind Power Infrastructure</option>
-                        <option value="Manufacturing & Heavy Industry" className="text-gray-900">Manufacturing & Heavy Industry</option>
-                        <option value="Food Processing & Cold Chain" className="text-gray-900">Food Processing & Cold Chain</option>
-                        <option value="Pharmaceuticals & Healthcare" className="text-gray-900">Pharmaceuticals & Healthcare</option>
-                        <option value="Textiles & Apparel" className="text-gray-900">Textiles & Apparel</option>
-                        <option value="Real Estate & Commercial Infra" className="text-gray-900">Real Estate & Commercial Infra</option>
-                        <option value="Logistics & Warehousing" className="text-gray-900">Logistics & Warehousing</option>
-                        <option value="Chemicals & Fertilizers" className="text-gray-900">Chemicals & Fertilizers</option>
-                        <option value="Hotels & Hospitality" className="text-gray-900">Hotels & Hospitality</option>
-                        <option value="Data Centers & Tech Parks" className="text-gray-900">Data Centers & Tech Parks</option>
+                        <option value="" disabled hidden>Select Industry / Sector</option>
+                        {formData.industry && !['Renewable Energy & CBG / Bio-Gas', 'Solar & Wind Power Infrastructure', 'Renewable Energy & Solar', 'Manufacturing & Heavy Industry', 'Food Processing & Cold Chain', 'Pharmaceuticals & Healthcare', 'Pharmaceuticals & Life Sciences', 'Textiles & Apparel', 'Real Estate & Commercial Infra', 'Hospitality & Commercial', 'Logistics & Warehousing', 'Chemicals & Fertilizers', 'Specialty Chemicals', 'Hotels & Hospitality', 'Data Centers & Tech Parks', 'Other Greenfield Sector'].includes(formData.industry) && (
+                          <option value={formData.industry} className="text-gray-900">{formData.industry}</option>
+                        )}
+                        <option value="Renewable Energy & CBG / Bio-Gas" className="text-gray-900">Renewable Energy &amp; CBG / Bio-Gas</option>
+                        <option value="Solar & Wind Power Infrastructure" className="text-gray-900">Solar &amp; Wind Power Infrastructure</option>
+                        <option value="Renewable Energy & Solar" className="text-gray-900">Renewable Energy &amp; Solar</option>
+                        <option value="Manufacturing & Heavy Industry" className="text-gray-900">Manufacturing &amp; Heavy Industry</option>
+                        <option value="Food Processing & Cold Chain" className="text-gray-900">Food Processing &amp; Cold Chain</option>
+                        <option value="Pharmaceuticals & Healthcare" className="text-gray-900">Pharmaceuticals &amp; Healthcare</option>
+                        <option value="Pharmaceuticals & Life Sciences" className="text-gray-900">Pharmaceuticals &amp; Life Sciences</option>
+                        <option value="Textiles & Apparel" className="text-gray-900">Textiles &amp; Apparel</option>
+                        <option value="Real Estate & Commercial Infra" className="text-gray-900">Real Estate &amp; Commercial Infra</option>
+                        <option value="Hotels & Hospitality" className="text-gray-900">Hotels &amp; Hospitality</option>
+                        <option value="Hospitality & Commercial" className="text-gray-900">Hospitality &amp; Commercial</option>
+                        <option value="Logistics & Warehousing" className="text-gray-900">Logistics &amp; Warehousing</option>
+                        <option value="Chemicals & Fertilizers" className="text-gray-900">Chemicals &amp; Fertilizers</option>
+                        <option value="Specialty Chemicals" className="text-gray-900">Specialty Chemicals</option>
+                        <option value="Data Centers & Tech Parks" className="text-gray-900">Data Centers &amp; Tech Parks</option>
                         <option value="Other Greenfield Sector" className="text-gray-900">Other Greenfield Sector</option>
                       </select>
                     </div>
 
-                    {/* Location Selection (Side by Side Dependent Dropdowns) */}
                     <div className="md:col-span-2">
                       <LocationDropdowns
                         value={formData.location}
@@ -443,241 +655,245 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                     </div>
                   </div>
 
-                  <div className="pt-4 flex justify-end">
+                  <div className="pt-2 flex items-center justify-between">
+                    {editingProject ? (
+                      <button
+                        type="button"
+                        onClick={handleSaveProjectEdits}
+                        className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        <span>Save Updates Now</span>
+                      </button>
+                    ) : <div />}
+
                     <button
                       type="submit"
-                      className="w-full sm:w-auto px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer touch-manipulation"
+                      className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                     >
-                      <span>Proceed to Financial Details</span>
+                      <span>Proceed to Step 2</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* STEP 2: FINANCIAL DETAILS */}
-              {step === 2 && (
-                <div className="space-y-6 animate-in fade-in duration-300">
-                  <div className="border-b border-gray-100 pb-4">
-                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
-                      <Landmark className="w-5 h-5 text-blue-600 shrink-0" />
+              {/* STEP 2: FINANCIAL DETAILS & STRICT EQUITY CHECK */}
+              {stage === 2 && (
+                <div className="space-y-5 animate-in fade-in duration-300">
+                  <div className="border-b border-gray-100 pb-3">
+                    <h2 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
+                      <Landmark className="w-5 h-5 text-blue-600" />
                       Step 2: Financial Details
                     </h2>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Input your project capital outlay and funding structure in ₹ Crores.
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Input your project cost and equity contribution in ₹ Crores.
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
-                    {/* Total Project Cost */}
+                  {step2Error && (
+                    <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs font-semibold text-rose-800 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                      <span>{step2Error}</span>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
                         Total Project Cost (₹ Cr) <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
-                        <span className="absolute left-3.5 top-3 text-base sm:text-sm font-bold text-gray-400">₹</span>
+                        <span className="absolute left-3 top-2.5 text-xs font-bold text-gray-400">₹</span>
                         <input
                           type="number"
                           step="0.1"
                           name="totalCostCr"
                           value={formData.totalCostCr}
                           onChange={handleInputChange}
-                          placeholder="Enter Total Cost (in ₹ Cr)"
+                          placeholder="Enter total project cost in ₹ Cr"
                           required
-                          className="w-full pl-8 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-base sm:text-sm font-bold text-gray-900"
+                          className="w-full pl-7 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-xs font-bold text-gray-900"
                         />
                       </div>
                     </div>
 
-                    {/* Promoter Contribution */}
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 leading-tight">
-                        How much money / equity do you have available for this project? (₹ CR) <span className="text-red-500">*</span>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        How much money do you have for the project in your hand? (Promoter Equity ₹ Cr) <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
-                        <span className="absolute left-3.5 top-3 text-base sm:text-sm font-bold text-gray-400">₹</span>
+                        <span className="absolute left-3 top-2.5 text-xs font-bold text-gray-400">₹</span>
                         <input
                           type="number"
                           step="0.1"
                           name="promoterContribCr"
                           value={formData.promoterContribCr}
                           onChange={handleInputChange}
-                          placeholder="Enter Equity Available (in ₹ Cr)"
+                          placeholder="Enter promoter equity in hand in ₹ Cr"
                           required
-                          className="w-full pl-8 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-base sm:text-sm font-bold text-gray-900"
+                          className="w-full pl-7 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none text-xs font-bold text-gray-900"
                         />
                       </div>
                     </div>
 
-                    {/* Loan Amount Required */}
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 leading-tight">
-                        Estimated Loan Needed (₹ Cr)
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        Loan Needed (₹ Cr)
                       </label>
                       <div className="relative">
-                        <span className="absolute left-3.5 top-3 text-base sm:text-sm font-bold text-gray-400">₹</span>
+                        <span className="absolute left-3 top-2.5 text-xs font-bold text-gray-400">₹</span>
                         <input
                           type="number"
                           step="0.1"
                           name="loanRequiredCr"
                           value={formData.loanRequiredCr}
                           onChange={handleInputChange}
-                          placeholder="Calculated automatically"
-                          className="w-full pl-8 pr-4 py-3 bg-blue-50/50 border border-blue-200 rounded-xl font-bold text-blue-900 text-base sm:text-sm outline-none"
+                          placeholder="Automatically calculated"
+                          readOnly
+                          className="w-full pl-7 pr-3 py-2.5 bg-blue-50/50 border border-blue-200 rounded-xl font-bold text-blue-900 text-xs outline-none"
                         />
                       </div>
                     </div>
                   </div>
 
-                  {/* Financial Ratios Preview Card */}
-                  {(() => {
-                    const isEquityValid = cost > 0 && contrib > 0 && parseFloat(equityPercent) >= 20;
-                    return (
-                      <>
-                        <div
-                          className={`p-4 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 transition-all ${
-                            isEquityValid
-                              ? 'bg-emerald-50 border-emerald-200'
-                              : 'bg-rose-50 border-rose-200'
-                          }`}
+                  {/* Equity Banner with Dynamic Color & Validation Check */}
+                  {cost > 0 && contrib > 0 && (
+                    <div
+                      className={`p-3.5 rounded-xl text-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border transition-all ${
+                        isEquityEligible
+                          ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
+                          : 'bg-rose-50 border-rose-300 text-rose-950'
+                      }`}
+                    >
+                      <span className="font-bold">
+                        Equity: {equityPercent}% | Loan: {debtPercent}%
+                      </span>
+                      <span className={`font-bold flex items-center gap-1 ${isEquityEligible ? 'text-emerald-700' : 'text-rose-700'}`}>
+                        {isEquityEligible ? (
+                          <>
+                            <Check className="w-4 h-4 text-emerald-600" />
+                            <span>✓ Meets minimum 20% equity criteria</span>
+                          </>
+                        ) : (
+                          <>
+                            <AlertCircle className="w-4 h-4 text-rose-600" />
+                            <span>⚠️ Equity below minimum 20% requirement (Banks require min 20% promoter contribution)</span>
+                          </>
+                        )}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="pt-2 flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setStage(1)}
+                      className="px-4 py-2 text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      <span>Back</span>
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      {editingProject && (
+                        <button
+                          type="button"
+                          onClick={handleSaveProjectEdits}
+                          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
                         >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-10 h-10 rounded-lg text-white flex items-center justify-center font-bold text-sm shrink-0 ${
-                                isEquityValid ? 'bg-emerald-600' : 'bg-rose-600'
-                              }`}
-                            >
-                              %
-                            </div>
-                            <div>
-                              <div
-                                className={`text-xs font-bold uppercase tracking-wide ${
-                                  isEquityValid ? 'text-emerald-950' : 'text-rose-950'
-                                }`}
-                              >
-                                Calculated Capital Structure
-                              </div>
-                              <div
-                                className={`text-sm font-extrabold ${
-                                  isEquityValid ? 'text-emerald-900' : 'text-rose-900'
-                                }`}
-                              >
-                                Equity:{' '}
-                                <span className={isEquityValid ? 'text-emerald-700' : 'text-rose-700'}>
-                                  {equityPercent}%
-                                </span>{' '}
-                                | Debt:{' '}
-                                <span className={isEquityValid ? 'text-emerald-700' : 'text-rose-700'}>
-                                  {debtPercent}%
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <div
-                            className={`text-xs px-3 py-2 rounded-lg border font-semibold flex items-center gap-1.5 w-full sm:w-auto ${
-                              isEquityValid
-                                ? 'text-emerald-700 bg-emerald-100/80 border-emerald-300'
-                                : 'text-rose-700 bg-rose-100/80 border-rose-300'
-                            }`}
-                          >
-                            {isEquityValid
-                              ? '✓ Capital structure meets minimum 20% equity threshold'
-                              : '⚠️ Equity is below standard 20% threshold. Please improve your margin / promoter contribution to proceed.'}
-                          </div>
-                        </div>
+                          <Save className="w-3.5 h-3.5" />
+                          <span>Save Updates</span>
+                        </button>
+                      )}
 
-                        <div className="pt-4 flex items-center justify-between gap-3">
-                          <button
-                            type="button"
-                            onClick={() => setStep(1)}
-                            className="px-4 sm:px-5 py-2.5 text-xs font-bold text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer min-h-[44px] touch-manipulation"
-                          >
-                            <ArrowLeft className="w-4 h-4" />
-                            <span>Back</span>
-                          </button>
-
-                          <button
-                            type="submit"
-                            disabled={!isEquityValid}
-                            className={`px-5 sm:px-6 py-3 font-bold text-sm rounded-xl shadow-md transition-all flex items-center gap-2 min-h-[44px] touch-manipulation ${
-                              isEquityValid
-                                ? 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer'
-                                : 'bg-gray-200 text-gray-400 border border-gray-300 cursor-not-allowed opacity-75'
-                            }`}
-                            title={
-                              !isEquityValid
-                                ? 'Equity is below standard 20% threshold. Please improve your margin / promoter contribution to proceed.'
-                                : ''
-                            }
-                          >
-                            <span>Proceed to Step 3</span>
-                            <ArrowRight className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </>
-                    );
-                  })()}
+                      <button
+                        type="submit"
+                        className={`px-6 py-2.5 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer ${
+                          isEquityEligible
+                            ? 'bg-blue-600 hover:bg-blue-700'
+                            : 'bg-slate-400 hover:bg-slate-500'
+                        }`}
+                      >
+                        <span>Proceed to Step 3</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {/* STEP 3: ADDITIONAL & CONTACT DETAILS */}
-              {step === 3 && (
-                <div className="space-y-6 animate-in fade-in duration-300">
-                  <div className="border-b border-gray-100 pb-4">
-                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
-                      <Briefcase className="w-5 h-5 text-blue-600 shrink-0" />
-                      Step 3: Readiness & Contact Details
+              {/* STEP 3: READINESS & CONTACT */}
+              {stage === 3 && (
+                <div className="space-y-5 animate-in fade-in duration-300">
+                  <div className="border-b border-gray-100 pb-3">
+                    <h2 className="text-base sm:text-lg font-bold text-gray-900 flex items-center gap-2">
+                      <Briefcase className="w-5 h-5 text-blue-600" />
+                      Step 3: Readiness &amp; Contact Details
                     </h2>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Final details to generate your bankability scorecard and executive teaser.
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Provide land status, collateral, promoter experience, and contact info.
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
-                    {/* Project Land Status */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                        Project Land Status <span className="text-red-500">*</span>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        Land Status <span className="text-red-500">*</span>
                       </label>
                       <select
                         name="landStatus"
                         value={formData.landStatus}
                         onChange={handleInputChange}
                         required
-                        className={`w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-base sm:text-sm font-medium ${formData.landStatus ? 'text-gray-900' : 'text-gray-400'}`}
+                        className={`w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 ${
+                          formData.landStatus ? 'text-gray-900' : 'text-gray-400'
+                        }`}
                       >
-                        <option value="" disabled hidden>Select Project Land Status</option>
-                        <option value="Owned & Registered" className="text-gray-900">Owned & Registered</option>
+                        <option value="" disabled hidden>Select Land Status</option>
+                        {formData.landStatus && !['Owned & Registered', 'Land Owned & Registered', 'Leased / Govt Allotted', 'Industrial Lease Signed', 'TSIIC / Industrial Park Allotted', 'MoU Signed / Under Acquisition', 'Land Selection Pending'].includes(formData.landStatus) && (
+                          <option value={formData.landStatus} className="text-gray-900">{formData.landStatus}</option>
+                        )}
+                        <option value="Owned & Registered" className="text-gray-900">Owned &amp; Registered</option>
+                        <option value="Land Owned & Registered" className="text-gray-900">Land Owned &amp; Registered</option>
                         <option value="Leased / Govt Allotted" className="text-gray-900">Leased / Govt Allotted</option>
+                        <option value="Industrial Lease Signed" className="text-gray-900">Industrial Lease Signed</option>
+                        <option value="TSIIC / Industrial Park Allotted" className="text-gray-900">TSIIC / Industrial Park Allotted</option>
                         <option value="MoU Signed / Under Acquisition" className="text-gray-900">MoU Signed / Under Acquisition</option>
                         <option value="Land Selection Pending" className="text-gray-900">Land Selection Pending</option>
                       </select>
                     </div>
 
-                    {/* Collateral / Mortgageable Status */}
                     <div>
-                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                        Collateral / Mortgageable Status <span className="text-red-500">*</span>
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        Collateral / Mortgage Status <span className="text-red-500">*</span>
                       </label>
                       <select
                         name="collateralStatus"
                         value={formData.collateralStatus}
                         onChange={handleInputChange}
                         required
-                        className={`w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-base sm:text-sm font-medium ${formData.collateralStatus ? 'text-gray-900' : 'text-gray-400'}`}
+                        className={`w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 ${
+                          formData.collateralStatus ? 'text-gray-900' : 'text-gray-400'
+                        }`}
                       >
                         <option value="" disabled hidden>Select Collateral Status</option>
+                        {formData.collateralStatus && !['Freehold (Clear Title)', 'Prime Land & Building Mortgage', 'Plant & Machinery Hypothecation', 'Factory Premises & Fixed Assets', 'Leasehold (Bank Clause)', 'Govt. Allotted Land', 'Under Mortgage / Encumbered', 'Agricultural / Conversion Pending'].includes(formData.collateralStatus) && (
+                          <option value={formData.collateralStatus} className="text-gray-900">{formData.collateralStatus}</option>
+                        )}
                         <option value="Freehold (Clear Title)" className="text-gray-900">Freehold (Clear Title)</option>
+                        <option value="Prime Land & Building Mortgage" className="text-gray-900">Prime Land &amp; Building Mortgage</option>
+                        <option value="Plant & Machinery Hypothecation" className="text-gray-900">Plant &amp; Machinery Hypothecation</option>
+                        <option value="Factory Premises & Fixed Assets" className="text-gray-900">Factory Premises &amp; Fixed Assets</option>
                         <option value="Leasehold (Bank Clause)" className="text-gray-900">Leasehold (Bank Clause)</option>
-                        <option value="Agricultural / Conversion Pending" className="text-gray-900">Agricultural / Conversion Pending</option>
-                        <option value="Under Mortgage / Encumbered" className="text-gray-900">Under Mortgage / Encumbered</option>
                         <option value="Govt. Allotted Land" className="text-gray-900">Govt. Allotted Land</option>
+                        <option value="Under Mortgage / Encumbered" className="text-gray-900">Under Mortgage / Encumbered</option>
+                        <option value="Agricultural / Conversion Pending" className="text-gray-900">Agricultural / Conversion Pending</option>
                       </select>
                     </div>
 
-                    {/* Promoter Experience */}
-                    <div>
-                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
                         Promoter Track Record <span className="text-red-500">*</span>
                       </label>
                       <select
@@ -685,42 +901,49 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                         value={formData.promoterExp}
                         onChange={handleInputChange}
                         required
-                        className={`w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-base sm:text-sm font-medium ${formData.promoterExp ? 'text-gray-900' : 'text-gray-400'}`}
+                        className={`w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 ${
+                          formData.promoterExp ? 'text-gray-900' : 'text-gray-400'
+                        }`}
                       >
                         <option value="" disabled hidden>Select Promoter Track Record</option>
+                        {formData.promoterExp && !['10+ Years (Industry Veteran)', '12+ Years Manufacturing', '10+ Years Pharma R&D', '8+ Years Hospitality & Infrastructure', '5-10 Years (Established Player)', '3-5 Years (Relevant Sector)', '0-3 Years (First-Time Promoter)'].includes(formData.promoterExp) && (
+                          <option value={formData.promoterExp} className="text-gray-900">{formData.promoterExp}</option>
+                        )}
                         <option value="10+ Years (Industry Veteran)" className="text-gray-900">10+ Years (Industry Veteran)</option>
+                        <option value="12+ Years Manufacturing" className="text-gray-900">12+ Years Manufacturing</option>
+                        <option value="10+ Years Pharma R&D" className="text-gray-900">10+ Years Pharma R&amp;D</option>
+                        <option value="8+ Years Hospitality & Infrastructure" className="text-gray-900">8+ Years Hospitality &amp; Infrastructure</option>
                         <option value="5-10 Years (Established Player)" className="text-gray-900">5-10 Years (Established Player)</option>
                         <option value="3-5 Years (Relevant Sector)" className="text-gray-900">3-5 Years (Relevant Sector)</option>
                         <option value="0-3 Years (First-Time Promoter)" className="text-gray-900">0-3 Years (First-Time Promoter)</option>
                       </select>
                     </div>
 
-                    {/* Brief Description */}
                     <div className="md:col-span-2">
-                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                        Brief Project Scope / Objectives
+                      <label className="block text-xs font-bold text-gray-700 mb-1">
+                        Project Description (Optional)
                       </label>
                       <textarea
                         name="description"
-                        rows={3}
+                        rows={2}
                         value={formData.description}
                         onChange={handleInputChange}
-                        placeholder="Provide any additional context like technical partners, expected capacity, or off-take agreements..."
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-base sm:text-sm font-medium text-gray-900"
+                        placeholder="Enter brief project description (e.g. proposed capacity, plant details)"
+                        className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-900 outline-none focus:bg-white focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                   </div>
 
-                  {/* Contact Fields Box */}
-                  <div className="p-4 sm:p-6 bg-slate-50 rounded-2xl border border-gray-200/80 space-y-4">
-                    <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                      <User className="w-4 h-4 text-blue-600 shrink-0" />
-                      <span>Contact & Confidential Delivery</span>
+                  {/* Contact Info */}
+                  <div className="p-4 bg-slate-50 rounded-xl border border-gray-200 space-y-3">
+                    <h3 className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Contact Details</span>
                     </h3>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
-                        <label className="block text-[11px] font-bold text-gray-600 uppercase mb-1">Your Name *</label>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">Full Name *</label>
                         <input
                           type="text"
                           name="fullName"
@@ -728,12 +951,12 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                           onChange={handleInputChange}
                           required
                           placeholder="Enter your full name"
-                          className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-base sm:text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-gray-600 uppercase mb-1">Mobile Number *</label>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">Mobile Number *</label>
                         <input
                           type="tel"
                           name="mobile"
@@ -744,688 +967,353 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                           }}
                           onBlur={() => setMobileTouched(true)}
                           required
-                          placeholder="Enter 10-digit mobile number"
+                          placeholder="Enter your 10-digit mobile number"
                           maxLength={10}
-                          className={`w-full px-3.5 py-2.5 bg-white border rounded-xl text-base sm:text-sm outline-none transition-all ${
-                            mobileTouched && !mobileValidation.isValid
-                              ? 'border-red-500 focus:ring-2 focus:ring-red-500 bg-red-50/40 text-red-900 font-medium'
-                              : 'border-gray-200 focus:ring-2 focus:ring-blue-500 text-gray-900'
-                          }`}
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         {mobileTouched && !mobileValidation.isValid && (
-                          <p className="text-xs text-red-600 font-semibold mt-1">
-                            {mobileValidation.error}
-                          </p>
+                          <p className="text-[11px] text-red-600 mt-1">{mobileValidation.error}</p>
                         )}
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-gray-600 uppercase mb-1">Work Email *</label>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">Email Address *</label>
                         <input
                           type="email"
                           name="email"
                           value={formData.email}
                           onChange={handleInputChange}
                           required
-                          placeholder="Enter work email address"
-                          className="w-full px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-base sm:text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter your email address"
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                     </div>
                   </div>
 
-                  <div className="pt-4 flex items-center justify-between gap-3">
+                  <div className="pt-2 flex items-center justify-between">
                     <button
                       type="button"
-                      onClick={() => setStep(2)}
-                      className="px-4 sm:px-5 py-2.5 text-xs font-bold text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer min-h-[44px] touch-manipulation"
+                      onClick={() => setStage(2)}
+                      className="px-4 py-2 text-xs font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all flex items-center gap-1 cursor-pointer"
                     >
                       <ArrowLeft className="w-4 h-4" />
                       <span>Back</span>
                     </button>
 
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="px-6 sm:px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm rounded-xl shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 min-h-[44px] touch-manipulation"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          <span>Generating Assessment Report...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Calculator className="w-4 h-4 text-blue-100" />
-                          <span>Calculate Feasibility & Eligibility</span>
-                          <ArrowRight className="w-4 h-4" />
-                        </>
+                    <div className="flex items-center gap-2">
+                      {editingProject && (
+                        <button
+                          type="button"
+                          onClick={handleSaveProjectEdits}
+                          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Save className="w-3.5 h-3.5" />
+                          <span>Save Updates</span>
+                        </button>
                       )}
-                    </button>
+
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        {isSubmitting ? (
+                          <span>Evaluating...</span>
+                        ) : (
+                          <>
+                            <Calculator className="w-4 h-4" />
+                            <span>Get Feasibility Result</span>
+                            <ArrowRight className="w-4 h-4" />
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
             </form>
           </div>
-        ) : (
-          /* RESULTS DASHBOARD & TEASER FORMAT SWITCHER */
-          <div className="space-y-6 sm:space-y-8 animate-in zoom-in-95 duration-500">
-            {/* View Switcher Bar */}
-            <div className="bg-slate-900 rounded-2xl p-2 sm:p-2.5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 border border-slate-800 shadow-xl">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:flex items-center gap-2">
-                <button
-                  onClick={() => setViewMode('scorecard')}
-                  className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer min-h-[42px] touch-manipulation ${
-                    viewMode === 'scorecard'
-                      ? 'bg-blue-600 text-white shadow-md'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800'
-                  }`}
-                >
-                  <BarChart3 className="w-4 h-4 shrink-0" />
-                  <span>Scorecard & Analytics</span>
-                </button>
+        )}
 
-                <button
-                  onClick={handleSelectTeaserTab}
-                  className={`px-3.5 sm:px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer min-h-[42px] touch-manipulation ${
-                    viewMode === 'teaser'
-                      ? 'bg-blue-600 text-white shadow-md'
-                      : isTeaserUnlocked
-                      ? 'text-slate-300 hover:text-white hover:bg-slate-800'
-                      : 'text-amber-400/90 hover:bg-amber-500/10 border border-amber-500/30'
-                  }`}
-                >
-                  {isTeaserUnlocked ? (
-                    <Eye className="w-4 h-4 shrink-0" />
-                  ) : (
-                    <Lock className="w-4 h-4 text-amber-400 shrink-0" />
-                  )}
-                  <span>Executive Teaser</span>
-                  {!isTeaserUnlocked && (
-                    <span className="px-1.5 py-0.5 text-[10px] bg-amber-500/20 text-amber-300 rounded font-semibold uppercase">
-                      Locked
-                    </span>
-                  )}
-                </button>
+        {/* ========================================================================= */}
+        {/* STAGE 1 RESULT: FEASIBILITY CHECK RESULT                                   */}
+        {/* ========================================================================= */}
+        {stage === 'feasibility_result' && (
+          <div className="bg-white rounded-3xl border border-gray-200 shadow-xl p-6 sm:p-8 space-y-6 animate-in zoom-in-95 duration-400">
+            {/* Header */}
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-100 pb-4">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold mb-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Feasibility Result Available</span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 font-manrope">
+                  {formData.projectName || 'Greenfield Project'}
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {formData.industry} • {formData.location}
+                </p>
               </div>
 
-              <div className="flex items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-slate-800/80">
-                <button
-                  onClick={() => setStep(1)}
-                  className="flex-1 md:flex-none px-3.5 py-2.5 text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer min-h-[42px] touch-manipulation"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 shrink-0" />
-                  <span>Recalculate</span>
-                </button>
+              <div className="flex items-center gap-2">
+                {editingProject && (
+                  <button
+                    onClick={handleSaveProjectEdits}
+                    className="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Save Project Updates</span>
+                  </button>
+                )}
 
                 <button
-                  onClick={handleDownloadTeaserClick}
-                  className={`flex-1 md:flex-none px-4 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm min-h-[42px] touch-manipulation ${
-                    isTeaserUnlocked
-                      ? 'text-white bg-blue-600 hover:bg-blue-700'
-                      : 'text-amber-300 bg-amber-950/60 border border-amber-500/40 hover:bg-amber-900/60'
-                  }`}
+                  onClick={() => setStage(1)}
+                  className="px-3.5 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 rounded-xl flex items-center gap-1 cursor-pointer"
                 >
-                  {isTeaserUnlocked ? (
-                    <Download className="w-3.5 h-3.5 shrink-0" />
-                  ) : (
-                    <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  )}
-                  <span>{isTeaserUnlocked ? 'Download PDF' : 'Unlock PDF'}</span>
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Edit Inputs</span>
                 </button>
               </div>
             </div>
 
-            {viewMode === 'scorecard' ? (
-              <>
-                {/* Report Header Card */}
-                <div className="bg-white rounded-2xl border border-gray-200 shadow-xl p-6 sm:p-8">
-                  <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-100 pb-6">
-                    <div>
-                      <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold uppercase tracking-wider mb-2">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
-                        <span>Assessment Completed</span>
-                      </div>
-                      <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 font-manrope">
-                        {formData.projectName || 'Greenfield Project'}
-                      </h2>
-                      <p className="text-xs text-gray-500 mt-1 font-medium flex items-center gap-3">
-                        <span>Sector: <strong className="text-gray-800">{formData.industry}</strong></span>
-                        <span>•</span>
-                        <span>Location: <strong className="text-gray-800">{formData.location}</strong></span>
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* 3 Core Metric Cards */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6">
-                    {/* Feasibility Check */}
-                    <div className="p-5 bg-slate-900 text-white rounded-2xl relative overflow-hidden flex flex-col justify-between">
-                      <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/10 rounded-full blur-xl" />
-                      <div>
-                        <div className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                          <BarChart3 className="w-4 h-4" />
-                          <span>Feasibility Check</span>
-                        </div>
-                        <div className="text-4xl font-black text-white my-2 font-manrope flex items-baseline gap-1">
-                          {getFeasibilityTerm(results.feasibilityScore)}
-                        </div>
-                      </div>
-                      <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-300">
-                        <span>Viability Rating</span>
-                        <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-bold">
-                          {results.feasibilityScore >= 78 ? 'High Feasibility' : 'Moderate Feasibility'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Bankability Rating */}
-                    <div className="p-5 bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-2xl relative overflow-hidden flex flex-col justify-between shadow-lg shadow-blue-600/20">
-                      <div>
-                        <div className="text-xs font-bold text-blue-100 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                          <Award className="w-4 h-4" />
-                          <span>Bankability Rating</span>
-                        </div>
-                        <div className="text-4xl font-black text-white my-2 font-manrope">
-                          {results.bankabilityRating} <span className="text-lg font-normal text-blue-200">/ 10</span>
-                        </div>
-                      </div>
-                      <div className="mt-4 pt-3 border-t border-blue-500/40 flex items-center justify-between text-xs text-blue-100">
-                        <span>Lender Category</span>
-                        <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white font-bold">
-                          Tier-1 Bankable
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Estimated Loan Eligibility */}
-                    <div className="p-5 bg-blue-50 border border-blue-200 rounded-2xl flex flex-col justify-between">
-                      <div>
-                        <div className="text-xs font-bold text-blue-900 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                          <Landmark className="w-4 h-4 text-blue-700" />
-                          <span>Estimated Loan Eligibility</span>
-                        </div>
-                        <div className="text-3xl font-black text-blue-950 my-2 font-manrope">
-                          ₹ {results.estimatedLoan} <span className="text-sm font-semibold text-blue-700">Cr</span>
-                        </div>
-                      </div>
-                      <div className="mt-4 pt-3 border-t border-blue-200/60 flex items-center justify-between text-xs text-blue-800">
-                        <span>Max Debt LTV</span>
-                        <span className="font-bold text-blue-900">{results.debtPct}% Debt Funding</span>
-                      </div>
-                    </div>
-                  </div>
+            {/* Feasibility Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-5 bg-slate-900 text-white rounded-2xl">
+                <span className="text-[11px] font-bold text-blue-400 uppercase tracking-wider block mb-1">
+                  Feasibility Check
+                </span>
+                <div className="text-2xl sm:text-3xl font-black font-manrope">
+                  {getFeasibilityTerm(results.feasibilityScore)}
                 </div>
+                <p className="text-xs text-slate-300 mt-1">Score: {results.feasibilityScore}/100</p>
+              </div>
 
-                {/* Proceed to Detailed Risk Assessment Call to Action */}
-                {!showRiskProfile && (
-                  <div className="flex flex-col items-center justify-center p-6 bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border border-slate-700/80 text-center shadow-lg my-2">
-                    <div className="max-w-md space-y-2 mb-4">
-                      <h4 className="text-base font-bold text-white font-manrope">Ready for Underwriting & Detailed Risk Scoring?</h4>
-                      <p className="text-xs text-slate-300">
-                        Enter promoter background, collateral coverage, credit track, and workforce details to generate your comprehensive 10-point underwriting rating and unlock the Executive Teaser PDF report.
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setShowRiskProfile(true);
-                        setTimeout(() => {
-                          const el = document.getElementById('risk-profile-section');
-                          if (el) {
-                            el.scrollIntoView({ behavior: 'smooth' });
-                          }
-                        }, 100);
-                      }}
-                      className="px-8 py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-sm sm:text-base rounded-2xl shadow-xl hover:shadow-2xl hover:shadow-blue-600/30 transition-all flex items-center justify-center gap-3 cursor-pointer group transform hover:-translate-y-0.5 active:translate-y-0"
-                    >
-                      <span>Proceed to Detailed Risk Assessment</span>
-                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1.5 transition-transform" />
-                    </button>
-                  </div>
-                )}
-
-                {/* Additional Data Collection Step: Detailed Risk Profile */}
-                {showRiskProfile && (
-                  <DetailedRiskProfileForm
-                    isUnlocked={isTeaserUnlocked}
-                    onSubmitSuccess={(data) => {
-                      setRiskProfileData(data);
-                      setRiskProfileSubmitted(true);
-                      setIsTeaserUnlocked(true);
-                    }}
-                    defaultEquityPercent={formData.equityPercent}
-                    defaultPromoterExpYears={formData.promoterExpYears}
-                    sectionId="risk-profile-section"
-                  />
-                )}
-
-                {/* Observations & Recommendations Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Key Observations */}
-                  <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-                    <h3 className="text-base font-bold text-gray-900 flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
-                      <FileText className="w-4 h-4 text-blue-600" />
-                      <span>Key Analytical Observations</span>
-                    </h3>
-
-                    <ul className="space-y-3 text-xs text-gray-700 font-medium">
-                      <li className="flex items-start gap-2.5">
-                        <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                        <span>
-                          Promoter equity commitment of <strong>₹ {formData.promoterContribCr} Cr ({results.eqPct}%)</strong> aligns with lead banker requirements for Greenfield project debt.
-                        </span>
-                      </li>
-                      <li className="flex items-start gap-2.5">
-                        <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                        <span>
-                          Land status (<strong>{formData.landStatus}</strong>) and Collateral status (<strong>{formData.collateralStatus}</strong>) reduce implementation delay risks.
-                        </span>
-                      </li>
-                      <li className="flex items-start gap-2.5">
-                        <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                        <span>
-                          Promoter experience (<strong>{formData.promoterExp}</strong>) enhances credit agency rating and loan margin pricing.
-                        </span>
-                      </li>
-                      <li className="flex items-start gap-2.5">
-                        <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                        <span>
-                          Eligible for state-level interest subventions and capital subsidies under active industrial policies.
-                        </span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Actionable Recommendations */}
-                  <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-                    <h3 className="text-base font-bold text-gray-900 flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
-                      <Sparkles className="w-4 h-4 text-blue-600" />
-                      <span>Recommended Next Steps</span>
-                    </h3>
-
-                    <div className="space-y-3 text-xs">
-                      <div className="p-3 bg-slate-50 rounded-xl border border-gray-200 flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
-                          1
-                        </div>
-                        <div>
-                          <div className="font-bold text-gray-900">Compile Bank-Grade DPR & Financial Model</div>
-                          <div className="text-gray-600 mt-0.5">Prepare a 10-year cash flow projection and TEV study aligned with banking standards.</div>
-                        </div>
-                      </div>
-
-                      <div className="p-3 bg-slate-50 rounded-xl border border-gray-200 flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
-                          2
-                        </div>
-                        <div>
-                          <div className="font-bold text-gray-900">Debt Syndication & Lender Mapping</div>
-                          <div className="text-gray-600 mt-0.5">Engage with consortium banks and financial institutions for competitive interest rates.</div>
-                        </div>
-                      </div>
-
-                      <div className="p-3 bg-slate-50 rounded-xl border border-gray-200 flex items-start gap-3">
-                        <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
-                          3
-                        </div>
-                        <div>
-                          <div className="font-bold text-gray-900">Subsidy Alignment & Statutory Approvals</div>
-                          <div className="text-gray-600 mt-0.5">Apply for industrial land clearances, environmental consents, and capital subsidy registration.</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+              <div className="p-5 bg-blue-50 border border-blue-200 rounded-2xl">
+                <span className="text-[11px] font-bold text-blue-900 uppercase tracking-wider block mb-1">
+                  Estimated Loan Needed
+                </span>
+                <div className="text-2xl sm:text-3xl font-black text-blue-950 font-manrope">
+                  ₹ {results.estimatedLoan} <span className="text-sm font-semibold">Cr</span>
                 </div>
-              </>
-            ) : (
-              /* EXECUTIVE PROJECT TEASER VIEW (EXACT FORMAT WITH INISIO BRANDING) */
-              <div className="space-y-6 bg-slate-200/80 p-4 sm:p-8 rounded-3xl border border-gray-300">
-                {!isTeaserUnlocked && (
-                  <div className="bg-amber-500/10 border border-amber-500/30 text-amber-900 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <Lock className="w-6 h-6 text-amber-600 shrink-0" />
-                      <div>
-                        <h4 className="font-bold text-sm text-slate-900">Teaser Preview & Download Pending Risk Profile Submission</h4>
-                        <p className="text-xs text-slate-600">Please complete all 5 required sections of the Detailed Risk Profile form below to unlock & calculate your rating out of 10.</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setViewMode('scorecard');
-                        setShowRiskProfile(true);
-                        setTimeout(() => {
-                          const el = document.getElementById('risk-profile-section');
-                          if (el) el.scrollIntoView({ behavior: 'smooth' });
-                        }, 100);
-                      }}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shrink-0 transition-all cursor-pointer shadow-sm"
-                    >
-                      Fill Detailed Risk Profile
-                    </button>
-                  </div>
+                <p className="text-xs text-slate-600 mt-1">Promoter: ₹ {formData.promoterContribCr} Cr ({results.eqPct}%)</p>
+              </div>
+
+              <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl">
+                <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1">
+                  Land &amp; Collateral
+                </span>
+                <div className="text-base font-bold text-slate-900">
+                  {formData.landStatus}
+                </div>
+                <p className="text-xs text-slate-600 mt-1">{formData.collateralStatus}</p>
+              </div>
+            </div>
+
+            {/* Simple Direct Next Action */}
+            <div className="pt-3 flex items-center justify-end border-t border-slate-100">
+              <button
+                onClick={() => {
+                  setStage('collect_bankability');
+                  window.scrollTo({ top: 120, behavior: 'smooth' });
+                }}
+                className="w-full sm:w-auto px-7 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>Proceed to Bankability Rating</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* STAGE 2 INPUT: DETAILED RISK PROFILE FOR BANKABILITY RATING                */}
+        {/* ========================================================================= */}
+        {stage === 'collect_bankability' && (
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setStage('feasibility_result')}
+                className="px-3.5 py-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 bg-white border border-slate-200 rounded-xl flex items-center gap-1 cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to Feasibility Result</span>
+              </button>
+
+              <div className="flex items-center gap-2">
+                {editingProject && (
+                  <button
+                    type="button"
+                    onClick={handleSaveProjectEdits}
+                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm cursor-pointer"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Save Project Updates</span>
+                  </button>
                 )}
-
-                {/* EXECUTIVE TEASER DOCUMENT */}
-                <div className="bg-white rounded-xl shadow-2xl p-6 sm:p-10 space-y-6 text-slate-900 border border-gray-200">
-                  {/* Top Legal Header */}
-                  <div className="border-b border-slate-200 pb-4">
-                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 font-manrope uppercase">
-                      {(formData.projectName || 'GREENFIELD PROJECT PRIVATE LIMITED').toUpperCase()}
-                    </h1>
-                    <h2 className="text-base font-bold text-slate-700 font-manrope mt-1">
-                      Company Profile & Executive Project Teaser
-                    </h2>
-                  </div>
-
-                  {/* Section 1: General Information */}
-                  <div className="space-y-3">
-                    <div className="bg-[#0F172A] text-white px-4 py-2 font-bold text-xs sm:text-sm uppercase tracking-wide rounded-sm">
-                      General Information
-                    </div>
-                    <div className="text-xs sm:text-sm text-slate-700 leading-relaxed space-y-2.5 font-sans">
-                      <p>
-                        <strong>{(formData.projectName || 'The Company').toUpperCase()}</strong> is engaged in the proposed greenfield establishment and operation of high-capacity facilities in the <strong>{formData.industry}</strong> sector. The project is proposed at <strong>{formData.location}</strong>, promoted by <strong>{formData.fullName || 'Promoter'}</strong>.
-                      </p>
-                      <p>
-                        The company proposes to establish a high-capacity greenfield plant with an estimated project cost of <strong>₹ {formData.totalCostCr} Crores (₹ {costLakhs} Lakhs)</strong>. To ensure uninterrupted operations and raw material security, the company has arranged suitable land under <strong>{formData.landStatus}</strong> status (Collateral / Title: <strong>{formData.collateralStatus || 'Freehold Clear Title'}</strong>).
-                      </p>
-                      <p>
-                        The project's technical design, engineering, DPR compilation, and debt syndication support are being structured by <strong>INISIO Greenfield Project Advisory</strong>, specializing in industrial project finance, TEV studies, and consortium bank structuring.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Section 2: Service Offerings */}
-                  <div className="space-y-3">
-                    <div className="bg-[#0F172A] text-white px-4 py-2 font-bold text-xs sm:text-sm uppercase tracking-wide rounded-sm">
-                      Service Offerings
-                    </div>
-                    <div className="border border-slate-200 text-xs sm:text-sm rounded-sm overflow-hidden">
-                      <div className="grid grid-cols-3 bg-slate-100 font-bold p-2.5 border-b border-slate-200 text-slate-900">
-                        <div className="col-span-1">Core Offering</div>
-                        <div className="col-span-2">Description & Scope</div>
-                      </div>
-                      <div className="grid grid-cols-3 p-3 text-slate-800">
-                        <div className="col-span-1 font-bold">Production & Commercial Supply of {formData.industry}</div>
-                        <div className="col-span-2 leading-relaxed">Commercial manufacture, refining, and supply of primary product outputs and value-added by-products for institutional, commercial, and industrial off-takers.</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Section 3: Directors Details */}
-                  <div className="space-y-3">
-                    <div className="bg-[#0F172A] text-white px-4 py-2 font-bold text-xs sm:text-sm uppercase tracking-wide rounded-sm">
-                      Directors Details
-                    </div>
-                    <div className="border border-slate-200 text-xs sm:text-sm rounded-sm overflow-hidden">
-                      <div className="grid grid-cols-2 bg-slate-100 font-bold p-2.5 border-b border-slate-200 text-slate-900">
-                        <div>Name</div>
-                        <div>Title / Designation</div>
-                      </div>
-                      <div className="grid grid-cols-2 p-2.5 text-slate-800">
-                        <div className="font-bold">{formData.fullName || 'Promoter'}</div>
-                        <div>Promoter / Lead Investor</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Section 4: Suppliers and Buyers */}
-                  <div className="space-y-3">
-                    <div className="bg-[#0F172A] text-white px-4 py-2 font-bold text-xs sm:text-sm uppercase tracking-wide rounded-sm">
-                      SUPPLIERS AND BUYERS
-                    </div>
-                    <div className="text-xs sm:text-sm text-slate-700 leading-relaxed space-y-2.5 font-sans">
-                      <p>
-                        <strong>{formData.projectName || 'The Company'}</strong> adopts an integrated supply chain model, sourcing raw materials and key feedstock through contract farming, primary producers, aggregators, and industrial suppliers within an optimal transport radius.
-                      </p>
-                      <p>
-                        On the marketing front, the company plans to sell primary output primarily to Oil Marketing Companies (OMCs), City Gas Distribution (CGD) networks, industrial bulk consumers, or retail networks. By-products will be marketed to institutional fertilizer and commercial agricultural users.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Section 5: Project Funding Facilities */}
-                  <div className="space-y-3">
-                    <div className="bg-[#0F172A] text-white px-4 py-2 font-bold text-xs sm:text-sm uppercase tracking-wide rounded-sm">
-                      Project Funding Facilities
-                    </div>
-
-                    <div className="text-xs font-bold text-slate-800 uppercase tracking-wide pt-1">
-                      Proposed Project Cost Statement
-                    </div>
-
-                    {/* Cost Table */}
-                    <div className="border border-slate-200 text-xs sm:text-sm rounded-sm overflow-hidden">
-                      <div className="grid grid-cols-2 bg-slate-100 font-bold p-2.5 border-b border-slate-200 text-slate-900">
-                        <div>Particulars</div>
-                        <div className="text-right">Amount (₹ Lakhs)</div>
-                      </div>
-                      <div className="grid grid-cols-2 p-2.5 border-b border-slate-100">
-                        <div>Consultancy, TEFR & Engineering Fees</div>
-                        <div className="text-right font-mono">{consultancyLakhs}</div>
-                      </div>
-                      <div className="grid grid-cols-2 p-2.5 border-b border-slate-100">
-                        <div>Plant & Machinery, Technology & Procurement</div>
-                        <div className="text-right font-mono">{machineryLakhs}</div>
-                      </div>
-                      <div className="grid grid-cols-2 p-2.5 border-b border-slate-100">
-                        <div>Land Cost, Civil Works & Infrastructure</div>
-                        <div className="text-right font-mono">{civilLakhs}</div>
-                      </div>
-                      <div className="grid grid-cols-2 p-2.5 bg-slate-50 font-bold text-slate-900">
-                        <div>Total Project Cost</div>
-                        <div className="text-right font-mono text-blue-700">{costLakhs} lakhs</div>
-                      </div>
-                    </div>
-
-                    <div className="text-xs font-bold text-slate-800 uppercase tracking-wide pt-2">
-                      Means of Finance
-                    </div>
-
-                    {/* Means Table */}
-                    <div className="border border-slate-200 text-xs sm:text-sm rounded-sm overflow-hidden">
-                      <div className="grid grid-cols-3 bg-slate-100 font-bold p-2.5 border-b border-slate-200 text-slate-900">
-                        <div>Means of Finance</div>
-                        <div>Amount (INR Lakhs)</div>
-                        <div className="text-right">Share (%)</div>
-                      </div>
-                      <div className="grid grid-cols-3 p-2.5 border-b border-slate-100">
-                        <div className="font-bold text-slate-900">Project Term Loan</div>
-                        <div className="font-mono">{loanLakhs} lakhs</div>
-                        <div className="text-right font-bold text-blue-700">{results.debtPct}%</div>
-                      </div>
-                      <div className="grid grid-cols-3 p-2.5 border-b border-slate-100">
-                        <div className="font-bold text-slate-900">Promoter Contribution</div>
-                        <div className="font-mono">{contribLakhs} lakhs</div>
-                        <div className="text-right font-bold text-slate-700">{results.eqPct}%</div>
-                      </div>
-                      <div className="grid grid-cols-3 p-2.5 bg-slate-50 font-bold text-slate-900">
-                        <div>Total Means of Finance</div>
-                        <div className="font-mono">{costLakhs} lakhs</div>
-                        <div className="text-right">100%</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Section 6: Present Requirement */}
-                  <div className="space-y-3">
-                    <div className="bg-[#0F172A] text-white px-4 py-2 font-bold text-xs sm:text-sm uppercase tracking-wide rounded-sm">
-                      Present Requirement
-                    </div>
-                    <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
-                      The Company proposes to avail a Term Loan facility of <strong>₹ {formData.loanRequiredCr} Crore</strong> to meet its capital expenditure requirements. The proposed facility will be utilized for the establishment of the {formData.industry} facility, including procurement and installation of plant & machinery, civil infrastructure development, and operational commissioning.
-                    </p>
-                  </div>
-
-                  {/* Section 7: Primary & Collaterals */}
-                  <div className="space-y-3">
-                    <div className="bg-[#0F172A] text-white px-4 py-2 font-bold text-xs sm:text-sm uppercase tracking-wide rounded-sm">
-                      Primary & Collaterals
-                    </div>
-                    <div className="border border-slate-200 text-xs sm:text-sm rounded-sm overflow-hidden">
-                      <div className="grid grid-cols-3 bg-slate-100 font-bold p-2.5 border-b border-slate-200 text-slate-900">
-                        <div>Security Type</div>
-                        <div className="col-span-2">Details</div>
-                      </div>
-                      <div className="grid grid-cols-3 p-3 border-b border-slate-100">
-                        <div className="font-bold text-slate-900">Primary Security</div>
-                        <div className="col-span-2 text-slate-800">Hypothecation on all the plant & machinery, equipment, civil structures, and fixed assets procured out of the Term Loan.</div>
-                      </div>
-                      <div className="grid grid-cols-3 p-3">
-                        <div className="font-bold text-slate-900">Collateral Security</div>
-                        <div className="col-span-2 text-blue-800 font-bold">{formData.collateralStatus || 'Freehold (Clear Title)'}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Section 8: Detailed Risk Profile & Underwriting Assessment */}
-                  {riskProfileSubmitted && (
-                    <div className="space-y-3">
-                      <div className="bg-[#0F172A] text-white px-4 py-2 font-bold text-xs sm:text-sm uppercase tracking-wide rounded-sm flex items-center justify-between">
-                        <span>Detailed Risk Profile & Underwriting Assessment</span>
-                        <span className="text-blue-400 font-extrabold text-xs">
-                          Rating: {comprehensiveRisk.scoreOutOf10} / 10 ({comprehensiveRisk.ratingLabel})
-                        </span>
-                      </div>
-                      <div className="border border-slate-200 text-xs sm:text-sm rounded-sm overflow-hidden">
-                        <div className="grid grid-cols-2 p-2.5 border-b border-slate-100 bg-blue-50/70">
-                          <div className="font-bold text-slate-800">Underwriting Rating (out of 10)</div>
-                          <div className="font-extrabold text-blue-800">{comprehensiveRisk.scoreOutOf10} / 10 ({comprehensiveRisk.ratingLabel})</div>
-                        </div>
-                        <div className="grid grid-cols-2 p-2.5 border-b border-slate-100">
-                          <div className="font-bold text-slate-700">CIBIL / Credit Score Track</div>
-                          <div className="font-semibold text-slate-900">
-                            {riskProfileData?.isNewToCredit ? 'New to Credit (N/A)' : (riskProfileData?.cibilScore ? `${riskProfileData.cibilScore} Score` : 'N/A')}
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 p-2.5 border-b border-slate-100 bg-slate-50">
-                          <div className="font-bold text-slate-700">Collateral Coverage %</div>
-                          <div className="font-semibold text-slate-900">
-                            {riskProfileData?.collateralCoveragePct ? `${riskProfileData.collateralCoveragePct}%` : 'N/A'}
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 p-2.5 border-b border-slate-100">
-                          <div className="font-bold text-slate-700">Industry Experience</div>
-                          <div className="text-slate-900">{riskProfileData?.industryExperience || formData.promoterExp || 'N/A'}</div>
-                        </div>
-                        <div className="grid grid-cols-2 p-2.5 border-b border-slate-100 bg-slate-50">
-                          <div className="font-bold text-slate-700">Educational Background</div>
-                          <div className="text-slate-900">{riskProfileData?.educationalBackground || 'N/A'}</div>
-                        </div>
-                        <div className="grid grid-cols-2 p-2.5 border-b border-slate-100">
-                          <div className="font-bold text-slate-700">Business Constitution & Vintage</div>
-                          <div className="text-slate-900">
-                            {riskProfileData ? `${riskProfileData.businessConstitution} (${riskProfileData.businessVintage})` : 'N/A'}
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 p-2.5 border-b border-slate-100 bg-slate-50">
-                          <div className="font-bold text-slate-700">Promoter Contribution Type</div>
-                          <div className="text-slate-900">{riskProfileData?.contributionType || 'N/A'}</div>
-                        </div>
-                        <div className="grid grid-cols-2 p-2.5 border-b border-slate-100">
-                          <div className="font-bold text-slate-700">Management & Technical Workforce</div>
-                          <div className="text-slate-900">
-                            {riskProfileData ? `${riskProfileData.managementTeamSize} Mgmt / Directors • ${riskProfileData.technicalWorkforceCount} Tech Staff` : 'N/A'}
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 p-2.5">
-                          <div className="font-bold text-slate-700">Debt–Equity Ratio</div>
-                          <div className="font-bold text-slate-900">{riskProfileData?.debtEquityRatio || `${results.debtPct}:${results.eqPct}`}</div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Section 9: Preliminary Information */}
-                  <div className="space-y-3">
-                    <div className="bg-[#0F172A] text-white px-4 py-2 font-bold text-xs sm:text-sm uppercase tracking-wide rounded-sm">
-                      Preliminary Information
-                    </div>
-                    <div className="border border-slate-200 text-xs sm:text-sm rounded-sm overflow-hidden">
-                      <div className="grid grid-cols-2 p-2.5 border-b border-slate-100 bg-slate-50">
-                        <div className="font-bold text-slate-700">Project Name</div>
-                        <div className="font-bold text-slate-900">{formData.projectName || 'Greenfield Project'}</div>
-                      </div>
-                      <div className="grid grid-cols-2 p-2.5 border-b border-slate-100">
-                        <div className="font-bold text-slate-700">Promoter Name</div>
-                        <div className="font-semibold text-slate-900">{formData.fullName || 'N/A'}</div>
-                      </div>
-                      <div className="grid grid-cols-2 p-2.5 border-b border-slate-100 bg-slate-50">
-                        <div className="font-bold text-slate-700">Industry Sector</div>
-                        <div className="font-semibold text-slate-900">{formData.industry}</div>
-                      </div>
-                      <div className="grid grid-cols-2 p-2.5 border-b border-slate-100">
-                        <div className="font-bold text-slate-700">Project Location</div>
-                        <div className="text-slate-900">{formData.location || 'India'}</div>
-                      </div>
-                      <div className="grid grid-cols-2 p-2.5 border-b border-slate-100 bg-slate-50">
-                        <div className="font-bold text-slate-700">Land Status</div>
-                        <div className="text-slate-900">{formData.landStatus || 'N/A'}</div>
-                      </div>
-                      <div className="grid grid-cols-2 p-2.5 border-b border-slate-100">
-                        <div className="font-bold text-slate-700">Collateral Status</div>
-                        <div className="text-slate-900">{formData.collateralStatus || 'N/A'}</div>
-                      </div>
-                      <div className="grid grid-cols-2 p-2.5 border-b border-slate-100 bg-slate-50">
-                        <div className="font-bold text-slate-700">Promoter Experience</div>
-                        <div className="text-slate-900">{formData.promoterExp || 'N/A'}</div>
-                      </div>
-                      <div className="grid grid-cols-2 p-2.5 border-b border-slate-100">
-                        <div className="font-bold text-slate-700">Feasibility Score</div>
-                        <div className="font-bold text-blue-700">{getFeasibilityTerm(results.feasibilityScore)} ({results.feasibilityScore}/100)</div>
-                      </div>
-                      <div className="grid grid-cols-2 p-2.5">
-                        <div className="font-bold text-slate-700">Bankability Grade</div>
-                        <div className="font-bold text-slate-900">{results.bankabilityRating} / 10</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Document Footer */}
-                  <div className="pt-6 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 font-medium">
-                    <div>Official Teaser Preview</div>
-                    <div className="text-right">
-                      <div className="text-[11px] font-bold text-slate-800 uppercase">Prepared by</div>
-                      <div className="text-base font-black text-blue-600 font-manrope">INISIO</div>
-                      <div className="text-[11px] font-semibold text-slate-700">Greenfield Advisory</div>
-                    </div>
-                  </div>
+                <div className="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+                  Step 2: Bankability Underwriting Form
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Bottom Primary CTAs */}
-            <div className="p-6 bg-slate-900 rounded-2xl text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+            <DetailedRiskProfileForm
+              defaultEquityPercent={results.eqPct}
+              defaultPromoterExpYears={formData.promoterExp ? parseInt(formData.promoterExp) || 8 : 8}
+              initialData={riskProfileData}
+              onSubmitSuccess={(data) => {
+                setRiskProfileData(data);
+                setStage('bankability_result');
+                window.scrollTo({ top: 120, behavior: 'smooth' });
+              }}
+              sectionId="bankability-form-section"
+            />
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* STAGE 2 RESULT: BANKABILITY RATING RESULT                                  */}
+        {/* ========================================================================= */}
+        {stage === 'bankability_result' && (
+          <div className="bg-white rounded-3xl border border-gray-200 shadow-xl p-6 sm:p-8 space-y-6 animate-in zoom-in-95 duration-400">
+            {/* Header */}
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-100 pb-4">
               <div>
-                <h4 className="text-lg font-bold text-white font-manrope">Ready to execute your Greenfield financing?</h4>
-                <p className="text-xs text-slate-300 mt-1">Book a 1-on-1 session with our senior debt syndication advisors.</p>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold mb-1.5">
+                  <Award className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Bankability Rating Computed</span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 font-manrope">
+                  Bankability Rating: {riskProfileData ? comprehensiveRisk.scoreOutOf10.toFixed(1) : results.bankabilityRating} / 10
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Project: {formData.projectName} • Industry: {formData.industry}
+                </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+              <div className="flex items-center gap-2">
+                {editingProject && (
+                  <button
+                    type="button"
+                    onClick={handleSaveProjectEdits}
+                    className="px-3.5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center gap-1.5 shadow-sm cursor-pointer"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Save Project Updates</span>
+                  </button>
+                )}
                 <button
-                  onClick={handleDownloadTeaserClick}
-                  className={`flex-1 sm:flex-none px-5 py-3 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md ${
-                    isTeaserUnlocked
-                      ? 'text-white bg-blue-600 hover:bg-blue-700'
-                      : 'text-amber-300 bg-amber-950/80 border border-amber-500/40 hover:bg-amber-900/80'
-                  }`}
-                  title={isTeaserUnlocked ? 'Downloads official bank-grade PDF teaser document' : 'Complete Detailed Risk Profile to unlock PDF download'}
+                  onClick={() => setStage('collect_bankability')}
+                  className="px-3.5 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 rounded-xl flex items-center gap-1 cursor-pointer"
                 >
-                  {isTeaserUnlocked ? <Download className="w-4 h-4" /> : <Lock className="w-4 h-4 text-amber-400" />}
-                  <span>{isTeaserUnlocked ? 'Download Teaser PDF' : 'Unlock Teaser PDF'}</span>
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Edit Underwriting Inputs</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Direct Bankability Overview Based Purely on User Inputs */}
+            <div className="p-6 bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950 text-white rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-6 shadow-lg">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-blue-300 uppercase tracking-wider block">
+                    Underwriting Bankability Grade
+                  </span>
+                  <span className="text-[11px] font-semibold text-blue-200 bg-blue-900/60 px-2 py-0.5 rounded-full border border-blue-700/50">
+                    {comprehensiveRisk.ratingLabel}
+                  </span>
+                </div>
+                <div className="text-4xl sm:text-5xl font-black font-manrope my-1 text-white">
+                  {riskProfileData ? comprehensiveRisk.scoreOutOf10.toFixed(1) : results.bankabilityRating} <span className="text-xl font-normal text-blue-200">/ 10</span>
+                </div>
+                <p className="text-xs text-slate-300">
+                  {riskProfileData?.businessConstitution || 'Corporate Entity'} • {riskProfileData?.businessVintage || 'Established Unit'} • Collateral: {riskProfileData?.collateralCoveragePct || '100'}%
+                </p>
+              </div>
+
+              <div className="w-full sm:w-auto grid grid-cols-2 sm:flex sm:flex-col gap-3 sm:border-l sm:border-slate-800 sm:pl-6 text-left sm:text-right">
+                <div>
+                  <span className="text-[11px] text-slate-400 block font-medium">Feasibility Score</span>
+                  <span className="text-base font-bold text-emerald-400">
+                    {results.feasibilityScore}/100 ({getFeasibilityTerm(results.feasibilityScore)})
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[11px] text-slate-400 block font-medium">Promoter Credit Track</span>
+                  <span className="text-base font-bold text-white">
+                    {riskProfileData?.isNewToCredit ? 'New to Credit' : `${riskProfileData?.cibilScore || '785'} CIBIL`}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Financial & Structuring Highlights */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Project Outlay</div>
+                <div className="text-lg font-black text-slate-900 font-manrope mt-0.5">₹ {formData.totalCostCr} Cr</div>
+                <div className="text-xs text-slate-500 mt-0.5">₹ {costLakhs} Lakhs capex</div>
+              </div>
+
+              <div className="p-4 bg-blue-50/60 border border-blue-200/80 rounded-2xl">
+                <div className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">Required Bank Loan</div>
+                <div className="text-lg font-black text-blue-900 font-manrope mt-0.5">₹ {results.estimatedLoan} Cr</div>
+                <div className="text-xs text-blue-700 mt-0.5">{results.debtPct}% Debt allocation</div>
+              </div>
+
+              <div className="p-4 bg-emerald-50/60 border border-emerald-200/80 rounded-2xl">
+                <div className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">Promoter Equity</div>
+                <div className="text-lg font-black text-emerald-900 font-manrope mt-0.5">₹ {formData.promoterContribCr} Cr</div>
+                <div className="text-xs text-emerald-700 mt-0.5">{results.eqPct}% Equity contribution</div>
+              </div>
+            </div>
+
+            {/* Next Steps & Action Banner */}
+            <div className="p-5 bg-slate-900 rounded-2xl text-white flex flex-col md:flex-row items-center justify-between gap-4">
+              <div>
+                <h3 className="text-base font-bold text-white font-manrope flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-blue-400" />
+                  <span>Assessment &amp; Bankability Completed</span>
+                </h3>
+                <p className="text-xs text-slate-300 mt-0.5">
+                  Your project details are ready. Go to your dashboard to track status or download the sample teaser directly.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+                <button
+                  type="button"
+                  onClick={handleDownloadTeaser}
+                  className="flex-1 sm:flex-none px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Download className="w-4 h-4 text-blue-400" />
+                  <span>Download Sample Teaser</span>
                 </button>
 
                 <button
+                  type="button"
                   onClick={onOpenConsultation}
-                  className="flex-1 sm:flex-none px-5 py-3 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                  className="flex-1 sm:flex-none px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  <PhoneCall className="w-4 h-4" />
-                  <span>Book Free Call</span>
+                  <PhoneCall className="w-4 h-4 text-emerald-400" />
+                  <span>Book Consultation</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleGoToDashboard}
+                  className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span>Go to Dashboard</span>
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

@@ -41,6 +41,7 @@ export default function App() {
   });
 
   const [selectedIndustryForAssessment, setSelectedIndustryForAssessment] = useState<string>('');
+  const [editingProjectForAssessment, setEditingProjectForAssessment] = useState<any>(null);
 
   const handleOpenAuth = (mode: 'login' | 'signup' | 'forgot-password' = 'login') => {
     setAuthInitialMode(mode);
@@ -96,13 +97,17 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleOpenAssessment = (industryName?: string) => {
+  const handleOpenAssessment = (industryName?: string, projectToEdit?: any) => {
     setSelectedIndustryForAssessment(industryName || '');
+    setEditingProjectForAssessment(projectToEdit || null);
     setActiveTab('assessment');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSelectTab = (tab: string) => {
+    if (tab !== 'assessment') {
+      setEditingProjectForAssessment(null);
+    }
     setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -156,7 +161,7 @@ export default function App() {
             <div className="animate-in fade-in duration-300">
               <UserDashboard
                 user={currentUser}
-                onOpenAssessment={() => handleOpenAssessment()}
+                onOpenAssessment={(projectToEdit) => handleOpenAssessment('', projectToEdit)}
                 onOpenConsultation={() => setConsultationModalOpen(true)}
               />
             </div>
@@ -179,6 +184,17 @@ export default function App() {
               <ProjectAssessmentPage
                 onOpenConsultation={() => setConsultationModalOpen(true)}
                 defaultIndustry={selectedIndustryForAssessment}
+                editingProject={editingProjectForAssessment}
+                onFinishEditing={() => {
+                  setEditingProjectForAssessment(null);
+                  setActiveTab('user-dashboard');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                onNavigateToDashboard={() => {
+                  setEditingProjectForAssessment(null);
+                  setActiveTab('user-dashboard');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
               />
             </div>
           )}

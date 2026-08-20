@@ -1,8 +1,10 @@
 import Lead from '../models/Lead.js';
 import Notification from '../models/Notification.js';
+import { isDBConnected } from '../config/db.js';
 
 const INITIAL_LEADS_DATA = [
   {
+    _id: 'lead_01',
     fullName: 'Suraj Kanu',
     mobile: '9848012345',
     email: 'kanusuraj15@gmail.com',
@@ -20,8 +22,10 @@ const INITIAL_LEADS_DATA = [
     promoterExp: '12+ Years Manufacturing',
     notes: 'Downloaded Teaser PDF. Land acquired in Dholera SIR. Looking for SBI syndication consortium.',
     status: 'DPR Ready',
+    createdAt: new Date(Date.now() - 2 * 3600000),
   },
   {
+    _id: 'lead_02',
     fullName: 'Suraj Kanu',
     mobile: '9848012345',
     email: 'kanusuraj15@gmail.com',
@@ -39,8 +43,10 @@ const INITIAL_LEADS_DATA = [
     promoterExp: '10+ Years Pharma R&D',
     notes: 'Downloaded Teaser PDF. USFDA compliant formulation facility in Genome Valley.',
     status: 'In Appraisal',
+    createdAt: new Date(Date.now() - 4 * 3600000),
   },
   {
+    _id: 'lead_03',
     fullName: 'Pravalika junnu',
     mobile: '6302026462',
     email: 'pravalikajunnu14@gmail.com',
@@ -58,8 +64,10 @@ const INITIAL_LEADS_DATA = [
     promoterExp: '8+ Years Hospitality & Infrastructure',
     notes: 'Downloaded Teaser PDF. Interested in Debt Syndication for 50% debt component.',
     status: 'In Appraisal',
+    createdAt: new Date(Date.now() - 8 * 3600000),
   },
   {
+    _id: 'lead_04',
     fullName: 'Rajesh Patel',
     mobile: '9825011223',
     email: 'rajesh.patel@dahejchem.com',
@@ -77,108 +85,173 @@ const INITIAL_LEADS_DATA = [
     promoterExp: '15+ Years Chemical Engineering',
     notes: 'Downloaded Teaser PDF. TEFR approved by CA desk.',
     status: 'DPR Ready',
+    createdAt: new Date(Date.now() - 24 * 3600000),
   }
 ];
 
+let memoryLeads = [...INITIAL_LEADS_DATA];
+
 export const getAllLeads = async (query = {}) => {
-  let filter = {};
+  if (isDBConnected()) {
+    try {
+      let filter = {};
+      if (query.email) {
+        filter.email = { $regex: new RegExp(`^${query.email}$`, 'i') };
+      }
+      if (query.search) {
+        const s = query.search;
+        filter.$or = [
+          { fullName: { $regex: s, $options: 'i' } },
+          { mobile: { $regex: s, $options: 'i' } },
+          { email: { $regex: s, $options: 'i' } },
+          { projectName: { $regex: s, $options: 'i' } },
+          { industry: { $regex: s, $options: 'i' } },
+        ];
+      }
+      if (query.filterSource === 'PDF') {
+        filter.downloadedPDF = true;
+      } else if (query.filterSource === 'FORM') {
+        filter.downloadedPDF = false;
+      }
 
+      let leads = await Lead.find(filter).sort({ createdAt: -1 });
+      if (leads.length === 0 && !query.search && !query.filterSource) {
+        await Lead.insertMany(INITIAL_LEADS_DATA).catch(() => {});
+        leads = await Lead.find(filter).sort({ createdAt: -1 });
+      }
+      return leads;
+    } catch (err) {
+      console.warn('MongoDB query failed in getAllLeads, using memory fallback:', err.message);
+    }
+  }
+
+  // Memory fallback filtering
+  let results = [...memoryLeads];
   if (query.email) {
-    filter.email = { $regex: new RegExp(`^${query.email}$`, 'i') };
+    const em = query.email.toLowerCase();
+    results = results.filter((l) => l.email && l.email.toLowerCase() === em);
   }
-
   if (query.search) {
-    const s = query.search;
-    filter.$or = [
-      { fullName: { $regex: s, $options: 'i' } },
-      { mobile: { $regex: s, $options: 'i' } },
-      { email: { $regex: s, $options: 'i' } },
-      { projectName: { $regex: s, $options: 'i' } },
-      { industry: { $regex: s, $options: 'i' } },
-    ];
+    const s = query.search.toLowerCase();
+    results = results.filter(
+      (l) =>
+        (l.fullName && l.fullName.toLowerCase().includes(s)) ||
+        (l.mobile && l.mobile.includes(s)) ||
+        (l.email && l.email.toLowerCase().includes(s)) ||
+        (l.projectName && l.projectName.toLowerCase().includes(s)) ||
+        (l.industry && l.industry.toLowerCase().includes(s))
+    );
   }
-
   if (query.filterSource === 'PDF') {
-    filter.downloadedPDF = true;
+    results = results.filter((l) => l.downloadedPDF);
   } else if (query.filterSource === 'FORM') {
-    filter.downloadedPDF = false;
+    results = results.filter((l) => !l.downloadedPDF);
   }
-
-  let leads = await Lead.find(filter).sort({ createdAt: -1 });
-
-  // Auto-seed initial leads if collection is empty
-  if (leads.length === 0 && !query.search && !query.filterSource) {
-    await Lead.insertMany(INITIAL_LEADS_DATA);
-    leads = await Lead.find(filter).sort({ createdAt: -1 });
-  }
-
-  return leads;
+  return results.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 };
 
 export const createLead = async (leadData) => {
-  // Check if lead with same mobile exists in past hour
-  const recent = await Lead.findOne({
-    mobile: leadData.mobile,
-    createdAt: { $gte: new Date(Date.now() - 60 * 60 * 1000) }
-  });
+  if (isDBConnected()) {
+    try {
+      const recent = await Lead.findOne({
+        mobile: leadData.mobile,
+        createdAt: { $gte: new Date(Date.now() - 60 * 60 * 1000) }
+      });
 
-  let lead;
-  if (recent) {
-    Object.assign(recent, leadData);
-    lead = await recent.save();
+      let lead;
+      if (recent) {
+        Object.assign(recent, leadData);
+        lead = await recent.save();
+      } else {
+        lead = await Lead.create({
+          ...leadData,
+          timestamp: new Date(),
+        });
+      }
+
+      try {
+        const isTeaser = lead.downloadedPDF || lead.source?.includes('PDF');
+        await Notification.create({
+          type: isTeaser ? 'TEASER_DOWNLOAD' : 'LEAD_CREATED',
+          title: isTeaser ? 'Project Teaser Downloaded' : 'New Greenfield Lead Received',
+          message: `${lead.fullName} (${lead.email || lead.mobile}) ${isTeaser ? 'downloaded Teaser PDF for' : 'submitted project'} '${lead.projectName}' (₹${lead.totalCostCr} Cr).`,
+          userEmail: lead.email,
+          userName: lead.fullName,
+          projectName: lead.projectName,
+          read: false,
+          metadata: { totalCostCr: lead.totalCostCr, loanRequiredCr: lead.loanRequiredCr, source: lead.source }
+        });
+      } catch (e) {}
+
+      return lead;
+    } catch (err) {
+      console.warn('MongoDB create failed in createLead, storing in memory fallback:', err.message);
+    }
+  }
+
+  // Memory fallback
+  const existingIdx = memoryLeads.findIndex((l) => l.mobile === leadData.mobile);
+  let created;
+  if (existingIdx >= 0) {
+    memoryLeads[existingIdx] = { ...memoryLeads[existingIdx], ...leadData, updatedAt: new Date() };
+    created = memoryLeads[existingIdx];
   } else {
-    lead = await Lead.create({
+    created = {
+      _id: `lead_${Date.now()}`,
       ...leadData,
-      timestamp: new Date(),
-    });
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    memoryLeads.unshift(created);
   }
-
-  // Trigger Admin Notification
-  try {
-    const isTeaser = lead.downloadedPDF || lead.source?.includes('PDF');
-    await Notification.create({
-      type: isTeaser ? 'TEASER_DOWNLOAD' : 'LEAD_CREATED',
-      title: isTeaser ? 'Project Teaser Downloaded' : 'New Greenfield Lead Received',
-      message: `${lead.fullName} (${lead.email || lead.mobile}) ${isTeaser ? 'downloaded Teaser PDF for' : 'submitted project'} '${lead.projectName}' (₹${lead.totalCostCr} Cr).`,
-      userEmail: lead.email,
-      userName: lead.fullName,
-      projectName: lead.projectName,
-      read: false,
-      metadata: { totalCostCr: lead.totalCostCr, loanRequiredCr: lead.loanRequiredCr, source: lead.source }
-    });
-  } catch (e) {
-    console.log('Notification trigger error:', e.message);
-  }
-
-  return lead;
+  return created;
 };
 
 export const getLeadById = async (id) => {
-  const lead = await Lead.findById(id);
-  if (!lead) {
-    throw new Error('Lead not found');
+  if (isDBConnected()) {
+    try {
+      const lead = await Lead.findById(id);
+      if (lead) return lead;
+    } catch (err) {}
   }
-  return lead;
+  const found = memoryLeads.find((l) => String(l._id) === String(id));
+  if (!found) throw new Error('Lead not found');
+  return found;
 };
 
 export const updateLead = async (id, updates) => {
-  const lead = await Lead.findByIdAndUpdate(id, updates, { new: true, runValidators: true });
-  if (!lead) {
-    throw new Error('Lead not found');
+  if (isDBConnected()) {
+    try {
+      const lead = await Lead.findByIdAndUpdate(id, updates, { new: true, runValidators: true });
+      if (lead) return lead;
+    } catch (err) {}
   }
-  return lead;
+  const idx = memoryLeads.findIndex((l) => String(l._id) === String(id));
+  if (idx === -1) throw new Error('Lead not found');
+  memoryLeads[idx] = { ...memoryLeads[idx], ...updates, updatedAt: new Date() };
+  return memoryLeads[idx];
 };
 
 export const deleteLead = async (id) => {
-  const lead = await Lead.findByIdAndDelete(id);
-  if (!lead) {
-    throw new Error('Lead not found');
+  if (isDBConnected()) {
+    try {
+      const lead = await Lead.findByIdAndDelete(id);
+      if (lead) return lead;
+    } catch (err) {}
   }
-  return lead;
+  const idx = memoryLeads.findIndex((l) => String(l._id) === String(id));
+  if (idx === -1) throw new Error('Lead not found');
+  const removed = memoryLeads.splice(idx, 1)[0];
+  return removed;
 };
 
 export const clearAllLeads = async () => {
-  await Lead.deleteMany({});
+  if (isDBConnected()) {
+    try {
+      await Lead.deleteMany({});
+    } catch (err) {}
+  }
+  memoryLeads = [];
   return { message: 'All leads cleared successfully' };
 };
 
@@ -190,3 +263,4 @@ export default {
   deleteLead,
   clearAllLeads,
 };
+

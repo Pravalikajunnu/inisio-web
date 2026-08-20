@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { AuthUser } from '../types';
-import { AdminNotificationCenter } from './AdminNotificationCenter';
 import {
   TrendingUp,
   Menu,
@@ -194,11 +193,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* Desktop Actions (Login Icon + Start Assessment) */}
               <div className="hidden lg:flex items-center gap-2.5">
                 
-                {/* Admin/Desk Notification Center */}
-                {currentUser && (currentUser.role === 'admin' || currentUser.role === 'ca') && (
-                  <AdminNotificationCenter />
-                )}
-
                 {/* User Account Dropdown */}
                 {currentUser ? (
                   <div className="relative">
@@ -252,26 +246,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                     )}
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      id="navbar-signin-btn"
-                      onClick={() => onOpenAuth('login')}
-                      className="px-3.5 py-2 text-xs font-bold text-slate-700 hover:text-blue-700 bg-slate-100 hover:bg-blue-50 active:bg-blue-100 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer border border-slate-200 min-h-[40px]"
-                      title="Sign In"
-                    >
-                      <LogIn className="w-3.5 h-3.5 text-blue-600" />
-                      <span>Sign In</span>
-                    </button>
-                    <button
-                      id="navbar-signup-btn"
-                      onClick={() => onOpenAuth('signup')}
-                      className="px-3.5 py-2 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer border border-emerald-200 min-h-[40px]"
-                      title="Create Account"
-                    >
-                      <User className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Sign Up</span>
-                    </button>
-                  </div>
+                  <button
+                    id="navbar-login-btn"
+                    onClick={() => onOpenAuth('login')}
+                    className="px-4 py-2 text-xs font-bold text-slate-800 hover:text-blue-700 bg-slate-100 hover:bg-blue-50 active:bg-blue-100 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer border border-slate-200 min-h-[40px]"
+                    title="Login"
+                  >
+                    <LogIn className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Login</span>
+                  </button>
                 )}
 
               <button
@@ -345,31 +328,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2 w-full">
-                    <span className="text-xs font-bold text-slate-700">Access Advisory &amp; Loan Portals:</span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        id="mobile-signin-btn"
-                        onClick={() => {
-                          setMobileMenuOpen(false);
-                          onOpenAuth('login');
-                        }}
-                        className="flex-1 py-2 bg-blue-600 active:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs"
-                      >
-                        <LogIn className="w-3.5 h-3.5" />
-                        <span>Sign In</span>
-                      </button>
-                      <button
-                        id="mobile-signup-btn"
-                        onClick={() => {
-                          setMobileMenuOpen(false);
-                          onOpenAuth('signup');
-                        }}
-                        className="flex-1 py-2 bg-emerald-600 active:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs"
-                      >
-                        <User className="w-3.5 h-3.5" />
-                        <span>Create Account</span>
-                      </button>
-                    </div>
+                    <button
+                      id="mobile-login-btn"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        onOpenAuth('login');
+                      }}
+                      className="w-full py-2.5 bg-blue-600 active:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                    >
+                      <LogIn className="w-4 h-4" />
+                      <span>Login to Portal</span>
+                    </button>
                   </div>
                 )}
               </div>

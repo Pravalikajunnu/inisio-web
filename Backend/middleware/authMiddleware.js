@@ -2,7 +2,42 @@ import { verifyToken } from '../utils/generateToken.js';
 import User from '../models/User.js';
 import { sendError } from '../utils/responseHandler.js';
 import { isDBConnected } from '../config/db.js';
-import { DEFAULT_USERS } from '../data/defaultData.js';
+
+// Built-in emergency user profiles for zero-downtime authentication fallback
+const FALLBACK_USERS = [
+  {
+    _id: 'user_admin_01',
+    email: 'admin@gmail.com',
+    name: 'Admin Desk',
+    role: 'admin',
+    company: 'Inisio HQ',
+    phone: '+91 98765 43210'
+  },
+  {
+    _id: 'user_ca_01',
+    email: 'ca@gmail.com',
+    name: 'Sharma & Associates CAs',
+    role: 'ca',
+    company: 'Sharma & Associates Chartered Accountants',
+    phone: '+91 98111 22334'
+  },
+  {
+    _id: 'user_user_01',
+    email: 'user@inisio.com',
+    name: 'Suraj Kanu',
+    role: 'user',
+    company: 'Solar & Agro Industrial Ventures',
+    phone: '+91 98480 12345'
+  },
+  {
+    _id: 'user_pravalika',
+    email: 'pravalikajunnu14@gmail.com',
+    name: 'Pravalika Junnu',
+    role: 'user',
+    company: 'Hotel Greenfield Resort & Convention',
+    phone: '+91 63020 26462'
+  }
+];
 
 /**
  * Middleware to authenticate requests using JWT Access Token
@@ -30,15 +65,15 @@ export const authenticateUser = async (req, res, next) => {
         }
       }
 
-      // Memory/token fallback for zero-downtime reliability
-      const defaultMatch = DEFAULT_USERS.find(
+      // Built-in fallback match for zero-downtime reliability
+      const defaultMatch = FALLBACK_USERS.find(
         (u) => String(u._id) === String(decoded.id) || u.email.toLowerCase() === String(decoded.email || '').toLowerCase()
       );
 
       req.user = {
-        _id: decoded.id,
+        _id: decoded.id || defaultMatch?._id || 'user_guest',
         email: decoded.email || defaultMatch?.email || 'user@inisio.com',
-        name: defaultMatch?.name || decoded.name || 'Inisio User',
+        name: decoded.name || defaultMatch?.name || 'Inisio User',
         role: decoded.role || defaultMatch?.role || 'user',
         company: defaultMatch?.company || 'Enterprise Ltd',
         phone: defaultMatch?.phone || '+91 98765 43210'

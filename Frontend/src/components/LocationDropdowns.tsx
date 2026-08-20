@@ -21,29 +21,101 @@ export const LocationDropdowns: React.FC<LocationDropdownsProps> = ({
   const [selectedDistrict, setSelectedDistrict] = useState<string>('');
   const [customLocation, setCustomLocation] = useState<string>('');
 
-  // Sync initial state if value exists
+  // Sync state whenever value changes
   useEffect(() => {
-    if (!value) return;
-    const parts = value.split(',').map(s => s.trim());
-    if (parts.length === 2) {
-      const matchState = INDIA_STATES_AND_UTS.find(s => s.name === parts[1]);
+    if (!value || !value.trim()) {
+      setSelectedState('');
+      setSelectedDistrict('');
+      setCustomLocation('');
+      return;
+    }
+
+    const trimmed = value.trim();
+
+    // Case 1: Format "District, State" (e.g. "Hyderabad, Telangana", "Ahmedabad, Gujarat")
+    const commaParts = trimmed.split(',').map(s => s.trim());
+    if (commaParts.length >= 2) {
+      const statePart = commaParts[commaParts.length - 1];
+      const distPart = commaParts.slice(0, commaParts.length - 1).join(', ');
+
+      const matchState = INDIA_STATES_AND_UTS.find(
+        s => s.name.toLowerCase() === statePart.toLowerCase()
+      );
+
       if (matchState) {
         setSelectedState(matchState.name);
-        if (matchState.districts.includes(parts[0])) {
-          setSelectedDistrict(parts[0]);
+        const matchDistrict = matchState.districts.find(
+          d => d.toLowerCase() === distPart.toLowerCase()
+        );
+        if (matchDistrict) {
+          setSelectedDistrict(matchDistrict);
+          setCustomLocation('');
         } else {
           setSelectedDistrict(OTHER_OPTION);
-          setCustomLocation(parts[0]);
+          setCustomLocation(distPart);
         }
         return;
       }
-    } else {
-      const matchState = INDIA_STATES_AND_UTS.find(s => s.name === value);
+    }
+
+    // Case 2: Format "State (City/Zone)" (e.g. "Gujarat (Dholera SIR)", "Telangana (Genome Valley)")
+    const parenMatch = trimmed.match(/^([^(]+)\s*\(([^)]+)\)$/);
+    if (parenMatch) {
+      const possibleState = parenMatch[1].trim();
+      const possibleSub = parenMatch[2].trim();
+      const matchState = INDIA_STATES_AND_UTS.find(
+        s => s.name.toLowerCase() === possibleState.toLowerCase()
+      );
       if (matchState) {
         setSelectedState(matchState.name);
+        const matchDistrict = matchState.districts.find(
+          d => d.toLowerCase() === possibleSub.toLowerCase()
+        );
+        if (matchDistrict) {
+          setSelectedDistrict(matchDistrict);
+          setCustomLocation('');
+        } else {
+          setSelectedDistrict(OTHER_OPTION);
+          setCustomLocation(possibleSub);
+        }
+        return;
       }
     }
-  }, []);
+
+    // Case 3: Just State name
+    const matchStateDirect = INDIA_STATES_AND_UTS.find(
+      s => s.name.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (matchStateDirect) {
+      setSelectedState(matchStateDirect.name);
+      setSelectedDistrict('');
+      setCustomLocation('');
+      return;
+    }
+
+    // Case 4: Search all districts across all states
+    let foundStateForDistrict: string | null = null;
+    let foundDistrictName: string | null = null;
+    for (const st of INDIA_STATES_AND_UTS) {
+      const dMatch = st.districts.find(d => d.toLowerCase() === trimmed.toLowerCase());
+      if (dMatch) {
+        foundStateForDistrict = st.name;
+        foundDistrictName = dMatch;
+        break;
+      }
+    }
+    if (foundStateForDistrict && foundDistrictName) {
+      setSelectedState(foundStateForDistrict);
+      setSelectedDistrict(foundDistrictName);
+      setCustomLocation('');
+      return;
+    }
+
+    // Case 5: Custom location not in list
+    setSelectedState(OTHER_OPTION);
+    setSelectedDistrict(OTHER_OPTION);
+    setCustomLocation(trimmed);
+  }, [value]);
 
   const currentStateObj = INDIA_STATES_AND_UTS.find(s => s.name === selectedState);
   const districtList = currentStateObj ? currentStateObj.districts : [];

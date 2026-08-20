@@ -5,42 +5,25 @@ import connectDB from './config/db.js';
 import apiRouter from './routes/index.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 
-dotenv.config({ override: true });
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const allowedOrigins = (process.env.CORS_ORIGIN || '*')
-  .split(',')
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-
 // Connect to MongoDB Atlas
-connectDB().catch((err) => {
-  console.error('MongoDB startup error:', err.message);
-});
+connectDB().catch(() => {});
 
 // Middleware
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow non-browser requests (e.g., curl, mobile, server-to-server)
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-
-    return callback(null, true); // Permissive fallback for all frontend clients
-  },
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
 }));
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Ensure DB connection retry if disconnected
+// Ensure DB connection attempt on request if not yet established
 app.use(async (req, res, next) => {
   try {
     connectDB().catch(() => {});
@@ -70,7 +53,7 @@ app.get('/', (req, res) => {
 app.use(notFound);
 app.use(errorHandler);
 
-// Start server
+// Start server if run directly
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Inisio Backend REST API Server is running on port ${PORT}`);

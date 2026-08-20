@@ -1,4 +1,6 @@
 import { createAdminNotification } from './notificationStore';
+import { DetailedRiskProfileData } from '../components/DetailedRiskProfileForm';
+import { CommercialSupplyFundingData } from '../components/CommercialSupplyFundingForm';
 
 export interface LeadRecord {
   id: string;
@@ -21,6 +23,21 @@ export interface LeadRecord {
   collateralStatus?: string;
   promoterExp?: string;
   status?: string;
+  photoOrLogo?: string;
+  dprFile?: { name: string; size: number; uploadedAt: string };
+  cmaFile?: { name: string; size: number; uploadedAt: string };
+  assignedTeam?: string;
+  assignedRole?: string;
+  assignedAt?: string;
+  timelineDate?: string;
+  timelineTime?: string;
+  lastEditedBy?: string;
+  lastEditedAt?: string;
+  riskProfileData?: DetailedRiskProfileData;
+  commercialData?: CommercialSupplyFundingData;
+  bankAppliedAt?: string;
+  loanApprovedAt?: string;
+  fundingDisbursedAt?: string;
 }
 
 const STORAGE_KEY = 'inisio_admin_leads_v1';
@@ -41,13 +58,42 @@ const INITIAL_LEADS: LeadRecord[] = [
     promoterContribCr: '30',
     feasibilityScore: 92,
     bankabilityRating: 'A+',
-    source: 'PDF Teaser Downloaded',
-    downloadedPDF: true,
+    source: 'Project Assessment',
+    downloadedPDF: false,
     landStatus: 'TSIIC / Industrial Park Allotted',
     collateralStatus: 'Plant & Machinery Hypothecation',
     promoterExp: '12+ Years Manufacturing',
-    notes: 'Downloaded Teaser PDF. Land acquired in Dholera SIR. Target SBI & Canara Bank consortium.',
-    status: 'DPR Ready'
+    notes: 'Assessment submitted. Land acquired in Dholera SIR. Target SBI & Canara Bank consortium.',
+    status: 'In Appraisal',
+    riskProfileData: {
+      industryExperience: 'More than 10 Years',
+      educationalBackground: 'Engineering / Technical Degree',
+      businessConstitution: 'Private Limited Company',
+      businessVintage: 'More than 8 Years',
+      contributionType: 'Combination of Cash & Land',
+      collateralCoveragePct: '125',
+      debtEquityRatio: '75:25',
+      managementTeamSize: '8',
+      technicalWorkforceCount: '35',
+      cibilScore: '795',
+      isNewToCredit: false
+    },
+    commercialData: {
+      rawMaterialSource: 'Industrial Vendors & Distributors',
+      keySuppliersList: 'Silicon Ingot suppliers, Wafer Tech Corp, Tier-1 Solar Cell Vendors',
+      procurementRadiusKm: 'Across India / State-wide',
+      primaryBuyersType: 'Industrial Companies & Factories',
+      keyBuyersList: 'NTPC, Tata Power Solar, Adani Green Energy, SECI EPC Contractors',
+      offTakeAgreementStatus: 'Signed Long-Term Agreement / Contract',
+      targetBankCategory: 'Public Sector Banks (SBI / PNB / Canara / BOB)',
+      requestedFacilityTypes: ['Term Loan (Machinery & Construction)', 'Working Capital Loan (CC / OD)', 'Letter of Credit (LC)'],
+      moratoriumPeriodMonths: '18 Months',
+      repaymentTenureYears: '8 to 10 Years',
+      machineryCostLakhs: '8160.00',
+      civilCostLakhs: '3600.00',
+      consultancyCostLakhs: '240.00',
+      gstNumber: '24AAECS1234F1Z5'
+    }
   },
   {
     id: 'lead-kanu-2',
@@ -69,7 +115,36 @@ const INITIAL_LEADS: LeadRecord[] = [
     collateralStatus: 'Factory Premises & Fixed Assets',
     promoterExp: '10+ Years Pharma R&D',
     notes: 'Downloaded Teaser PDF. USFDA compliant formulation facility in Genome Valley.',
-    status: 'In Appraisal'
+    status: 'In Appraisal',
+    riskProfileData: {
+      industryExperience: 'More than 10 Years',
+      educationalBackground: 'Post Graduate (Master\'s / MBA)',
+      businessConstitution: 'Private Limited Company',
+      businessVintage: '4 to 7 Years',
+      contributionType: 'Cash / Bank Balance',
+      collateralCoveragePct: '110',
+      debtEquityRatio: '75:25',
+      managementTeamSize: '5',
+      technicalWorkforceCount: '20',
+      cibilScore: '780',
+      isNewToCredit: false
+    },
+    commercialData: {
+      rawMaterialSource: 'Industrial Vendors & Distributors',
+      keySuppliersList: 'API Importers, Pharma Solvent Distributors, Cleanroom Suppliers',
+      procurementRadiusKm: '100 to 250 KM',
+      primaryBuyersType: 'Industrial Companies & Factories',
+      keyBuyersList: 'Dr Reddys Laboratories, Hetero Drugs, Aurobindo Pharma Contract Division',
+      offTakeAgreementStatus: 'MoU / Expression of Interest (EOI) Done',
+      targetBankCategory: 'Public Sector Banks (SBI / PNB / Canara / BOB)',
+      requestedFacilityTypes: ['Term Loan (Machinery & Construction)', 'Working Capital Loan (CC / OD)'],
+      moratoriumPeriodMonths: '12 Months',
+      repaymentTenureYears: '7 Years',
+      machineryCostLakhs: '1258.00',
+      civilCostLakhs: '555.00',
+      consultancyCostLakhs: '37.00',
+      gstNumber: '36AAECB9876P1Z1'
+    }
   },
   {
     id: 'lead-100',
@@ -91,7 +166,36 @@ const INITIAL_LEADS: LeadRecord[] = [
     collateralStatus: 'Prime Land & Building Mortgage',
     promoterExp: '8+ Years Hospitality & Infrastructure',
     notes: 'Downloaded Teaser PDF. Interested in Debt Syndication for 50% debt component.',
-    status: 'In Appraisal'
+    status: 'In Appraisal',
+    riskProfileData: {
+      industryExperience: '6 to 10 Years',
+      educationalBackground: 'Post Graduate (Master\'s / MBA)',
+      businessConstitution: 'Private Limited Company',
+      businessVintage: '4 to 7 Years',
+      contributionType: 'Combination of Cash & Land',
+      collateralCoveragePct: '150',
+      debtEquityRatio: '50:50',
+      managementTeamSize: '6',
+      technicalWorkforceCount: '25',
+      cibilScore: '810',
+      isNewToCredit: false
+    },
+    commercialData: {
+      rawMaterialSource: 'Local Wholesale Suppliers & Mandis',
+      keySuppliersList: 'Hospitality Procurement Vendors, HVAC contractors, Kitchen equipment suppliers',
+      procurementRadiusKm: 'Within 25 KM (Local)',
+      primaryBuyersType: 'Retailers & Direct Consumers',
+      keyBuyersList: 'Corporate MICE event organizers, Wedding planners, IT corridor business travelers',
+      offTakeAgreementStatus: 'Letter of Intent (LOI) Received',
+      targetBankCategory: 'Public Sector Banks (SBI / PNB / Canara / BOB)',
+      requestedFacilityTypes: ['Term Loan (Machinery & Construction)', 'Working Capital Loan (CC / OD)', 'Bank Guarantee (BG)'],
+      moratoriumPeriodMonths: '18 Months',
+      repaymentTenureYears: '8 to 10 Years',
+      machineryCostLakhs: '1360.00',
+      civilCostLakhs: '600.00',
+      consultancyCostLakhs: '40.00',
+      gstNumber: '36AAJCP4412K1Z9'
+    }
   },
   {
     id: 'lead-101',
@@ -121,32 +225,20 @@ export function getStoredLeads(userEmail?: string): LeadRecord[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     let leads: LeadRecord[] = [];
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_LEADS));
-      leads = INITIAL_LEADS;
-    } else {
+    if (raw) {
       leads = JSON.parse(raw);
     }
 
-    // If userEmail provided, filter specifically for this user's email or allow case-insensitive match
+    // If userEmail provided, filter specifically for this user's email (case-insensitive match)
     if (userEmail) {
       const emailLower = userEmail.toLowerCase().trim();
-      const userLeads = leads.filter(l => l.email && l.email.toLowerCase().trim() === emailLower);
-      
-      // If user is kanusuraj15@gmail.com and has no leads in storage, make sure the 2 sample teasers exist
-      if (userLeads.length === 0 && emailLower === 'kanusuraj15@gmail.com') {
-        const kanuLeads = INITIAL_LEADS.filter(l => l.email.toLowerCase() === 'kanusuraj15@gmail.com');
-        const merged = [...kanuLeads, ...leads];
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-        return kanuLeads;
-      }
-      return userLeads;
+      return leads.filter(l => l.email && l.email.toLowerCase().trim() === emailLower);
     }
 
     return leads;
   } catch (err) {
     console.error('Failed to load leads:', err);
-    return INITIAL_LEADS;
+    return [];
   }
 }
 
@@ -177,7 +269,12 @@ export async function fetchLeadsFromBackend(email?: string): Promise<LeadRecord[
           landStatus: item.landStatus,
           collateralStatus: item.collateralStatus,
           promoterExp: item.promoterExp,
-          status: item.status || 'New'
+          status: item.status || 'New',
+          photoOrLogo: item.photoOrLogo,
+          dprFile: item.dprFile,
+          cmaFile: item.cmaFile,
+          riskProfileData: item.riskProfileData,
+          commercialData: item.commercialData
         }));
         
         if (!email) {
@@ -239,6 +336,53 @@ export function saveLeadRecord(lead: Omit<LeadRecord, 'id' | 'timestamp'>): Lead
   }).catch((e) => console.log('Async lead persist:', e.message));
 
   return newLead;
+}
+
+export function updateLeadRecord(id: string, updates: Partial<LeadRecord>, editedBy = 'Promoter'): LeadRecord | null {
+  const leads = getStoredLeads();
+  let updatedRecord: LeadRecord | null = null;
+
+  const updatedLeads = leads.map(l => {
+    if (l.id === id) {
+      updatedRecord = {
+        ...l,
+        ...updates,
+        lastEditedBy: editedBy,
+        lastEditedAt: new Date().toISOString()
+      };
+      return updatedRecord;
+    }
+    return l;
+  });
+
+  if (updatedRecord) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLeads));
+    window.dispatchEvent(new CustomEvent('inisio_lead_added', { detail: updatedRecord }));
+
+    // Notify admin about this update
+    try {
+      createAdminNotification({
+        type: 'PROJECT_MODIFIED',
+        title: `Project '${(updatedRecord as LeadRecord).projectName}' Modified`,
+        message: `${editedBy} updated project parameters for '${(updatedRecord as LeadRecord).projectName}' (Capex: ₹${(updatedRecord as LeadRecord).totalCostCr} Cr).`,
+        userEmail: (updatedRecord as LeadRecord).email,
+        userName: (updatedRecord as LeadRecord).fullName,
+        projectName: (updatedRecord as LeadRecord).projectName,
+        metadata: updates
+      });
+    } catch (e) {}
+
+    // Async sync to backend if valid backend ID
+    if (id && !id.startsWith('lead-')) {
+      fetch(`/api/leads/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      }).catch(() => {});
+    }
+  }
+
+  return updatedRecord;
 }
 
 export function deleteLeadRecord(id: string): void {

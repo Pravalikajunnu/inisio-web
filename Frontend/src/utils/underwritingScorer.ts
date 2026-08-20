@@ -20,58 +20,50 @@ export function calculateComprehensiveRiskScore(
   let totalPoints = (baseFeasibilityScore / 100) * 3.5;
 
   // 1. Industry Experience (Max 1.0 pt)
-  switch (riskData.industryExperience) {
-    case '10+ Years':
-      totalPoints += 1.0;
-      break;
-    case '6–10 Years':
-      totalPoints += 0.8;
-      break;
-    case '3–5 Years':
-      totalPoints += 0.5;
-      break;
-    case '0–2 Years':
-      totalPoints += 0.2;
-      break;
-    default:
-      totalPoints += 0.4;
+  const expStr = (riskData.industryExperience || '').toLowerCase();
+  if (expStr.includes('10') || expStr.includes('more than 10')) {
+    totalPoints += 1.0;
+  } else if (expStr.includes('6') || expStr.includes('10')) {
+    totalPoints += 0.8;
+  } else if (expStr.includes('3') || expStr.includes('5')) {
+    totalPoints += 0.5;
+  } else if (expStr.includes('0') || expStr.includes('2') || expStr.includes('new')) {
+    totalPoints += 0.2;
+  } else {
+    totalPoints += 0.4;
   }
 
   // 2. Educational Background (Max 0.8 pt)
-  switch (riskData.educationalBackground) {
-    case 'Technical / Professional Degree':
-    case 'Post Graduate':
-      totalPoints += 0.8;
-      break;
-    case 'Graduate':
-      totalPoints += 0.6;
-      break;
-    case 'Diploma':
-      totalPoints += 0.4;
-      break;
-    default:
-      totalPoints += 0.3;
+  const eduStr = (riskData.educationalBackground || '').toLowerCase();
+  if (eduStr.includes('master') || eduStr.includes('mba') || eduStr.includes('post graduate') || eduStr.includes('technical') || eduStr.includes('engineering') || eduStr.includes('ca') || eduStr.includes('finance')) {
+    totalPoints += 0.8;
+  } else if (eduStr.includes('graduate') || eduStr.includes('degree')) {
+    totalPoints += 0.6;
+  } else if (eduStr.includes('diploma')) {
+    totalPoints += 0.4;
+  } else {
+    totalPoints += 0.3;
   }
 
   // 3. Business Vintage & Constitution (Max 1.0 pt)
-  switch (riskData.businessVintage) {
-    case '8+ Years':
-      totalPoints += 0.5;
-      break;
-    case '4–7 Years':
-      totalPoints += 0.4;
-      break;
-    case '1–3 Years':
-      totalPoints += 0.25;
-      break;
-    default:
-      totalPoints += 0.1;
+  const vinStr = (riskData.businessVintage || '').toLowerCase();
+  if (vinStr.includes('8') || vinStr.includes('more than 8')) {
+    totalPoints += 0.5;
+  } else if (vinStr.includes('4') || vinStr.includes('7')) {
+    totalPoints += 0.4;
+  } else if (vinStr.includes('1') || vinStr.includes('3')) {
+    totalPoints += 0.25;
+  } else {
+    totalPoints += 0.15;
   }
 
-  if (riskData.businessConstitution === 'Private Limited' || riskData.businessConstitution === 'Public Limited') {
+  const constStr = (riskData.businessConstitution || '').toLowerCase();
+  if (constStr.includes('private limited') || constStr.includes('public limited')) {
     totalPoints += 0.5;
-  } else if (riskData.businessConstitution === 'LLP') {
+  } else if (constStr.includes('llp') || constStr.includes('limited liability')) {
     totalPoints += 0.4;
+  } else if (constStr.includes('partnership')) {
+    totalPoints += 0.3;
   } else {
     totalPoints += 0.2;
   }
@@ -80,17 +72,22 @@ export function calculateComprehensiveRiskScore(
   const colVal = parseFloat(riskData.collateralCoveragePct || '0');
   if (colVal >= 100) {
     totalPoints += 1.2;
+  } else if (colVal >= 75) {
+    totalPoints += 0.95;
   } else if (colVal >= 50) {
-    totalPoints += 0.8;
+    totalPoints += 0.75;
+  } else if (colVal >= 25) {
+    totalPoints += 0.45;
   } else {
-    totalPoints += 0.3;
+    totalPoints += 0.2;
   }
 
   // 5. Promoter Contribution Type (Max 0.5 pt)
-  if (riskData.contributionType === 'Cash' || riskData.contributionType === 'Land') {
+  const contribStr = (riskData.contributionType || '').toLowerCase();
+  if (contribStr.includes('cash') || contribStr.includes('combination') || contribStr.includes('land')) {
     totalPoints += 0.5;
   } else {
-    totalPoints += 0.3;
+    totalPoints += 0.35;
   }
 
   // 6. Management & Technical Workforce (Max 0.5 pt)

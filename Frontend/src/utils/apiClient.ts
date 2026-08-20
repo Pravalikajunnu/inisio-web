@@ -26,7 +26,14 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const url = endpoint.startsWith('http') ? endpoint : `/api${endpoint}`;
+  const baseUrl = (import.meta as any).env?.VITE_API_URL 
+    ? (import.meta as any).env.VITE_API_URL.replace(/\/$/, '')
+    : (import.meta as any).env?.VITE_BACKEND_URL 
+      ? `${(import.meta as any).env.VITE_BACKEND_URL.replace(/\/$/, '')}/api`
+      : '/api';
+
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${cleanEndpoint}`;
 
   const response = await fetch(url, {
     ...options,

@@ -4,6 +4,7 @@ import { getFeasibilityTerm } from '../types';
 import { DetailedRiskProfileData } from '../components/DetailedRiskProfileForm';
 
 export interface TeaserPDFData {
+  // Step 1 Feasibility Inputs
   fullName: string;
   mobile: string;
   email: string;
@@ -27,10 +28,31 @@ export interface TeaserPDFData {
   strengthPoints?: string[];
   keyRisks?: string[];
   directors?: Array<{ name: string; title: string }>;
-  gstNumber?: string;
-  panNumber?: string;
+
+  // Step 2 Bankability Underwriting Inputs
   riskProfileData?: DetailedRiskProfileData;
   riskScoreOutOf10?: number;
+
+  // Step 3 Suppliers, Buyers & Funding Facilities Inputs
+  rawMaterialSource?: string;
+  procurementRadiusKm?: string;
+  keySuppliersList?: string;
+  primaryBuyersType?: string;
+  offTakeAgreementStatus?: string;
+  keyBuyersList?: string;
+  targetBankCategory?: string;
+  fundingFacilityTypes?: string[];
+  moratoriumPeriodMonths?: string;
+  repaymentTenureYears?: string;
+  machineryCostLakhs?: string | number;
+  civilCostLakhs?: string | number;
+  consultancyCostLakhs?: string | number;
+  gstNumber?: string;
+  panNumber?: string;
+
+  // Legacy string helper fields
+  suppliersInfo?: string;
+  buyersInfo?: string;
 }
 
 export function generateProjectTeaserPDF(data: TeaserPDFData) {
@@ -42,17 +64,17 @@ export function generateProjectTeaserPDF(data: TeaserPDFData) {
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 14;
+  const margin = 16;
   const contentWidth = pageWidth - margin * 2;
-  const bottomMargin = 20;
+  const bottomMargin = 22;
   const maxY = pageHeight - bottomMargin;
 
-  let y = 18;
+  let y = 20;
 
   const checkPageBreak = (neededHeight: number) => {
     if (y + neededHeight > maxY) {
       doc.addPage();
-      y = 18;
+      y = 20;
     }
   };
 
@@ -63,121 +85,115 @@ export function generateProjectTeaserPDF(data: TeaserPDFData) {
   const contribCr = parseFloat(String(data.promoterContribCr)) || (costCr * (data.eqPct / 100));
   const contribLakhs = (contribCr * 100).toFixed(2);
 
-  const consultancyLakhs = (parseFloat(costLakhs) * 0.02).toFixed(2);
-  const machineryLakhs = (parseFloat(costLakhs) * 0.68).toFixed(2);
-  const civilLakhs = (parseFloat(costLakhs) * 0.30).toFixed(2);
+  const defaultConsultancy = (parseFloat(costLakhs) * 0.02).toFixed(2);
+  const defaultMachinery = (parseFloat(costLakhs) * 0.68).toFixed(2);
+  const defaultCivil = (parseFloat(costLakhs) * 0.30).toFixed(2);
 
-  const projectName = (data.projectName || 'GREENFIELD PROJECT').toUpperCase();
+  const machineryLakhs = data.machineryCostLakhs ? String(data.machineryCostLakhs) : defaultMachinery;
+  const civilLakhs = data.civilCostLakhs ? String(data.civilCostLakhs) : defaultCivil;
+  const consultancyLakhs = data.consultancyCostLakhs ? String(data.consultancyCostLakhs) : defaultConsultancy;
 
-  // Helper for Section Banners (Navy `#0F172A`)
-  const drawSectionBanner = (title: string, neededHeightAfter: number = 25) => {
+  const companyLegalName = (data.projectName || 'GREENFIELD PROJECT PRIVATE LIMITED').toUpperCase();
+  const rp = data.riskProfileData;
+
+  // Section Banner Helper (Dark Slate Header like Sample Teaser)
+  const drawSectionBanner = (title: string, neededHeightAfter: number = 20) => {
     checkPageBreak(10 + neededHeightAfter);
-    doc.setFillColor(15, 23, 42); // Slate-900
+    doc.setFillColor(15, 23, 42); // #0F172A Slate-900
     doc.rect(margin, y, contentWidth, 7, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9.5);
     doc.text(title, margin + 4, y + 4.8);
-    y += 10;
+    y += 11;
   };
 
-  // Helper for Footer
+  // Footer Helper
   const drawFooter = (pageNum: number, totalPages: number) => {
-    doc.setDrawColor(200, 200, 200);
+    doc.setDrawColor(220, 220, 220);
     doc.setLineWidth(0.3);
     doc.line(margin, pageHeight - 16, pageWidth - margin, pageHeight - 16);
 
-    // Left Page Number
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
-    doc.setTextColor(51, 65, 85);
-    doc.text(`Page ${pageNum} of ${totalPages}`, margin, pageHeight - 9);
+    doc.setTextColor(70, 70, 70);
+    doc.text(`Page ${pageNum} of ${totalPages}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
 
-    // Right Branding "Prepared by INISIO"
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(120, 120, 120);
+    doc.text('Prepared by', margin, pageHeight - 12);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(15, 23, 42);
-    doc.text('Prepared by', pageWidth - margin, pageHeight - 11, { align: 'right' });
-    doc.setFontSize(10.5);
-    doc.setTextColor(37, 99, 235); // Blue-600
-    doc.text('INISIO', pageWidth - margin, pageHeight - 6, { align: 'right' });
+    doc.setFontSize(10);
+    doc.setTextColor(37, 99, 235);
+    doc.text('INISIO', margin, pageHeight - 7);
   };
 
-  // ==================== DOCUMENT HEADER ====================
+  // ==================== PAGE 1 ====================
+  // Company Profile Header
   doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15);
-  doc.text(projectName, margin, y);
+  doc.setFontSize(16);
+  doc.text(companyLegalName, margin, y);
 
-  y += 6;
+  y += 7;
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11.5);
-  doc.setTextColor(51, 65, 85);
-  doc.text('Company Profile & Executive Project Teaser', margin, y);
+  doc.setFontSize(12);
+  doc.setTextColor(30, 41, 59);
+  doc.text('Company Profile', margin, y);
 
-  y += 10;
+  y += 9;
 
-  // 1. General Information
-  drawSectionBanner('General Information', 25);
+  // General Information
+  drawSectionBanner('General Information', 40);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
-  doc.setTextColor(51, 65, 85);
+  doc.setTextColor(30, 41, 59);
 
-  const genInfoText1 = `${projectName} is engaged in the proposed greenfield establishment and operation of facilities in the ${data.industry} sector. Proposed location at ${data.location}, promoted by ${data.fullName || 'Promoter'}.`;
-  const splitGen1 = doc.splitTextToSize(genInfoText1, contentWidth);
-  checkPageBreak(splitGen1.length * 4.2 + 2);
-  doc.text(splitGen1, margin, y);
-  y += splitGen1.length * 4.2 + 3;
+  const genP1 = `${companyLegalName} is engaged in the proposed greenfield establishment and operation of facilities in the ${data.industry} sector. The project is situated at ${data.location || 'India'}. It is promoted by ${data.fullName || 'the promoter'} and managed by an experienced management team.`;
+  const splitP1 = doc.splitTextToSize(genP1, contentWidth);
+  doc.text(splitP1, margin, y);
+  y += splitP1.length * 4.2 + 3;
 
-  const genInfoText2 = `The company proposes to establish a state-of-the-art facility with an estimated total capital outlay of Rs ${data.totalCostCr} Crores (Rs ${costLakhs} Lakhs). To ensure uninterrupted operation and raw material security, suitable land has been arranged under ${data.landStatus} status (${data.collateralStatus || 'Freehold Clear Title'}).`;
-  const splitGen2 = doc.splitTextToSize(genInfoText2, contentWidth);
-  checkPageBreak(splitGen2.length * 4.2 + 2);
-  doc.text(splitGen2, margin, y);
-  y += splitGen2.length * 4.2 + 3;
+  const descText = data.description ? `${data.description}. ` : '';
+  const genP2 = `The company proposes to establish a state-of-the-art facility with an estimated total capital outlay of Rs ${data.totalCostCr} Crores (${costLakhs} Lakhs). ${descText}To ensure an uninterrupted operation and supply of raw materials, suitable land has been identified and arranged under ${data.landStatus} status (${data.collateralStatus || 'Freehold Clear Title'}), which is adequate for the proposed plant, storage facilities, and operational requirements.`;
+  const splitP2 = doc.splitTextToSize(genP2, contentWidth);
+  checkPageBreak(splitP2.length * 4.2 + 3);
+  doc.text(splitP2, margin, y);
+  y += splitP2.length * 4.2 + 3;
 
-  const genInfoText3 = `Project technical design, DPR formulation, financial modeling, and bank debt syndication support are being provided by INISIO Greenfield Project Advisory, specializing in industrial project finance, TEV studies, and consortium bank structuring.`;
-  const splitGen3 = doc.splitTextToSize(genInfoText3, contentWidth);
-  checkPageBreak(splitGen3.length * 4.2 + 6);
-  doc.text(splitGen3, margin, y);
-  y += splitGen3.length * 4.2 + 6;
+  const genP3 = `The project's technical design, engineering, DPR formulation, financial modeling, and loan syndication support are being provided by INISIO Greenfield Project Advisory, specializing in industrial project finance, TEV studies, and banking consortium structuring.`;
+  const splitP3 = doc.splitTextToSize(genP3, contentWidth);
+  checkPageBreak(splitP3.length * 4.2 + 6);
+  doc.text(splitP3, margin, y);
+  y += splitP3.length * 4.2 + 7;
 
-  // 2. Service Offerings
-  drawSectionBanner('Service Offerings', 20);
+  // Service Offerings
+  drawSectionBanner('Service Offerings', 25);
 
-  doc.setFillColor(241, 245, 249);
-  doc.rect(margin, y, contentWidth, 6, 'F');
-  doc.setDrawColor(226, 232, 240);
-  doc.rect(margin, y, contentWidth, 6, 'D');
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
-  doc.setTextColor(15, 23, 42);
-  doc.text('Core Offering', margin + 4, y + 4.2);
-  doc.text('Description & Scope', margin + 55, y + 4.2);
-  y += 6;
-
-  const serviceDesc = `Commercial manufacture, refining, and supply of primary product outputs and value-added by-products for institutional, commercial, and industrial off-takers.`;
-  const splitService = doc.splitTextToSize(serviceDesc, contentWidth - 60);
-  const serviceRowH = Math.max(8, splitService.length * 4.2 + 3);
-
-  checkPageBreak(serviceRowH + 6);
+  const serviceH = 16;
+  checkPageBreak(serviceH);
   doc.setFillColor(255, 255, 255);
-  doc.rect(margin, y, contentWidth, serviceRowH, 'F');
+  doc.rect(margin, y, contentWidth, serviceH, 'F');
   doc.setDrawColor(226, 232, 240);
-  doc.rect(margin, y, contentWidth, serviceRowH, 'D');
+  doc.rect(margin, y, contentWidth, serviceH, 'D');
 
   doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
   doc.setTextColor(15, 23, 42);
-  doc.text(`Production & Supply (${data.industry})`, margin + 4, y + 4.5);
+  const leftService = doc.splitTextToSize(`The Production and Supply of ${data.industry}`, contentWidth * 0.4 - 4);
+  doc.text(leftService, margin + 4, y + 5);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(51, 65, 85);
-  doc.text(splitService, margin + 55, y + 4.5);
-  y += serviceRowH + 6;
+  const rightService = doc.splitTextToSize(`Commercial production, quality processing, and wholesale supply of primary outputs and value-added commercial derivatives.`, contentWidth * 0.6 - 6);
+  doc.text(rightService, margin + contentWidth * 0.4 + 2, y + 5);
 
-  // 3. Directors Details
-  drawSectionBanner('Directors Details', 15);
+  y += serviceH + 8;
+
+  // Directors Details Table
+  drawSectionBanner('Directors Details', 30);
 
   doc.setFillColor(241, 245, 249);
   doc.rect(margin, y, contentWidth, 6, 'F');
@@ -188,130 +204,162 @@ export function generateProjectTeaserPDF(data: TeaserPDFData) {
   doc.setFontSize(8.5);
   doc.setTextColor(15, 23, 42);
   doc.text('Name', margin + 4, y + 4.2);
-  doc.text('Title / Designation', margin + 110, y + 4.2);
+  doc.text('Title', margin + 110, y + 4.2);
   y += 6;
 
-  const directorsList = data.directors && data.directors.length > 0 ? data.directors : [
-    { name: data.fullName || 'Promoter', title: 'Promoter / Lead Investor' }
-  ];
+  const directorsList = data.directors && data.directors.length > 0
+    ? data.directors
+    : [
+        { name: data.fullName || 'Promoter', title: 'Managing Director / Key Promoter' }
+      ];
 
   directorsList.forEach((dir, idx) => {
-    checkPageBreak(7);
-    const c = idx % 2 === 0 ? 255 : 250;
-    doc.setFillColor(c, c, c);
+    checkPageBreak(6);
+    const bg = idx % 2 === 0 ? 255 : 250;
+    doc.setFillColor(bg, bg, bg);
     doc.rect(margin, y, contentWidth, 6, 'F');
     doc.setDrawColor(226, 232, 240);
     doc.rect(margin, y, contentWidth, 6, 'D');
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.5);
-    doc.setTextColor(30, 41, 59);
+    doc.setTextColor(15, 23, 42);
     doc.text(dir.name, margin + 4, y + 4.2);
+
     doc.setFont('helvetica', 'normal');
+    doc.setTextColor(51, 65, 85);
     doc.text(dir.title, margin + 110, y + 4.2);
     y += 6;
   });
-  y += 6;
 
-  // 4. Suppliers and Buyers
-  drawSectionBanner('SUPPLIERS AND BUYERS', 25);
+  y += 8;
 
+  // ==================== PAGE 2 ====================
+  // Raw Materials & Supply Model
+  drawSectionBanner('RAW MATERIALS & MARKET OFFTAKE', 40);
+
+  const rawSource = data.rawMaterialSource || 'Direct Vendors, Authorized Distributors & Aggregators';
+  const radius = data.procurementRadiusKm || 'Target Industrial Cluster';
+  const customSuppliers = data.keySuppliersList ? ` Key suppliers: ${data.keySuppliersList}.` : '';
+
+  const supText1 = `${companyLegalName} will procure essential raw materials, feedstocks, and machinery spares through ${rawSource} within the ${radius}.${customSuppliers} Long-term supply consistency will be maintained via structured vendor agreements.`;
+  const splitSup1 = doc.splitTextToSize(supText1, contentWidth);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
   doc.setTextColor(51, 65, 85);
+  doc.text(splitSup1, margin, y);
+  y += splitSup1.length * 4.2 + 3;
 
-  const suppText1 = `${projectName} adopts an integrated supply chain model, sourcing raw materials and key feedstock through contract farming, primary producers, aggregators, and industrial suppliers within an optimal transport radius.`;
-  const splitSupp1 = doc.splitTextToSize(suppText1, contentWidth);
-  checkPageBreak(splitSupp1.length * 4.2 + 2);
-  doc.text(splitSupp1, margin, y);
-  y += splitSupp1.length * 4.2 + 3;
+  const buyerType = data.primaryBuyersType || 'Industrial Off-Takers, Institutional Buyers & Commercial Wholesalers';
+  const agreement = data.offTakeAgreementStatus || 'Commercial Contracts / Direct Wholesale Distribution';
+  const customBuyers = data.keyBuyersList ? ` Target buyers: ${data.keyBuyersList}.` : '';
 
-  const suppText2 = `On the marketing front, the company plans to sell primary output primarily to Oil Marketing Companies (OMCs), City Gas Distribution (CGD) networks, industrial bulk consumers, or retail networks. By-products will be marketed to institutional fertilizer and commercial agricultural users.`;
-  const splitSupp2 = doc.splitTextToSize(suppText2, contentWidth);
-  checkPageBreak(splitSupp2.length * 4.2 + 6);
-  doc.text(splitSupp2, margin, y);
-  y += splitSupp2.length * 4.2 + 6;
+  const supText2 = `On the sales and commercialization front, the company plans to supply finished outputs and by-products primarily to ${buyerType} under ${agreement}.${customBuyers} Direct B2B and institutional supply channels will drive revenue realization.`;
+  const splitSup2 = doc.splitTextToSize(supText2, contentWidth);
+  checkPageBreak(splitSup2.length * 4.2 + 3);
+  doc.text(splitSup2, margin, y);
+  y += splitSup2.length * 4.2 + 7;
 
-  // 5. Project Funding Facilities
+  // Project Funding Facilities
   drawSectionBanner('Project Funding Facilities', 60);
 
+  // Subheading 1: Cost Statement
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
   doc.setTextColor(15, 23, 42);
-  doc.text('PROPOSED PROJECT COST STATEMENT', margin, y);
-  y += 5;
+  doc.text('Proposed Project Cost Statement', margin, y);
+  y += 4.5;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+  doc.text('Debt Types: Project Term Loan', margin, y);
+  y += 4.5;
 
   doc.setFillColor(241, 245, 249);
   doc.rect(margin, y, contentWidth, 6, 'F');
   doc.setDrawColor(226, 232, 240);
   doc.rect(margin, y, contentWidth, 6, 'D');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.setTextColor(15, 23, 42);
   doc.text('Particulars', margin + 4, y + 4.2);
   doc.text('Amount (INR Lakhs)', margin + 110, y + 4.2);
   y += 6;
 
   const costRows = [
-    { item: 'Consultancy, TEFR & Engineering Fees', val: `${consultancyLakhs}` },
-    { item: 'Plant & Machinery, Technology & Procurement', val: `${machineryLakhs}` },
-    { item: 'Land Cost, Civil Works & Infrastructure', val: `${civilLakhs}` }
+    { name: 'Consultancy & Fees', amt: `${consultancyLakhs}` },
+    { name: 'Plant & Machinery', amt: `${machineryLakhs}` },
+    { name: 'Land Cost & Civil Works', amt: `${civilLakhs}` }
   ];
 
-  costRows.forEach((row) => {
+  costRows.forEach((r, idx) => {
     checkPageBreak(6);
-    doc.setFillColor(255, 255, 255);
+    const bg = idx % 2 === 0 ? 255 : 250;
+    doc.setFillColor(bg, bg, bg);
     doc.rect(margin, y, contentWidth, 6, 'F');
     doc.setDrawColor(226, 232, 240);
     doc.rect(margin, y, contentWidth, 6, 'D');
 
     doc.setFont('helvetica', 'normal');
-    doc.text(row.item, margin + 4, y + 4.2);
-    doc.text(row.val, margin + 110, y + 4.2);
+    doc.setTextColor(51, 65, 85);
+    doc.text(r.name, margin + 4, y + 4.2);
+    doc.text(r.amt, margin + 110, y + 4.2);
     y += 6;
   });
 
+  // Total Project Cost Row
   checkPageBreak(6);
   doc.setFillColor(241, 245, 249);
   doc.rect(margin, y, contentWidth, 6, 'F');
   doc.setDrawColor(226, 232, 240);
   doc.rect(margin, y, contentWidth, 6, 'D');
   doc.setFont('helvetica', 'bold');
+  doc.setTextColor(15, 23, 42);
   doc.text('Total Project Cost', margin + 4, y + 4.2);
   doc.text(`${costLakhs} lakhs`, margin + 110, y + 4.2);
   y += 8;
 
+  // Subheading 2: Means of Finance
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
-  doc.text('MEANS OF FINANCE', margin, y);
-  y += 5;
+  doc.text('Means of Finance', margin, y);
+  y += 4.5;
 
   doc.setFillColor(241, 245, 249);
   doc.rect(margin, y, contentWidth, 6, 'F');
   doc.setDrawColor(226, 232, 240);
   doc.rect(margin, y, contentWidth, 6, 'D');
-  doc.text('Means of Finance', margin + 4, y + 4.2);
+  doc.text('Funding Source', margin + 4, y + 4.2);
   doc.text('Amount (INR Lakhs)', margin + 85, y + 4.2);
   doc.text('Share (%)', margin + 140, y + 4.2);
   y += 6;
 
   const meansRows = [
-    { name: 'Project Term Loan', val: `${loanLakhs} lakhs`, pct: `${data.debtPct}%` },
-    { name: 'Promoter Contribution', val: `${contribLakhs} lakhs`, pct: `${data.eqPct}%` }
+    { name: 'Project Term Loan', amt: `${loanLakhs} lakhs`, pct: `${data.debtPct}%` },
+    { name: 'Promoter Contribution', amt: `${contribLakhs} lakhs`, pct: `${data.eqPct}%` }
   ];
 
-  meansRows.forEach((row) => {
+  meansRows.forEach((m, idx) => {
     checkPageBreak(6);
-    doc.setFillColor(255, 255, 255);
+    const bg = idx % 2 === 0 ? 255 : 250;
+    doc.setFillColor(bg, bg, bg);
     doc.rect(margin, y, contentWidth, 6, 'F');
     doc.setDrawColor(226, 232, 240);
     doc.rect(margin, y, contentWidth, 6, 'D');
 
     doc.setFont('helvetica', 'bold');
-    doc.text(row.name, margin + 4, y + 4.2);
+    doc.setTextColor(15, 23, 42);
+    doc.text(m.name, margin + 4, y + 4.2);
+
     doc.setFont('helvetica', 'normal');
-    doc.text(row.val, margin + 85, y + 4.2);
-    doc.text(row.pct, margin + 140, y + 4.2);
+    doc.setTextColor(51, 65, 85);
+    doc.text(m.amt, margin + 85, y + 4.2);
+    doc.text(m.pct, margin + 140, y + 4.2);
     y += 6;
   });
 
+  // Total Means Row
   checkPageBreak(6);
   doc.setFillColor(241, 245, 249);
   doc.rect(margin, y, contentWidth, 6, 'F');
@@ -323,21 +371,20 @@ export function generateProjectTeaserPDF(data: TeaserPDFData) {
   doc.text('100%', margin + 140, y + 4.2);
   y += 8;
 
-  // 6. Present Requirement
-  drawSectionBanner('Present Requirement', 20);
+  // Present Requirement
+  drawSectionBanner('Present Requirement', 25);
 
+  const reqText = `The Company proposes to avail a Term Loan of Rs ${data.loanRequiredCr} crore to meet its capital expenditure requirements. The proposed facility will be utilised for the establishment of a ${data.industry} facility, including the procurement and installation of plant & machinery, development of civil infrastructure, and other project-related assets required for the successful implementation and commissioning of the project.`;
+  const splitReq = doc.splitTextToSize(reqText, contentWidth);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
   doc.setTextColor(51, 65, 85);
-
-  const reqText = `The Company proposes to avail a Term Loan facility of Rs ${data.loanRequiredCr} Crore to meet its capital expenditure requirements. The proposed facility will be utilized for the establishment of the ${data.industry} facility, including procurement and installation of plant & machinery, civil infrastructure development, and operational commissioning.`;
-  const splitReq = doc.splitTextToSize(reqText, contentWidth);
-  checkPageBreak(splitReq.length * 4.2 + 6);
   doc.text(splitReq, margin, y);
   y += splitReq.length * 4.2 + 8;
 
-  // 7. Primary & Collaterals
-  drawSectionBanner('Primary & Collaterals', 25);
+  // ==================== PAGE 3 ====================
+  // Primary & Collaterals
+  drawSectionBanner('Primary & Collaterals', 30);
 
   doc.setFillColor(241, 245, 249);
   doc.rect(margin, y, contentWidth, 6, 'F');
@@ -351,7 +398,7 @@ export function generateProjectTeaserPDF(data: TeaserPDFData) {
   y += 6;
 
   const secRows = [
-    { type: 'Primary Security', desc: 'Hypothecation on all the plant & machinery, equipment, civil structures, and other fixed assets procured out of the Term Loan.' },
+    { type: 'Primary Security', desc: 'Hypothecation on all the plant & machinery, equipment, civil structures, and other fixed assets procured/to be procured out of the Term Loan.' },
     { type: 'Collateral Security', desc: `${data.collateralStatus || 'Freehold Clear Title Land / First Charge on Immovable Assets'}` }
   ];
 
@@ -377,71 +424,25 @@ export function generateProjectTeaserPDF(data: TeaserPDFData) {
 
   y += 8;
 
-  // 8. Detailed Risk Profile & Underwriting Assessment
-  if (data.riskProfileData || data.riskScoreOutOf10) {
-    drawSectionBanner('Detailed Risk Profile & Underwriting Assessment', 50);
+  // Preliminary Information
+  drawSectionBanner('Preliminary Information', 45);
 
-    const rp = data.riskProfileData;
-    const cibilStr = rp?.isNewToCredit ? 'New to Credit (N/A)' : (rp?.cibilScore ? `${rp.cibilScore} Score` : 'N/A');
-    const riskScoreVal = data.riskScoreOutOf10 || 8.0;
-
-    const riskGrid: Array<{ label: string; val: string }> = [
-      { label: 'Underwriting Score (out of 10)', val: `${riskScoreVal} / 10 (${riskScoreVal >= 8.5 ? 'Excellent' : riskScoreVal >= 7.0 ? 'Good' : riskScoreVal >= 5.5 ? 'Average' : 'High Risk'})` },
-      { label: 'CIBIL / Credit Score Track', val: cibilStr },
-      { label: 'Collateral Coverage %', val: rp?.collateralCoveragePct ? `${rp.collateralCoveragePct}%` : 'N/A' },
-      { label: 'Promoter Experience', val: rp?.industryExperience || data.promoterExp || 'N/A' },
-      { label: 'Educational Background', val: rp?.educationalBackground || 'N/A' },
-      { label: 'Business Constitution', val: rp?.businessConstitution || 'N/A' },
-      { label: 'Business Vintage', val: rp?.businessVintage || 'N/A' },
-      { label: 'Promoter Contribution Type', val: rp?.contributionType || 'N/A' },
-      { label: 'Management & Technical Workforce', val: rp ? `${rp.managementTeamSize || 0} Mgmt / ${rp.technicalWorkforceCount || 0} Tech Staff` : 'N/A' },
-      { label: 'Debt–Equity Ratio', val: rp?.debtEquityRatio || `${data.debtPct}:${data.eqPct}` }
-    ];
-
-    riskGrid.forEach((item, idx) => {
-      checkPageBreak(6);
-      const c = idx % 2 === 0 ? 255 : 250;
-      doc.setFillColor(c, c, c);
-      doc.rect(margin, y, contentWidth, 6, 'F');
-      doc.setDrawColor(226, 232, 240);
-      doc.rect(margin, y, contentWidth, 6, 'D');
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8.5);
-      doc.setTextColor(15, 23, 42);
-      doc.text(item.label, margin + 4, y + 4.2);
-
-      doc.setFont('helvetica', 'normal');
-      doc.text(item.val, margin + 70, y + 4.2);
-      y += 6;
-    });
-
-    y += 6;
-  }
-
-  // 9. Preliminary Information
-  drawSectionBanner('Preliminary Information', 50);
-
-  const prelimGrid: Array<{ label: string; val: string }> = [
-    { label: 'Project Name', val: projectName },
-    { label: 'Promoter Name', val: data.fullName || 'N/A' },
-    { label: 'Industry Sector', val: data.industry },
-    { label: 'Project Location', val: data.location || 'India' },
-    { label: 'Land Status', val: data.landStatus || 'N/A' },
-    { label: 'Collateral Status', val: data.collateralStatus || 'N/A' },
-    { label: 'Promoter Experience', val: data.promoterExp || 'N/A' },
-    { label: 'Feasibility Assessment', val: `${getFeasibilityTerm(data.feasibilityScore)} (${data.feasibilityScore}/100)` },
-    { label: 'Bankability Grade', val: `${data.bankabilityRating} / 10` }
+  const prelimRows: Array<{ label: string; val: string }> = [
+    { label: 'Entity Type', val: rp?.businessConstitution || 'Private Limited Company / Greenfield Entity' },
+    { label: 'Project / Legal Name', val: companyLegalName },
+    { label: 'Key Promoter', val: data.fullName || 'Promoter' },
+    { label: 'Contact Phone', val: data.mobile || 'Confidential / On Request' },
+    { label: 'Contact Email', val: data.email || 'Confidential / On Request' },
+    { label: 'Operating / Track Record', val: rp?.businessVintage || `${data.promoterExp || 'Experienced'} in Industry` },
+    ...(data.gstNumber ? [{ label: 'GST Number', val: data.gstNumber }] : []),
+    ...(data.panNumber ? [{ label: 'PAN Number', val: data.panNumber }] : []),
+    { label: 'Registered Location', val: `${data.location || 'India'}` },
+    { label: 'Proposed Plant Site', val: `${data.location || 'India'} (${data.landStatus})` },
+    { label: 'Feasibility Score', val: `${getFeasibilityTerm(data.feasibilityScore)} (${data.feasibilityScore}/100)` },
+    { label: 'Bankability Grade', val: `${data.bankabilityRating} / 10 (Tier-1 Bankable Grade)` }
   ];
 
-  if (data.gstNumber) {
-    prelimGrid.push({ label: 'GST Number', val: data.gstNumber });
-  }
-  if (data.panNumber) {
-    prelimGrid.push({ label: 'PAN Number', val: data.panNumber });
-  }
-
-  prelimGrid.forEach((item, idx) => {
+  prelimRows.forEach((item, idx) => {
     checkPageBreak(6);
     const c = idx % 2 === 0 ? 255 : 250;
     doc.setFillColor(c, c, c);
@@ -455,11 +456,11 @@ export function generateProjectTeaserPDF(data: TeaserPDFData) {
     doc.text(item.label, margin + 4, y + 4.2);
 
     doc.setFont('helvetica', 'normal');
-    doc.text(item.val, margin + 60, y + 4.2);
+    doc.text(item.val, margin + 65, y + 4.2);
     y += 6;
   });
 
-  // Render footers dynamically on all generated pages
+  // Render footers dynamically across all pages
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
@@ -471,7 +472,7 @@ export function generateProjectTeaserPDF(data: TeaserPDFData) {
     fullName: data.fullName || 'Promoter',
     mobile: data.mobile || 'N/A',
     email: data.email || 'N/A',
-    projectName: data.projectName || `${data.industry} Greenfield Project`,
+    projectName: companyLegalName,
     industry: data.industry || 'General Industry',
     location: data.location || 'India',
     totalCostCr: data.totalCostCr,
@@ -480,7 +481,7 @@ export function generateProjectTeaserPDF(data: TeaserPDFData) {
     bankabilityRating: data.bankabilityRating,
     source: 'PDF Teaser Downloaded',
     downloadedPDF: true,
-    notes: `Land: ${data.landStatus}. Collateral: ${data.collateralStatus || 'N/A'}. Exp: ${data.promoterExp}.`
+    notes: `Land: ${data.landStatus}. Collateral: ${data.collateralStatus || 'N/A'}. Exp: ${data.promoterExp}. Suppliers: ${data.rawMaterialSource || '-'}. Buyers: ${data.primaryBuyersType || '-'}`
   });
 
   const fileName = `Inisio_Teaser_${(data.projectName || data.fullName || 'Greenfield').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
@@ -504,11 +505,14 @@ export function sendLeadToWhatsApp(data: TeaserPDFData, adminPhone = '9163020264
     `• Total Capex: ₹ ${data.totalCostCr} Cr\n` +
     `• Promoter Equity: ₹ ${data.promoterContribCr} Cr (${data.eqPct}%)\n` +
     `• Required Debt: ₹ ${data.loanRequiredCr} Cr (${data.debtPct}%)\n\n` +
+    `*Suppliers & Buyers:*\n` +
+    `• Raw Material Source: ${data.rawMaterialSource || 'N/A'}\n` +
+    `• Buyers Segment: ${data.primaryBuyersType || 'N/A'}\n\n` +
     `*Advisory Evaluation:*\n` +
     `• Feasibility Check: ${getFeasibilityTerm(data.feasibilityScore)}\n` +
     `• Bankability Grade: ${data.bankabilityRating}/10\n` +
     `• Est. Eligible Loan: ₹ ${data.estimatedLoan} Cr\n\n` +
-    `_User requested official Executive Project Teaser from Inisio Advisory Desk._`;
+    `_User generated official Executive Project Teaser from Inisio Advisory Desk._`;
 
   const url = `https://wa.me/${adminPhone}?text=${encodeURIComponent(text)}`;
   window.open(url, '_blank');
