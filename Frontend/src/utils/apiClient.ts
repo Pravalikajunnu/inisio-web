@@ -15,6 +15,24 @@ const getAuthToken = (): string | null => {
   return null;
 };
 
+const env = (import.meta as any).env || {};
+const configuredApiUrl = env.VITE_API_URL
+  ? env.VITE_API_URL.replace(/\/$/, '')
+  : env.VITE_BACKEND_URL
+    ? `${env.VITE_BACKEND_URL.replace(/\/$/, '')}/api`
+    : env.DEV
+      ? '/api'
+      : 'https://inisio-web.onrender.com/api';
+
+export const apiUrl = (endpoint: string): string => {
+  if (endpoint.startsWith('http')) {
+    return endpoint;
+  }
+
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  return `${configuredApiUrl}${cleanEndpoint}`;
+};
+
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = getAuthToken();
   const headers: Record<string, string> = {
@@ -26,14 +44,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const baseUrl = (import.meta as any).env?.VITE_API_URL 
-    ? (import.meta as any).env.VITE_API_URL.replace(/\/$/, '')
-    : (import.meta as any).env?.VITE_BACKEND_URL 
-      ? `${(import.meta as any).env.VITE_BACKEND_URL.replace(/\/$/, '')}/api`
-      : '/api';
-
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${cleanEndpoint}`;
+  const url = apiUrl(endpoint);
 
   const response = await fetch(url, {
     ...options,

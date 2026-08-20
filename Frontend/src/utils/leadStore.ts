@@ -1,4 +1,5 @@
 import { createAdminNotification } from './notificationStore';
+import { apiUrl } from './apiClient';
 import { DetailedRiskProfileData } from '../components/DetailedRiskProfileForm';
 import { CommercialSupplyFundingData } from '../components/CommercialSupplyFundingForm';
 
@@ -244,8 +245,8 @@ export function getStoredLeads(userEmail?: string): LeadRecord[] {
 
 export async function fetchLeadsFromBackend(email?: string): Promise<LeadRecord[]> {
   try {
-    const url = email ? `/api/leads?email=${encodeURIComponent(email)}` : '/api/leads';
-    const response = await fetch(url);
+    const url = email ? `/leads?email=${encodeURIComponent(email)}` : '/leads';
+    const response = await fetch(apiUrl(url));
     if (response.ok) {
       const data = await response.json();
       if (data && data.data && Array.isArray(data.data) && data.data.length > 0) {
@@ -329,7 +330,7 @@ export function saveLeadRecord(lead: Omit<LeadRecord, 'id' | 'timestamp'>): Lead
   }
 
   // Asynchronously sync to MongoDB Atlas REST endpoint
-  fetch('/api/leads', {
+  fetch(apiUrl('/leads'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(lead),
@@ -374,7 +375,7 @@ export function updateLeadRecord(id: string, updates: Partial<LeadRecord>, edite
 
     // Async sync to backend if valid backend ID
     if (id && !id.startsWith('lead-')) {
-      fetch(`/api/leads/${id}`, {
+      fetch(apiUrl(`/leads/${id}`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates)
@@ -392,7 +393,7 @@ export function deleteLeadRecord(id: string): void {
   window.dispatchEvent(new CustomEvent('inisio_lead_added'));
 
   if (id && !id.startsWith('lead-')) {
-    fetch(`/api/leads/${id}`, { method: 'DELETE' }).catch(() => {});
+    fetch(apiUrl(`/leads/${id}`), { method: 'DELETE' }).catch(() => {});
   }
 }
 
@@ -400,7 +401,7 @@ export function clearAllLeads(): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
   window.dispatchEvent(new CustomEvent('inisio_lead_added'));
 
-  fetch('/api/leads/clear-all', { method: 'DELETE' }).catch(() => {});
+  fetch(apiUrl('/leads/clear-all'), { method: 'DELETE' }).catch(() => {});
 }
 
 export function exportLeadsToCSV(): void {

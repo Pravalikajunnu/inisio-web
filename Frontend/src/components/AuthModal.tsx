@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthUser, UserRole } from '../types';
+import { apiUrl } from '../utils/apiClient';
 import {
   X,
   Lock,
@@ -97,12 +98,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     // Try backend authentication
     try {
-      const endpoint = mode === 'signup' ? '/api/auth/register' : '/api/auth/login';
+      const endpoint = mode === 'signup' ? '/auth/register' : '/auth/login';
       const body = mode === 'signup' 
         ? { email: cleanEmail, password: password || 'inisio123', name: name || 'Promoter', phone, company, role }
         : { email: cleanEmail, password: password || 'inisio123' };
 
-      const response = await fetch(endpoint, {
+      const response = await fetch(apiUrl(endpoint), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

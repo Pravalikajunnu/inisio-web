@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthUser } from '../types';
+import { apiUrl } from '../utils/apiClient';
 import { fetchLeadsFromBackend, updateLeadRecord, LeadRecord } from '../utils/leadStore';
 import { generateProjectTeaserPDF, TeaserPDFData } from '../utils/pdfGenerator';
 import { ProjectEditModal, EditSectionType } from './ProjectEditModal';
@@ -130,7 +131,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       
       let apiProjects: any[] = [];
       try {
-        const pRes = await fetch(`/api/projects?email=${encodeURIComponent(user.email)}`);
+        const pRes = await fetch(apiUrl(`/projects?email=${encodeURIComponent(user.email)}`));
         if (pRes.ok) {
           const pData = await pRes.json();
           if (pData && pData.data && Array.isArray(pData.data)) {
