@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { getStoredLeads, deleteLeadRecord, clearAllLeads, exportLeadsToCSV, LeadRecord } from '../utils/leadStore';
-import { getAdminNotifications, AdminNotification } from '../utils/notificationStore';
+import { getAdminNotifications, AdminNotification, getUnreadNotificationCount } from '../utils/notificationStore';
 import { UserProfileDetailModal } from './UserProfileDetailModal';
+import { LeadEditModal } from './LeadEditModal';
+import { AdminNotificationModal } from './AdminNotificationModal';
 import { AuthUser } from '../types';
 import {
   ShieldCheck,
@@ -38,7 +40,10 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'edits' | 'assignments' | 'teasers'>('all');
   const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null);
+  const [editingLead, setEditingLead] = useState<LeadRecord | null>(null);
   const [showToast, setShowToast] = useState<string | null>(null);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [unreadNotifs, setUnreadNotifs] = useState(0);
 
   const triggerToast = (msg: string) => {
     setShowToast(msg);
@@ -48,12 +53,18 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
   useEffect(() => {
     loadData();
     const handleUpdate = () => loadData();
+    const handleNotifUpdate = () => setUnreadNotifs(getUnreadNotificationCount());
     window.addEventListener('inisio_lead_added', handleUpdate);
-    return () => window.removeEventListener('inisio_lead_added', handleUpdate);
+    window.addEventListener('inisio_admin_notification_added', handleNotifUpdate);
+    return () => {
+      window.removeEventListener('inisio_lead_added', handleUpdate);
+      window.removeEventListener('inisio_admin_notification_added', handleNotifUpdate);
+    };
   }, []);
 
   const loadData = () => {
     setLeads(getStoredLeads());
+    setUnreadNotifs(getUnreadNotificationCount());
   };
 
   const filteredLeads = leads.filter(l => {
@@ -104,6 +115,20 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
         </div>
       )}
 
+      {/* Ultra-Minimalist Role Feature Banner */}
+      <div className="bg-slate-50 border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-6 py-2.5 flex items-center gap-2 text-xs">
+          <ShieldCheck className="w-4 h-4 text-slate-500 shrink-0" />
+          {user.role === 'admin3' ? (
+            <span className="text-slate-700"><strong>Admin 3 (Super Admin):</strong> You have full unrestricted rights to edit records, manage users, and configure settings.</span>
+          ) : user.role === 'admin2' ? (
+            <span className="text-slate-700"><strong>Admin 2 (Editor):</strong> You can view project details and edit specific implementation and services fields.</span>
+          ) : (
+            <span className="text-slate-700"><strong>Admin 1 (Read-Only):</strong> You can view project details and status updates without editing privileges.</span>
+          )}
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         
         {/* ---------------------------------------------------- */}
@@ -130,15 +155,28 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
 
             <div className="flex items-center gap-2.5 shrink-0">
               <button
-                onClick={() => {
-                  exportLeadsToCSV();
-                  triggerToast('Exported all leads to CSV!');
-                }}
-                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                onClick={() => setIsNotifOpen(true)}
+                className="relative p-2 text-zinc-500 hover:text-zinc-900 bg-white border border-zinc-200 hover:bg-zinc-50 rounded-lg transition-colors cursor-pointer shadow-sm"
               >
-                <FileSpreadsheet className="w-3.5 h-3.5" />
-                <span>Export CSV</span>
+                <Bell className="w-4 h-4" />
+                {unreadNotifs > 0 && (
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-bold text-white">
+                    {unreadNotifs}
+                  </span>
+                )}
               </button>
+              {user.role !== 'admin1' && (
+                <button
+                  onClick={() => {
+                    exportLeadsToCSV();
+                    triggerToast('Exported all leads to CSV!');
+                  }}
+                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  <span>Export CSV</span>
+                </button>
+              )}
             </div>
           </div>
           
@@ -363,6 +401,17 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
                               <span>Track</span>
                             </button>
 
+                            {(user.role === 'admin2' || user.role === 'admin3') && (
+                              <button
+                                onClick={() => setEditingLead(lead)}
+                                className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer border border-amber-200/50"
+                                title="Edit Specific Fields"
+                              >
+                                <Edit3 className="w-3 h-3" />
+                                <span>Edit</span>
+                              </button>
+                            )}
+
                             <a
                               href={`https://wa.me/91${lead.mobile.replace(/[^0-9]/g, '')}?text=${waText}`}
                               target="_blank"
@@ -374,19 +423,21 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
                               <span>WA</span>
                             </a>
 
-                            <button
-                              onClick={() => {
-                                if (confirm(`Delete lead entry for ${lead.fullName}?`)) {
-                                  deleteLeadRecord(lead.id);
-                                  loadData();
-                                  triggerToast('Deleted lead record.');
-                                }
-                              }}
-                              className="p-1 text-zinc-400 hover:text-red-600 rounded transition-colors cursor-pointer"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            {user.role === 'admin3' && (
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Delete lead entry for ${lead.fullName}?`)) {
+                                    deleteLeadRecord(lead.id);
+                                    loadData();
+                                    triggerToast('Deleted lead record.');
+                                  }
+                                }}
+                                className="p-1 text-zinc-400 hover:text-red-600 rounded transition-colors cursor-pointer"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -400,19 +451,21 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
           {/* Table Footer */}
           <div className="flex items-center justify-between text-xs text-zinc-400 pt-2 border-t border-zinc-100">
             <span>Showing {filteredLeads.length} of {leads.length} records</span>
-            <button
-              onClick={() => {
-                if (confirm('Clear all leads data? This cannot be undone.')) {
-                  clearAllLeads();
-                  loadData();
-                  triggerToast('Cleared all lead records.');
-                }
-              }}
-              className="text-red-500 hover:text-red-700 flex items-center gap-1 cursor-pointer text-xs"
-            >
-              <Trash2 className="w-3 h-3" />
-              <span>Clear All Leads</span>
-            </button>
+            {user.role === 'admin3' && (
+              <button
+                onClick={() => {
+                  if (confirm('Clear all leads data? This cannot be undone.')) {
+                    clearAllLeads();
+                    loadData();
+                    triggerToast('Cleared all lead records.');
+                  }
+                }}
+                className="text-red-500 hover:text-red-700 flex items-center gap-1 cursor-pointer text-xs"
+              >
+                <Trash2 className="w-3 h-3" />
+                <span>Clear All Leads</span>
+              </button>
+            )}
           </div>
 
         </div>
@@ -423,13 +476,28 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
       <UserProfileDetailModal
         lead={selectedLead}
         onClose={() => setSelectedLead(null)}
-        onDelete={(id) => {
+        onDelete={user.role === 'admin3' ? (id) => {
           deleteLeadRecord(id);
           loadData();
           triggerToast('Deleted lead record.');
+        } : undefined}
+      />
+
+      <LeadEditModal
+        lead={editingLead}
+        user={user}
+        isOpen={!!editingLead}
+        onClose={() => setEditingLead(null)}
+        onSaved={() => {
+          loadData();
+          triggerToast('Project details successfully updated.');
         }}
       />
 
+      <AdminNotificationModal
+        isOpen={isNotifOpen}
+        onClose={() => setIsNotifOpen(false)}
+      />
     </div>
   );
 };

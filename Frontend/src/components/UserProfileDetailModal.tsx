@@ -305,6 +305,34 @@ export const UserProfileDetailModal: React.FC<UserProfileDetailModalProps> = ({
             </div>
           </div>
 
+          {/* Edit History / Audit Trail */}
+          {(lead.editHistory && lead.editHistory.length > 0) && (
+            <div className="rounded-xl p-4 border border-zinc-200 bg-white space-y-3">
+              <h3 className="font-bold text-zinc-900 uppercase tracking-wider text-[11px] border-b border-zinc-100 pb-2 flex items-center gap-1.5">
+                <Edit3 className="w-3.5 h-3.5 text-blue-600" />
+                <span>Audit Trail &amp; Edit History</span>
+              </h3>
+              <div className="space-y-3">
+                {lead.editHistory.map((audit) => (
+                  <div key={audit.id} className="p-3 bg-zinc-50 border border-zinc-100 rounded-lg text-xs space-y-2">
+                    <div className="flex items-center justify-between text-[10px] text-zinc-500 font-medium">
+                      <span className="flex items-center gap-1">
+                        <User className="w-3 h-3" />
+                        Edited by: <strong className="text-zinc-700">{audit.editedBy}</strong>
+                      </span>
+                      <span>{new Date(audit.timestamp).toLocaleString('en-IN')}</span>
+                    </div>
+                    <ul className="list-disc pl-4 space-y-1 text-zinc-700">
+                      {audit.changes.map((change, idx) => (
+                        <li key={idx}>{change}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
         </div>
 
         {/* Footer */}

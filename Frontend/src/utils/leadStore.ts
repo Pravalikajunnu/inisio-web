@@ -1,7 +1,13 @@
 import { createAdminNotification } from './notificationStore';
-import { apiUrl } from './apiClient';
 import { DetailedRiskProfileData } from '../components/DetailedRiskProfileForm';
 import { CommercialSupplyFundingData } from '../components/CommercialSupplyFundingForm';
+
+export interface EditAuditRecord {
+  id: string;
+  timestamp: string;
+  editedBy: string;
+  changes: string[];
+}
 
 export interface LeadRecord {
   id: string;
@@ -34,6 +40,7 @@ export interface LeadRecord {
   timelineTime?: string;
   lastEditedBy?: string;
   lastEditedAt?: string;
+  editHistory?: EditAuditRecord[];
   riskProfileData?: DetailedRiskProfileData;
   commercialData?: CommercialSupplyFundingData;
   bankAppliedAt?: string;
@@ -245,8 +252,8 @@ export function getStoredLeads(userEmail?: string): LeadRecord[] {
 
 export async function fetchLeadsFromBackend(email?: string): Promise<LeadRecord[]> {
   try {
-    const url = email ? `/leads?email=${encodeURIComponent(email)}` : '/leads';
-    const response = await fetch(apiUrl(url));
+    const url = email ? `/api/leads?email=${encodeURIComponent(email)}` : '/api/leads';
+    const response = await fetch(url);
     if (response.ok) {
       const data = await response.json();
       if (data && data.data && Array.isArray(data.data) && data.data.length > 0) {
@@ -330,7 +337,7 @@ export function saveLeadRecord(lead: Omit<LeadRecord, 'id' | 'timestamp'>): Lead
   }
 
   // Asynchronously sync to MongoDB Atlas REST endpoint
-  fetch(apiUrl('/leads'), {
+  fetch('/api/leads', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(lead),
@@ -342,14 +349,35 @@ export function saveLeadRecord(lead: Omit<LeadRecord, 'id' | 'timestamp'>): Lead
 export function updateLeadRecord(id: string, updates: Partial<LeadRecord>, editedBy = 'Promoter'): LeadRecord | null {
   const leads = getStoredLeads();
   let updatedRecord: LeadRecord | null = null;
+  let changes: string[] = [];
 
   const updatedLeads = leads.map(l => {
     if (l.id === id) {
+      Object.keys(updates).forEach((key) => {
+        const k = key as keyof LeadRecord;
+        if (updates[k] !== undefined && updates[k] !== l[k] && typeof updates[k] !== 'object' && k !== 'lastEditedBy' && k !== 'lastEditedAt') {
+          changes.push(`${k} changed from '${l[k] || 'none'}' to '${updates[k]}'`);
+        }
+      });
+
+      const newHistoryRecord: EditAuditRecord = {
+        id: `audit-${Date.now()}-${Math.random().toString(36).substring(2,9)}`,
+        timestamp: new Date().toISOString(),
+        editedBy,
+        changes
+      };
+
+      const editHistory = l.editHistory ? [...l.editHistory] : [];
+      if (changes.length > 0) {
+        editHistory.unshift(newHistoryRecord);
+      }
+
       updatedRecord = {
         ...l,
         ...updates,
         lastEditedBy: editedBy,
-        lastEditedAt: new Date().toISOString()
+        lastEditedAt: new Date().toISOString(),
+        editHistory
       };
       return updatedRecord;
     }
@@ -361,21 +389,23 @@ export function updateLeadRecord(id: string, updates: Partial<LeadRecord>, edite
     window.dispatchEvent(new CustomEvent('inisio_lead_added', { detail: updatedRecord }));
 
     // Notify admin about this update
-    try {
-      createAdminNotification({
-        type: 'PROJECT_MODIFIED',
-        title: `Project '${(updatedRecord as LeadRecord).projectName}' Modified`,
-        message: `${editedBy} updated project parameters for '${(updatedRecord as LeadRecord).projectName}' (Capex: ₹${(updatedRecord as LeadRecord).totalCostCr} Cr).`,
-        userEmail: (updatedRecord as LeadRecord).email,
-        userName: (updatedRecord as LeadRecord).fullName,
-        projectName: (updatedRecord as LeadRecord).projectName,
-        metadata: updates
-      });
-    } catch (e) {}
+    if (changes.length > 0) {
+      try {
+        createAdminNotification({
+          type: 'PROJECT_MODIFIED',
+          title: `Project '${(updatedRecord as LeadRecord).projectName}' Modified`,
+          message: `${editedBy} updated: ${changes.join(', ')}.`,
+          userEmail: (updatedRecord as LeadRecord).email,
+          userName: (updatedRecord as LeadRecord).fullName,
+          projectName: (updatedRecord as LeadRecord).projectName,
+          metadata: { changes, updates }
+        });
+      } catch (e) {}
+    }
 
     // Async sync to backend if valid backend ID
     if (id && !id.startsWith('lead-')) {
-      fetch(apiUrl(`/leads/${id}`), {
+      fetch(`/api/leads/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates)
@@ -393,7 +423,7 @@ export function deleteLeadRecord(id: string): void {
   window.dispatchEvent(new CustomEvent('inisio_lead_added'));
 
   if (id && !id.startsWith('lead-')) {
-    fetch(apiUrl(`/leads/${id}`), { method: 'DELETE' }).catch(() => {});
+    fetch(`/api/leads/${id}`, { method: 'DELETE' }).catch(() => {});
   }
 }
 
@@ -401,7 +431,7 @@ export function clearAllLeads(): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
   window.dispatchEvent(new CustomEvent('inisio_lead_added'));
 
-  fetch(apiUrl('/leads/clear-all'), { method: 'DELETE' }).catch(() => {});
+  fetch('/api/leads/clear-all', { method: 'DELETE' }).catch(() => {});
 }
 
 export function exportLeadsToCSV(): void {

@@ -18,7 +18,7 @@ export const TRUST_NUMBERS = [
   },
   {
     id: 'funding',
-    value: 500,
+    value: 2000,
     prefix: '₹',
     suffix: 'Cr+',
     label: 'Funding Assisted',
@@ -27,7 +27,7 @@ export const TRUST_NUMBERS = [
   },
   {
     id: 'industries',
-    value: 100,
+    value: 50,
     suffix: '+',
     label: 'Industries Covered',
     description: 'Across manufacturing, energy, & tech',
@@ -35,7 +35,7 @@ export const TRUST_NUMBERS = [
   },
   {
     id: 'satisfaction',
-    value: 95,
+    value: 100,
     suffix: '%',
     label: 'Client Satisfaction',
     description: 'Repeat entrepreneurs & referrals',

@@ -46,134 +46,83 @@ interface StepItem {
 export const HOW_IT_WORKS_STEPS: StepItem[] = [
   {
     number: 1,
-    id: 'consultation',
-    title: 'Free Project Consultation',
-    shortTitle: 'Consultation',
-    timeframe: 'Day 1 – 2',
-    description: 'Help entrepreneurs understand whether their Greenfield Project is suitable for bank funding.',
-    icon: MessageSquare,
+    id: 'assessment',
+    title: 'Project Assessment',
+    shortTitle: 'Assessment',
+    timeframe: 'Minute 1',
+    description: 'Answer a few simple questions about your greenfield project, including cost, location, and industry, to get started.',
+    icon: FileSearch,
     points: [
-      'Understand the business idea',
-      'Discuss project cost',
-      'Estimate funding requirement',
-      'Explain the project loan process'
+      'Basic project details',
+      'Capital cost breakdown',
+      'Location and industry',
+      'Promoter experience'
     ],
-    deliverables: ['Initial Consultation', 'Project Checklist']
+    deliverables: ['Instant Data Processing', 'Initial Review']
   },
   {
     number: 2,
-    id: 'feasibility',
-    title: 'Project Feasibility Assessment',
-    shortTitle: 'Feasibility',
-    timeframe: 'Day 3 – 5',
-    description: 'Evaluate whether the project is financially and technically viable.',
-    icon: FileSearch,
+    id: 'rating',
+    title: 'Bankability Rating',
+    shortTitle: 'Bankability',
+    timeframe: 'Minute 2',
+    description: 'Our proprietary algorithm instantly calculates your project\'s feasibility score and bankability rating.',
+    icon: BarChart3,
     points: [
-      'Market demand',
-      'Technical feasibility',
-      'Investment analysis',
-      'Profitability estimation',
-      'Project loan eligibility'
+      'Debt Service Coverage Ratio (DSCR)',
+      'Equity contribution check',
+      'Financial feasibility score',
+      'Automated risk analysis'
     ],
-    deliverables: ['Feasibility Report', 'Bankability Assessment']
+    deliverables: ['Bankability Rating', 'Feasibility Score']
   },
   {
     number: 3,
-    id: 'documentation',
-    title: 'DPR & Financial Documentation',
-    shortTitle: 'DPR & Documents',
-    timeframe: 'Day 6 – 12',
-    description: 'Prepare complete bank-ready documents.',
-    icon: FileSpreadsheet,
+    id: 'confidence',
+    title: 'Get Confidence',
+    shortTitle: 'Confidence',
+    timeframe: 'Minute 3',
+    description: 'Receive an instant Executive Teaser and a risk profile summary to understand your project\'s strengths before approaching banks.',
+    icon: ShieldCheck,
     points: [
-      'Detailed Project Report (DPR)',
-      'Financial Projections',
-      'Cost Estimates',
-      'CMA Data',
-      'Required Documents'
+      'Executive Teaser generation',
+      'Risk profile summary',
+      'Strengths and weaknesses',
+      'Project readiness check'
     ],
-    deliverables: ['Complete Project Loan File', 'Bank-Ready DPR']
+    deliverables: ['Executive Teaser PDF', 'Risk Profile Report']
   },
   {
     number: 4,
-    id: 'bank-selection',
-    title: 'Select the Right Bank',
-    shortTitle: 'Bank Selection',
-    timeframe: 'Day 13 – 16',
-    description: 'Recommend the most suitable lender.',
-    icon: Building2,
+    id: 'dashboard',
+    title: 'Interactive Dashboard',
+    shortTitle: 'Dashboard',
+    timeframe: 'Ongoing',
+    description: 'Track your project\'s progress, manage documents, and monitor your loan application stages in real-time.',
+    icon: Layers,
     points: [
-      'Compare banks',
-      'Compare loan schemes',
-      'Compare interest rates',
-      'Government subsidy options',
-      'Funding structure'
+      'Real-time status tracking',
+      'Document management',
+      'Stage-by-stage progress',
+      'Centralized communication'
     ],
-    deliverables: ['Bank Recommendation', 'Loan Strategy']
+    deliverables: ['Client Portal Access', 'Document Vault']
   },
   {
     number: 5,
-    id: 'application',
-    title: 'Project Loan Application',
-    shortTitle: 'Application',
-    timeframe: 'Day 17 – 20',
-    description: 'Handle the complete application process.',
-    icon: Send,
+    id: 'advisory',
+    title: 'Immediate Advisory Support',
+    shortTitle: 'Advisory',
+    timeframe: 'On-Demand',
+    description: 'Get connected with dedicated Chartered Accountants and banking experts for DPR drafting, CMA modeling, and financial structuring.',
+    icon: Users2,
     points: [
-      'Prepare application',
-      'Verify documents',
-      'Submit to bank',
-      'Track application'
+      'DPR preparation',
+      'CMA data modeling',
+      'Bank negotiation support',
+      'Chartered Accountant guidance'
     ],
-    deliverables: ['Submitted Loan Application', 'Tracking Support']
-  },
-  {
-    number: 6,
-    id: 'bank-review',
-    title: 'Bank Review Support',
-    shortTitle: 'Bank Review',
-    timeframe: 'Day 21 – 35',
-    description: 'Coordinate with banks until approval.',
-    icon: HelpCircle,
-    points: [
-      'Respond to bank queries',
-      'Additional documentation',
-      'Site inspection support',
-      'Financial clarification'
-    ],
-    deliverables: ['Query Resolution', 'Updated Documents']
-  },
-  {
-    number: 7,
-    id: 'sanction',
-    title: 'Project Loan Sanction',
-    shortTitle: 'Loan Sanction',
-    timeframe: 'Day 36 – 45',
-    description: 'Guide the client after approval.',
-    icon: Award,
-    points: [
-      'Explain sanction letter',
-      'Loan conditions',
-      'Documentation support',
-      'Next steps'
-    ],
-    deliverables: ['Sanction Letter Guidance', 'Loan Acceptance Support']
-  },
-  {
-    number: 8,
-    id: 'disbursement',
-    title: 'Loan Disbursement & Project Execution',
-    shortTitle: 'Disbursement',
-    timeframe: 'Post-Sanction',
-    description: 'Continue supporting the client after sanction.',
-    icon: TrendingUp,
-    points: [
-      'Loan disbursement assistance',
-      'Project implementation guidance',
-      'Subsidy support',
-      'Post-loan advisory'
-    ],
-    deliverables: ['Fund Release Support', 'Ongoing Project Guidance']
+    deliverables: ['Bank-Ready DPR', 'Dedicated CA Support']
   }
 ];
 
@@ -253,10 +202,10 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
             <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-200/80">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-800 uppercase tracking-wider font-manrope">
-                  8-Step Project Loan Process
+                  5-Step Project Loan Process
                 </span>
                 <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
-                  Step {activeStep} of 8: {HOW_IT_WORKS_STEPS[activeStep - 1]?.title}
+                  Step {activeStep} of 5: {HOW_IT_WORKS_STEPS[activeStep - 1]?.title}
                 </span>
               </div>
 
@@ -275,11 +224,11 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
                 </button>
                 <button
                   onClick={() => {
-                    const next = Math.min(8, activeStep + 1);
+                    const next = Math.min(5, activeStep + 1);
                     setActiveStep(next);
                     document.getElementById(`step-${next}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                   }}
-                  disabled={activeStep === 8}
+                  disabled={activeStep === 5}
                   className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-2xs"
                 >
                   Next →
@@ -288,7 +237,7 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
             </div>
 
             {/* Step Selector Buttons Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
               {HOW_IT_WORKS_STEPS.map((step) => {
                 const isActive = activeStep === step.number;
                 const isCompleted = activeStep > step.number;
@@ -321,7 +270,7 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
         </section>
 
         {/* ========================================================================= */}
-        {/* 3. Detailed 8-Step Timeline (Vertical Connected Flow) */}
+        {/* 3. Detailed 5-Step Timeline (Vertical Connected Flow) */}
         {/* ========================================================================= */}
         <section className="relative max-w-5xl mx-auto space-y-6 sm:space-y-10">
           
@@ -451,33 +400,26 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
             </h2>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
             <div className="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-1">
               <span className="font-manrope text-2xl sm:text-3xl font-extrabold text-blue-400 block">
-                ₹5 Cr – ₹500 Cr+
+                ₹5 Cr – ₹2000 Cr+
               </span>
               <span className="text-xs sm:text-sm text-slate-300 font-medium">Projects Supported</span>
-            </div>
-
-            <div className="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-1">
-              <span className="font-manrope text-2xl sm:text-3xl font-extrabold text-blue-400 block">
-                30+
-              </span>
-              <span className="text-xs sm:text-sm text-slate-300 font-medium">Banking Partners</span>
             </div>
 
             <div className="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-1">
               <span className="font-manrope text-2xl sm:text-3xl font-extrabold text-emerald-400 block">
                 100%
               </span>
-              <span className="text-xs sm:text-sm text-slate-300 font-medium">Bank-Ready DPR</span>
+              <span className="text-xs sm:text-sm text-slate-300 font-medium">Client Satisfaction</span>
             </div>
 
             <div className="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-1">
               <span className="font-manrope text-2xl sm:text-3xl font-extrabold text-blue-400 block">
-                End-to-End
+                50+
               </span>
-              <span className="text-xs sm:text-sm text-slate-300 font-medium">Project Loan Advisory</span>
+              <span className="text-xs sm:text-sm text-slate-300 font-medium">Industries</span>
             </div>
           </div>
         </section>

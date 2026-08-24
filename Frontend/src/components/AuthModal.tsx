@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { AuthUser, UserRole } from '../types';
-import { apiUrl } from '../utils/apiClient';
 import {
   X,
   Lock,
@@ -61,8 +60,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const handleQuickLogin = (selectedRole: UserRole) => {
     setError('');
     setSuccessMessage('');
-    if (selectedRole === 'admin') {
-      setEmail('admin@gmail.com');
+    if (selectedRole === 'admin' || selectedRole === 'admin3') {
+      setEmail('admin3@gmail.com');
+      setPassword('admin123');
+    } else if (selectedRole === 'admin2') {
+      setEmail('admin2@gmail.com');
+      setPassword('admin123');
+    } else if (selectedRole === 'admin1') {
+      setEmail('admin1@gmail.com');
       setPassword('admin123');
     } else if (selectedRole === 'ca') {
       setEmail('ca@gmail.com');
@@ -88,6 +93,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
+    if ((mode === 'signup' || mode === 'login') && password && password.length < 6) {
+      setError('Password must be at least 6 characters');
+      setLoading(false);
+      return;
+    }
+
     if (mode === 'forgot-password') {
       setTimeout(() => {
         setLoading(false);
@@ -98,12 +109,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     // Try backend authentication
     try {
-      const endpoint = mode === 'signup' ? '/auth/register' : '/auth/login';
+      const endpoint = mode === 'signup' ? '/api/auth/register' : '/api/auth/login';
       const body = mode === 'signup' 
         ? { email: cleanEmail, password: password || 'inisio123', name: name || 'Promoter', phone, company, role }
         : { email: cleanEmail, password: password || 'inisio123' };
 
-      const response = await fetch(apiUrl(endpoint), {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -291,7 +302,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   >
                     <option value="user">Promoter / Borrower</option>
                     <option value="ca">CA / Financial Auditor</option>
-                    <option value="admin">Platform Admin</option>
+                    <option value="admin1">Admin 1 (Read-Only)</option>
+                    <option value="admin2">Admin 2 (Editor)</option>
+                    <option value="admin3">Admin 3 (Super Admin)</option>
                   </select>
                 </div>
               </div>
@@ -412,10 +425,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => handleQuickLogin('admin')}
+              onClick={() => handleQuickLogin('admin1')}
               className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 text-[11px] font-semibold rounded-lg border border-slate-200 transition-colors cursor-pointer"
             >
-              Platform Admin
+              Admin 1
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickLogin('admin2')}
+              className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 text-[11px] font-semibold rounded-lg border border-slate-200 transition-colors cursor-pointer"
+            >
+              Admin 2
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickLogin('admin3')}
+              className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 text-[11px] font-semibold rounded-lg border border-slate-200 transition-colors cursor-pointer"
+            >
+              Admin 3
             </button>
           </div>
         </div>

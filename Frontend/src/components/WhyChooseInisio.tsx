@@ -127,8 +127,8 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
   // SECTION 4: Why Choose Inisio? (4 Concise Benefits)
   const whyChooseBenefits = [
     {
-      title: 'Simple Loan Process',
-      desc: 'Clear, hassle-free guidance that removes complexity and confusion from bank financing.'
+      title: 'Create Your Own Dashboard',
+      desc: 'Track your project progress and manage your loan application seamlessly.'
     },
     {
       title: 'Business-Focused Guidance',
@@ -571,62 +571,7 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
           </div>
         </section>
 
-        {/* ==========================================
-            SECTION 5: WHO WE HELP
-           ========================================== */}
-        <section className="space-y-8 pt-4 border-t border-slate-200/70">
-          <div className="text-center max-w-[640px] mx-auto space-y-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-blue-800 bg-blue-50 px-3 py-1 rounded-full border border-blue-200/80">
-              Tailored Guidance
-            </span>
-            <h2 className="font-manrope text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
-              Funding Support for Every Stage of Your Business
-            </h2>
-            <p className="font-inter text-xs sm:text-sm text-[#6B7280]">
-              Whether starting fresh or scaling up, we align with your specific stage of growth.
-            </p>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {whoWeHelpCategories.map((cat, idx) => {
-              const IconComp = cat.icon;
-              return (
-                <div
-                  key={idx}
-                  className="bg-slate-50/70 rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:bg-white hover:border-blue-400 hover:shadow-sm transition-all text-left flex flex-col justify-between space-y-4"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                        <IconComp className="w-5 h-5" />
-                      </div>
-                      <span className="text-[10px] font-bold text-blue-800 bg-blue-100/80 px-2 py-0.5 rounded border border-blue-200/80">
-                        {cat.badge}
-                      </span>
-                    </div>
-
-                    <div>
-                      <h3 className="font-manrope font-bold text-base text-slate-900 tracking-tight">
-                        {cat.title}
-                      </h3>
-                      <p className="font-inter text-xs sm:text-sm text-[#4B5563] leading-relaxed mt-1">
-                        {cat.desc}
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={onOpenAssessment}
-                    className="text-xs font-bold text-blue-700 hover:text-blue-800 flex items-center gap-1 cursor-pointer pt-2 border-t border-slate-200/60"
-                  >
-                    <span>Check Stage Eligibility</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </section>
 
         {/* ==========================================
             SECTION 6: FINAL CTA

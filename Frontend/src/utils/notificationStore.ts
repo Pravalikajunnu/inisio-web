@@ -1,5 +1,3 @@
-import { apiUrl } from './apiClient';
-
 export interface AdminNotification {
   id: string;
   timestamp: string;
@@ -100,7 +98,7 @@ export function createAdminNotification(
   }
 
   // Sync to backend API asynchronously
-  fetch(apiUrl('/notifications'), {
+  fetch('/api/notifications', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(newNotif)
@@ -115,7 +113,7 @@ export function markNotificationAsRead(id: string): void {
   localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
   window.dispatchEvent(new CustomEvent('inisio_admin_notification_added'));
 
-  fetch(apiUrl(`/notifications/${id}/read`), { method: 'PATCH' }).catch(() => {});
+  fetch(`/api/notifications/${id}/read`, { method: 'PATCH' }).catch(() => {});
 }
 
 export function markAllNotificationsAsRead(): void {
@@ -124,7 +122,7 @@ export function markAllNotificationsAsRead(): void {
   localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
   window.dispatchEvent(new CustomEvent('inisio_admin_notification_added'));
 
-  fetch(apiUrl('/notifications/read-all'), { method: 'PATCH' }).catch(() => {});
+  fetch('/api/notifications/read-all', { method: 'PATCH' }).catch(() => {});
 }
 
 export function clearAllNotifications(): void {

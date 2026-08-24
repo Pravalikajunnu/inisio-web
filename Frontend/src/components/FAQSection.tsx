@@ -17,18 +17,6 @@ export const FAQSection: React.FC<FAQSectionProps> = ({
   onOpenConsultation
 }) => {
   const [openId, setOpenId] = useState<string>('faq_1');
-  const [activeCategory, setActiveCategory] = useState<string>('All');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-
-  const categories = ['All', 'Assessment', 'Loan Process', 'DPR', 'Feasibility'];
-
-  const filteredFaqs = FAQS.filter((faq) => {
-    const matchesCategory = activeCategory === 'All' || faq.category === activeCategory;
-    const matchesSearch =
-      faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      faq.answer.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
 
   const toggleFAQ = (id: string) => {
     setOpenId(openId === id ? '' : id);
@@ -49,43 +37,11 @@ export const FAQSection: React.FC<FAQSectionProps> = ({
           <p className="text-xs sm:text-sm text-gray-600">
             Got questions about DPR preparation, bankability ratings, or term loan debt ratios? We have answers.
           </p>
-
-          {/* Category Tabs & Search Bar */}
-          <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-            {/* Category pills */}
-            <div className="flex flex-wrap gap-1.5">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                    activeCategory === cat
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-
-            {/* Search input */}
-            <div className="w-full sm:w-64 relative">
-              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search questions..."
-                className="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
         </div>
 
         {/* Accordion Items List */}
         <div className="space-y-3 font-inter">
-          {filteredFaqs.map((faq) => {
+          {FAQS.map((faq) => {
             const isOpen = openId === faq.id;
             return (
               <div
@@ -126,12 +82,6 @@ export const FAQSection: React.FC<FAQSectionProps> = ({
               </div>
             );
           })}
-
-          {filteredFaqs.length === 0 && (
-            <div className="text-center py-10 glass-card rounded-2xl border border-dashed border-gray-300">
-              <p className="text-sm text-gray-500">No questions matched your search query.</p>
-            </div>
-          )}
         </div>
 
         {/* Still Have Questions CTA */}

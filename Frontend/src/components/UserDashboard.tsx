@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { AuthUser } from '../types';
-import { apiUrl } from '../utils/apiClient';
 import { fetchLeadsFromBackend, updateLeadRecord, LeadRecord } from '../utils/leadStore';
 import { generateProjectTeaserPDF, TeaserPDFData } from '../utils/pdfGenerator';
 import { ProjectEditModal, EditSectionType } from './ProjectEditModal';
@@ -36,6 +35,7 @@ import {
   Plus,
   Coins,
   Check,
+  Activity,
   ExternalLink,
   ChevronRight,
   ChevronDown,
@@ -131,7 +131,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       
       let apiProjects: any[] = [];
       try {
-        const pRes = await fetch(apiUrl(`/projects?email=${encodeURIComponent(user.email)}`));
+        const pRes = await fetch(`/api/projects?email=${encodeURIComponent(user.email)}`);
         if (pRes.ok) {
           const pData = await pRes.json();
           if (pData && pData.data && Array.isArray(pData.data)) {
@@ -429,11 +429,21 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   const dprUploadTimestamp = activeProject?.dprFile?.uploadedAt || activeProject?.cmaFile?.uploadedAt;
   const dprDateFormatted = formatRealtimeDate(dprUploadTimestamp);
 
-  const isAssessmentCompleted = Boolean(activeProject && (activeProject.projectName || activeProject.totalCostCr));
-  const isRatingCompleted = Boolean(activeProject && (activeProject.feasibilityScore !== undefined || activeProject.bankabilityRating));
-  const isDocCompleted = Boolean(activeProject?.dprFile?.uploadedAt || activeProject?.cmaFile?.uploadedAt);
-  const isBankAppCompleted = Boolean(activeProject?.bankAppliedAt);
-  const isLoanApproved = Boolean(activeProject?.loanApprovedAt);
+  const statusMap: Record<string, number> = {
+    'New': 1,
+    'Contacted': 1,
+    'In Appraisal': 2,
+    'DPR Ready': 3,
+    'CA Approved': 4,
+    'Sanctioned': 5
+  };
+  const adminStageLevel = statusMap[activeProject?.status as string] || 0;
+
+  const isAssessmentCompleted = Boolean(activeProject && (activeProject.projectName || activeProject.totalCostCr)) || adminStageLevel >= 1;
+  const isRatingCompleted = Boolean(activeProject && (activeProject.feasibilityScore !== undefined || activeProject.bankabilityRating)) || adminStageLevel >= 2;
+  const isDocCompleted = Boolean(activeProject?.dprFile?.uploadedAt || activeProject?.cmaFile?.uploadedAt) || adminStageLevel >= 3;
+  const isBankAppCompleted = Boolean(activeProject?.bankAppliedAt) || adminStageLevel >= 4;
+  const isLoanApproved = Boolean(activeProject?.loanApprovedAt) || adminStageLevel >= 5;
   const isFundingCompleted = Boolean(activeProject?.fundingDisbursedAt);
 
   const lifecycleStages = [
@@ -514,6 +524,14 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
         </div>
       )}
 
+      {/* Ultra-Minimalist Role Feature Banner */}
+      <div className="bg-slate-50 border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-6 py-2.5 flex items-center gap-2 text-xs">
+          <ShieldCheck className="w-4 h-4 text-slate-500 shrink-0" />
+          <span className="text-slate-700"><strong>User Access:</strong> You can browse materials, request trade services, and fill out application forms.</span>
+        </div>
+      </div>
+
       {/* Edit Modal */}
       {activeProject && (
         <ProjectEditModal
@@ -563,18 +581,19 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
 
               {/* Project Dropdown / Switcher */}
               {userProjects.length > 0 && (
-                <div className="relative">
-                  <button
-                    onClick={() => setProjectDropdownOpen(!projectDropdownOpen)}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-lg text-sm font-semibold text-zinc-900 transition-colors cursor-pointer"
-                  >
-                    <Building2 className="w-4 h-4 text-blue-600 shrink-0" />
-                    <span className="truncate max-w-[200px]">{activeProject?.projectName || 'Select Project'}</span>
-                    <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-mono font-bold">
-                      {userProjects.length} {userProjects.length === 1 ? 'Project' : 'Projects'}
-                    </span>
-                    <ChevronDown className="w-4 h-4 text-zinc-400 shrink-0" />
-                  </button>
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <button
+                      onClick={() => setProjectDropdownOpen(!projectDropdownOpen)}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-lg text-sm font-semibold text-zinc-900 transition-colors cursor-pointer"
+                    >
+                      <Building2 className="w-4 h-4 text-blue-600 shrink-0" />
+                      <span className="truncate max-w-[200px]">{activeProject?.projectName || 'Select Project'}</span>
+                      <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-mono font-bold">
+                        {userProjects.length} {userProjects.length === 1 ? 'Project' : 'Projects'}
+                      </span>
+                      <ChevronDown className="w-4 h-4 text-zinc-400 shrink-0" />
+                    </button>
 
                   {/* Dropdown Menu */}
                   {projectDropdownOpen && (
@@ -619,6 +638,14 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                         </div>
                       </div>
                     </>
+                  )}
+                  </div>
+                  
+                  {activeProject?.status && (
+                    <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 border border-emerald-200 rounded-lg shadow-sm">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-xs font-semibold text-emerald-700">Status: {activeProject.status}</span>
+                    </div>
                   )}
                 </div>
               )}
@@ -884,10 +911,17 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                             </p>
 
                             {/* Completed Timestamp */}
-                            {isCompleted && st.completedAt && (
+                            {isCompleted && (
                               <div className="text-[11px] text-emerald-800 font-semibold mt-1 flex items-center gap-1">
                                 <Check className="w-3 h-3 text-emerald-600 stroke-[3]" />
-                                <span>Completed: {st.completedAt}</span>
+                                <span>{st.completedAt ? `Completed: ${st.completedAt}` : 'Stage Completed'}</span>
+                              </div>
+                            )}
+                            
+                            {isInProgress && activeProject?.status && (
+                              <div className="text-[11px] text-blue-800 font-semibold mt-1 flex items-center gap-1 bg-blue-50 w-fit px-2 py-0.5 rounded-md border border-blue-100">
+                                <Activity className="w-3 h-3 text-blue-600" />
+                                <span>Current Status: {activeProject.status}</span>
                               </div>
                             )}
 

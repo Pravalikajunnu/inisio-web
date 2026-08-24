@@ -116,7 +116,7 @@ export const TrustNumbers: React.FC = () => {
         <div className="mt-8 pt-5 border-t border-slate-200/70 flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-slate-600">
           <div className="flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-blue-600" />
-            <span>Aligned with PSU & Top Private Bank Credit Committees</span>
+            <span>Aligned with PSU & Top Private Bank Credit</span>
           </div>
           <div className="flex flex-wrap items-center gap-4 text-slate-500 font-semibold uppercase text-[10px] tracking-wider">
             <span>• HDFC Bank</span>

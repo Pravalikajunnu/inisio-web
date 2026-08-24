@@ -140,6 +140,14 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
         </div>
       )}
 
+      {/* Ultra-Minimalist Role Feature Banner */}
+      <div className="bg-slate-50 border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-6 py-2.5 flex items-center gap-2 text-xs">
+          <ShieldCheck className="w-4 h-4 text-slate-500 shrink-0" />
+          <span className="text-slate-700"><strong>CA Access:</strong> Restricted to financial documents, tax processing, and DPR data analysis.</span>
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         
         {/* ---------------------------------------------------- */}

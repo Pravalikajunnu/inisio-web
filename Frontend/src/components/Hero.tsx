@@ -14,7 +14,11 @@ import {
   TrendingUp,
   XCircle,
   Clock,
-  Award
+  Award,
+  FileSearch,
+  BarChart3,
+  Layers,
+  Users2
 } from 'lucide-react';
 
 interface HeroProps {
@@ -175,24 +179,24 @@ export const Hero: React.FC<HeroProps> = ({
 
   const simpleProcessSteps = [
     {
-      icon: Calculator,
-      title: '1. Check Eligibility',
-      description: 'Quickly find out how much project loan you can get from top banks in just 2 minutes.'
+      icon: FileSearch,
+      title: '1. Project Assessment',
+      description: 'Answer simple questions about your project cost, location, and industry to get started.'
     },
     {
-      icon: FileCheck,
-      title: '2. Prepare Paperwork',
-      description: 'We prepare all required project reports, financial plans, and documents banks ask for.'
+      icon: BarChart3,
+      title: '2. Bankability Rating',
+      description: 'Instantly calculate your project\'s feasibility score and debt service coverage capabilities.'
     },
     {
-      icon: ShieldCheck,
-      title: '3. Expert Guidance',
-      description: 'Our financial advisors work with you to fix any issues and strengthen your application.'
+      icon: Layers,
+      title: '3. Track Your Project',
+      description: 'Use our interactive dashboard to manage documents and monitor loan application progress.'
     },
     {
-      icon: Award,
-      title: '4. Bank Approval',
-      description: 'We submit your application directly to bank managers for quick loan sanction.'
+      icon: Users2,
+      title: '4. Advisory Support',
+      description: 'Get connected with dedicated Chartered Accountants and experts for DPR drafting and CMA modeling.'
     }
   ];
 
@@ -430,7 +434,7 @@ export const Hero: React.FC<HeroProps> = ({
             <div className="bg-white/90 rounded-2xl p-6 border border-rose-200/80 shadow-xs space-y-3 text-left">
               <div className="flex items-center gap-2 text-rose-600 font-bold text-xs uppercase tracking-wider">
                 <XCircle className="w-4 h-4 text-rose-500" />
-                <span>Applying On Your Own</span>
+                <span>Pursuing On Your Own</span>
               </div>
               <ul className="space-y-2.5 text-xs sm:text-sm text-slate-700 leading-relaxed">
                 <li className="flex items-start gap-2">
@@ -449,10 +453,7 @@ export const Hero: React.FC<HeroProps> = ({
             </div>
 
             {/* With Inisio */}
-            <div className="bg-white rounded-2xl p-6 border-2 border-blue-500/80 shadow-xs space-y-3 text-left relative overflow-hidden">
-              <div className="absolute top-0 right-0 bg-blue-600 text-white text-[10px] font-bold px-3 py-0.5 rounded-bl-lg uppercase tracking-wider">
-                Recommended
-              </div>
+            <div className="bg-white rounded-2xl p-6 border border-blue-500/80 shadow-xs space-y-3 text-left relative overflow-hidden">
               <div className="flex items-center gap-2 text-blue-700 font-bold text-xs uppercase tracking-wider">
                 <CheckCircle2 className="w-4 h-4 text-blue-600" />
                 <span>Applying With Inisio</span>
@@ -460,7 +461,7 @@ export const Hero: React.FC<HeroProps> = ({
               <ul className="space-y-2.5 text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
                 <li className="flex items-start gap-2">
                   <span className="text-blue-600 font-bold">•</span>
-                  <span>95%+ approval success with bank-approved formatting and expert preparation.</span>
+                  <span>Approval success with bank-approved formatting and expert preparation.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-blue-600 font-bold">•</span>

@@ -70,9 +70,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const navLinks = [
     { id: 'home', name: 'Home' },
+    { id: 'about', name: 'About' },
     { id: 'how-it-works', name: 'How It Works' },
     { id: 'industries', name: 'Industries' },
-    { id: 'about', name: 'About' },
+    { id: 'faq', name: 'FAQ' },
     { id: 'blogs', name: 'Blogs' },
     { id: 'contact', name: 'Contact' }
   ];
@@ -97,13 +98,13 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   const getDashboardTabForRole = (role: string) => {
-    if (role === 'admin') return 'admin-dashboard';
+    if (role === 'admin' || role === 'admin1' || role === 'admin2' || role === 'admin3') return 'admin-dashboard';
     if (role === 'ca') return 'ca-dashboard';
     return 'user-dashboard';
   };
 
   const getRoleBadge = (role: string) => {
-    if (role === 'admin') {
+    if (role === 'admin' || role === 'admin1' || role === 'admin2' || role === 'admin3') {
       return {
         label: 'Admin Desk',
         bg: 'bg-emerald-100 text-emerald-800 border-emerald-300',

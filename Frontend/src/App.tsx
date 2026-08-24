@@ -79,7 +79,7 @@ export default function App() {
     localStorage.setItem('inisio_active_user', JSON.stringify(user));
 
     // Redirect to corresponding dashboard based on exact email/role request
-    if (user.role === 'admin' || user.email === 'admin@gmail.com') {
+    if (user.role === 'admin' || user.role === 'admin1' || user.role === 'admin2' || user.role === 'admin3' || user.email === 'admin@gmail.com') {
       setActiveTab('admin-dashboard');
     } else if (user.role === 'ca' || user.email === 'ca@gmail.com') {
       setActiveTab('ca-dashboard');
@@ -146,10 +146,13 @@ export default function App() {
               <BankLogosCarousel />
               <TrustNumbers />
               <ProjectActionCards
-                onOpenAssessment={() => handleOpenAssessment()}
-                onOpenConsultation={() => setConsultationModalOpen(true)}
+                onNavigateToAbout={() => handleSelectTab('about')}
+                onNavigateToContact={() => handleSelectTab('contact')}
               />
               <Testimonials />
+              <FAQSection
+                onOpenConsultation={() => setConsultationModalOpen(true)}
+              />
               <LatestBlogs
                 onOpenAssessment={() => handleOpenAssessment()}
                 onOpenConsultation={() => setConsultationModalOpen(true)}
@@ -252,7 +255,7 @@ export default function App() {
           onOpenAssessment={() => handleOpenAssessment()}
           onOpenConsultation={() => setConsultationModalOpen(true)}
           onOpenAdmin={() => {
-            if (currentUser?.role === 'admin') {
+            if (currentUser?.role === 'admin' || currentUser?.role === 'admin1' || currentUser?.role === 'admin2' || currentUser?.role === 'admin3') {
               setActiveTab('admin-dashboard');
             } else {
               setAdminModalOpen(true);

@@ -215,6 +215,37 @@ export const SAMPLE_BLOGS: BlogPost[] = [
         'Combine central and state incentives to lower effective borrowing costs.'
       ]
     }
+  },
+  {
+    id: 'project-finance-jargon',
+    title: 'Project Finance Jargon Explained',
+    category: 'Education',
+    date: '15 Aug 2026',
+    readTime: '4 min read',
+    image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=800&q=80',
+    summary: 'Decode the complex terminology used by bankers and financial advisors when discussing greenfield project loans.',
+    content: {
+      intro: 'Understanding banking terminology is crucial when pitching your greenfield project. From DSCR to Moratorium, we break down the most common jargon used in project finance.',
+      sections: [
+        {
+          heading: '1. DSCR (Debt Service Coverage Ratio)',
+          body: 'This ratio measures the cash flow available to pay current debt obligations. A DSCR above 1.5x is generally preferred by most banks for term loan sanction.'
+        },
+        {
+          heading: '2. Moratorium Period',
+          body: 'A period during the loan term when the borrower is not required to make principal repayment. For greenfield projects, this covers the construction and trial run phase.'
+        },
+        {
+          heading: '3. Margin Money (Promoter Equity)',
+          body: 'The percentage of the project cost that the business owner (promoter) must invest from their own funds before the bank releases the loan amount.'
+        }
+      ],
+      keyTakeaways: [
+        'Understand key terms to negotiate better loan conditions.',
+        'DSCR and Margin Money are the most critical factors for approval.',
+        'A moratorium period helps manage cash flow during construction.'
+      ]
+    }
   }
 ];
 
