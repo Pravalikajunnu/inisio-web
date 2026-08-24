@@ -50,7 +50,7 @@ export const Footer: React.FC<FooterProps> = ({
             </button>
 
             <p className="text-[15px] font-normal text-slate-400 font-inter leading-[1.6] max-w-sm">
-              Inisio is India's premier expert-led greenfield project advisory platform. We turn industrial concepts into bank-sanctioned businesses through rigorous feasibility studies, 100% compliant DPRs, and institutional debt syndication.
+              Inisio helps you fund and launch your new project. We make the journey easy with quick project assessment, clear bankability ratings, a simple tracking dashboard, and dedicated Inisio support.
             </p>
           </div>
 
