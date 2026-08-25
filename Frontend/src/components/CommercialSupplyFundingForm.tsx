@@ -28,9 +28,9 @@ export interface CommercialSupplyFundingData {
   requestedFacilityTypes: string[];
   moratoriumPeriodMonths: string;
   repaymentTenureYears: string;
-  machineryCostLakhs: string;
-  civilCostLakhs: string;
-  consultancyCostLakhs: string;
+  machineryCostCr: string;
+  civilCostCr: string;
+  consultancyCostCr: string;
   gstNumber: string;
 }
 
@@ -54,10 +54,10 @@ export const CommercialSupplyFundingForm: React.FC<CommercialSupplyFundingFormPr
   sectionId = 'commercial-funding-section'
 }) => {
   // Compute default estimates in lakhs based on cost
-  const totalLakhs = initialCostCr ? initialCostCr * 100 : 0;
-  const defaultMachinery = totalLakhs ? (totalLakhs * 0.68).toFixed(2) : '';
-  const defaultCivil = totalLakhs ? (totalLakhs * 0.30).toFixed(2) : '';
-  const defaultConsultancy = totalLakhs ? (totalLakhs * 0.02).toFixed(2) : '';
+  const totalCr = initialCostCr ? initialCostCr : 0;
+  const defaultMachinery = totalCr ? (totalCr * 0.68).toFixed(2) : '';
+  const defaultCivil = totalCr ? (totalCr * 0.30).toFixed(2) : '';
+  const defaultConsultancy = totalCr ? (totalCr * 0.02).toFixed(2) : '';
 
   const [formData, setFormData] = useState<CommercialSupplyFundingData>({
     rawMaterialSource: initialData?.rawMaterialSource || 'Industrial Vendors & Distributors',
@@ -72,9 +72,9 @@ export const CommercialSupplyFundingForm: React.FC<CommercialSupplyFundingFormPr
       : ['Term Loan (Machinery & Construction)', 'Working Capital Loan (CC / OD)'],
     moratoriumPeriodMonths: initialData?.moratoriumPeriodMonths || '12 Months',
     repaymentTenureYears: initialData?.repaymentTenureYears || '8 to 10 Years',
-    machineryCostLakhs: initialData?.machineryCostLakhs || defaultMachinery,
-    civilCostLakhs: initialData?.civilCostLakhs || defaultCivil,
-    consultancyCostLakhs: initialData?.consultancyCostLakhs || defaultConsultancy,
+    machineryCostCr: initialData?.machineryCostCr || defaultMachinery,
+    civilCostCr: initialData?.civilCostCr || defaultCivil,
+    consultancyCostCr: initialData?.consultancyCostCr || defaultConsultancy,
     gstNumber: initialData?.gstNumber || ''
   });
 
@@ -83,9 +83,9 @@ export const CommercialSupplyFundingForm: React.FC<CommercialSupplyFundingFormPr
       setFormData(prev => ({
         ...prev,
         ...initialData,
-        machineryCostLakhs: initialData.machineryCostLakhs || prev.machineryCostLakhs || defaultMachinery,
-        civilCostLakhs: initialData.civilCostLakhs || prev.civilCostLakhs || defaultCivil,
-        consultancyCostLakhs: initialData.consultancyCostLakhs || prev.consultancyCostLakhs || defaultConsultancy
+        machineryCostCr: initialData.machineryCostCr || prev.machineryCostCr || defaultMachinery,
+        civilCostCr: initialData.civilCostCr || prev.civilCostCr || defaultCivil,
+        consultancyCostCr: initialData.consultancyCostCr || prev.consultancyCostCr || defaultConsultancy
       }));
     }
   }, [initialData, defaultMachinery, defaultCivil, defaultConsultancy]);
@@ -385,56 +385,56 @@ export const CommercialSupplyFundingForm: React.FC<CommercialSupplyFundingFormPr
             </div>
           </div>
 
-          {/* Project Cost Breakdown Inputs in Lakhs */}
+          {/* Project Cost Breakdown Inputs in Cr */}
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                Cost Breakdown (in ₹ Lakhs)
+                Cost Breakdown (in ₹ Cr)
               </span>
               <span className="text-[11px] font-semibold text-slate-500">
-                Total Cost: ₹ {initialCostCr} Cr ({initialCostCr * 100} Lakhs)
+                Total Cost: ₹ {initialCostCr} Cr ({initialCostCr * 100} Cr)
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                  Plant &amp; Machinery (₹ Lakhs)
+                  Plant &amp; Machinery (₹ Cr)
                 </label>
                 <input
                   type="number"
                   step="0.01"
-                  value={formData.machineryCostLakhs}
-                  onChange={(e) => setFormData({ ...formData, machineryCostLakhs: e.target.value })}
-                  placeholder="Enter plant & machinery cost in ₹ Lakhs"
+                  value={formData.machineryCostCr}
+                  onChange={(e) => setFormData({ ...formData, machineryCostCr: e.target.value })}
+                  placeholder="Enter plant & machinery cost in ₹ Cr"
                   className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
 
               <div>
                 <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                  Civil Works &amp; Building (₹ Lakhs)
+                  Civil Works &amp; Building (₹ Cr)
                 </label>
                 <input
                   type="number"
                   step="0.01"
-                  value={formData.civilCostLakhs}
-                  onChange={(e) => setFormData({ ...formData, civilCostLakhs: e.target.value })}
-                  placeholder="Enter civil works & land cost in ₹ Lakhs"
+                  value={formData.civilCostCr}
+                  onChange={(e) => setFormData({ ...formData, civilCostCr: e.target.value })}
+                  placeholder="Enter civil works & land cost in ₹ Cr"
                   className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
 
               <div>
                 <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                  Consultancy &amp; Fees (₹ Lakhs)
+                  Consultancy &amp; Fees (₹ Cr)
                 </label>
                 <input
                   type="number"
                   step="0.01"
-                  value={formData.consultancyCostLakhs}
-                  onChange={(e) => setFormData({ ...formData, consultancyCostLakhs: e.target.value })}
-                  placeholder="Enter consultancy & fees in ₹ Lakhs"
+                  value={formData.consultancyCostCr}
+                  onChange={(e) => setFormData({ ...formData, consultancyCostCr: e.target.value })}
+                  placeholder="Enter consultancy & fees in ₹ Cr"
                   className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>

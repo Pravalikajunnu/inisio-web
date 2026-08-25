@@ -47,7 +47,8 @@ type AssessmentStage =
   | 3
   | 'feasibility_result'
   | 'collect_bankability'
-  | 'bankability_result';
+  | 'bankability_result'
+  | 'collect_financials';
 
 export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
   onOpenConsultation,
@@ -61,11 +62,25 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
   const [mobileTouched, setMobileTouched] = useState(false);
   const [step2Error, setStep2Error] = useState('');
   const [saveSuccessMessage, setSaveSuccessMessage] = useState('');
+  const [isDataSaved, setIsDataSaved] = useState(false);
+  const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
 
   // Stage 2 Inputs: Risk Profile Data for Bankability Rating
   const [riskProfileData, setRiskProfileData] = useState<DetailedRiskProfileData | null>(null);
 
   // Stage 1 Form State: Initial 3 Steps (All blank by default - no forced pre-selection)
+  const [financials, setFinancials] = useState({
+    consultancyCostCr: '',
+    machineryCostCr: '',
+    civilCostCr: '',
+    otherCostsCr: '',
+    termLoanCr: '',
+    promoterContributionCr: '',
+    otherFinanceCr: ''
+  });
+
+
+
   const [formData, setFormData] = useState({
     projectName: '',
     industry: defaultIndustry || '',
@@ -83,6 +98,19 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
   });
 
   const mobileValidation = validateIndianMobileNumber(formData.mobile);
+
+  React.useEffect(() => {
+    if (stage === 'collect_financials') {
+      const loanCr = parseFloat(formData.loanRequiredCr) || 0;
+      const promCr = parseFloat(formData.promoterContribCr) || 0;
+      
+      setFinancials(prev => ({
+        ...prev,
+        termLoanCr: prev.termLoanCr || (loanCr > 0 ? loanCr.toString() : ''),
+        promoterContributionCr: prev.promoterContributionCr || (promCr > 0 ? promCr.toString() : '')
+      }));
+    }
+  }, [stage, formData.loanRequiredCr, formData.promoterContribCr]);
 
   // Pre-fill inputs when editing a project
   React.useEffect(() => {
@@ -154,6 +182,34 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
           cibilScore: '785',
           isNewToCredit: false
         });
+      }
+
+      if (editingProject.financials) {
+        setFinancials({
+          consultancyCostCr: editingProject.financials.consultancyCostCr ? String(editingProject.financials.consultancyCostCr) : '',
+          machineryCostCr: editingProject.financials.machineryCostCr ? String(editingProject.financials.machineryCostCr) : '',
+          civilCostCr: editingProject.financials.civilCostCr ? String(editingProject.financials.civilCostCr) : '',
+          otherCostsCr: editingProject.financials.otherCostsCr ? String(editingProject.financials.otherCostsCr) : '',
+          termLoanCr: editingProject.financials.termLoanCr ? String(editingProject.financials.termLoanCr) : '',
+          promoterContributionCr: editingProject.financials.promoterContributionCr ? String(editingProject.financials.promoterContributionCr) : '',
+          otherFinanceCr: editingProject.financials.otherFinanceCr ? String(editingProject.financials.otherFinanceCr) : ''
+        });
+      } else {
+        const tCost = parseFloat(String(editingProject.totalCostCr)) || 0;
+        const lReq = parseFloat(String(editingProject.loanRequiredCr)) || 0;
+        const pCont = parseFloat(String(editingProject.promoterContribCr)) || 0;
+        
+        if (tCost > 0) {
+          setFinancials({
+            consultancyCostCr: String(Math.round(tCost * 0.05 * 100) / 100),
+            machineryCostCr: String(Math.round(tCost * 0.60 * 100) / 100),
+            civilCostCr: String(Math.round(tCost * 0.30 * 100) / 100),
+            otherCostsCr: String(Math.round(tCost * 0.05 * 100) / 100),
+            termLoanCr: lReq > 0 ? String(lReq) : '',
+            promoterContributionCr: pCont > 0 ? String(pCont) : '',
+            otherFinanceCr: ''
+          });
+        }
       }
     } else if (defaultIndustry) {
       setFormData((prev) => ({
@@ -351,15 +407,23 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
 
     // Step 2 Bankability Underwriting Inputs
     riskProfileData: riskProfileData || undefined,
-    riskScoreOutOf10: comprehensiveRisk.scoreOutOf10
+      financials: financials,
+    riskScoreOutOf10: comprehensiveRisk.scoreOutOf10,
+    machineryCostCr: financials.machineryCostCr || undefined,
+    civilCostCr: financials.civilCostCr || undefined,
+    consultancyCostCr: financials.consultancyCostCr || undefined,
+    otherCostsCr: financials.otherCostsCr || undefined,
+    termLoanCr: financials.termLoanCr || undefined,
+    promoterContributionCr: financials.promoterContributionCr || undefined,
+    otherFinanceCr: financials.otherFinanceCr || undefined
   });
 
-  const handleDownloadTeaser = () => {
+  const handleDownloadTeaser = (action: 'download' | 'preview' = 'download') => {
     const pdfData = getPDFData();
-    generateProjectTeaserPDF(pdfData);
+    generateProjectTeaserPDF(pdfData, action);
   };
 
-  const handleSaveProjectEdits = () => {
+  const handleSaveProjectEdits = (skipRedirect = false) => {
     if (!formData.projectName.trim()) {
       alert('Please enter your Project Name before saving.');
       return;
@@ -382,27 +446,32 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       email: formData.email,
       feasibilityScore: computed.feasibilityScore,
       bankabilityRating: activeBankability,
-      riskProfileData: riskProfileData || undefined
+      riskProfileData: riskProfileData || undefined,
+      financials: financials
     };
 
-    if (editingProject?.id) {
-      updateLeadRecord(editingProject.id, updatedPayload, formData.fullName || 'Promoter');
+    const activeId = editingProject?.id || createdProjectId;
+    if (activeId) {
+      updateLeadRecord(activeId, updatedPayload, formData.fullName || 'Promoter');
     } else {
-      saveLeadRecord({
+      const saved = saveLeadRecord({
         ...updatedPayload,
         source: 'Project Assessment Form',
         downloadedPDF: false
       });
+      setCreatedProjectId(saved.id);
     }
 
     setSaveSuccessMessage('Project details updated successfully!');
-    setTimeout(() => {
-      if (onNavigateToDashboard) {
-        onNavigateToDashboard();
-      } else if (onFinishEditing) {
-        onFinishEditing();
-      }
-    }, 1200);
+    if (!skipRedirect) {
+      setTimeout(() => {
+        if (onNavigateToDashboard) {
+          onNavigateToDashboard();
+        } else if (onFinishEditing) {
+          onFinishEditing();
+        }
+      }, 1200);
+    }
   };
 
   const handleGoToDashboard = () => {
@@ -428,14 +497,16 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       riskProfileData: riskProfileData || undefined
     };
 
-    if (editingProject?.id) {
-      updateLeadRecord(editingProject.id, payload, formData.fullName || 'Promoter');
+    const activeId = editingProject?.id || createdProjectId;
+    if (activeId) {
+      updateLeadRecord(activeId, payload, formData.fullName || 'Promoter');
     } else {
-      saveLeadRecord({
+      const saved = saveLeadRecord({
         ...payload,
         source: 'Project Assessment Flow',
         downloadedPDF: false
       });
+      setCreatedProjectId(saved.id);
     }
 
     if (onNavigateToDashboard) {
@@ -523,7 +594,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
         {saveSuccessMessage && (
           <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-800 font-bold flex items-center gap-2.5 shadow-sm animate-in fade-in">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-            <span>{saveSuccessMessage} Returning to your dashboard...</span>
+            <span>{saveSuccessMessage} {isDataSaved ? '' : 'Returning to your dashboard...'}</span>
           </div>
         )}
 
@@ -1253,7 +1324,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
                 <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Total Project Outlay</div>
                 <div className="text-lg font-black text-slate-900 font-manrope mt-0.5">₹ {formData.totalCostCr} Cr</div>
-                <div className="text-xs text-slate-500 mt-0.5">₹ {costLakhs} Lakhs capex</div>
+                <div className="text-xs text-slate-500 mt-0.5">₹ {cost.toFixed(2)} Cr capex</div>
               </div>
 
               <div className="p-4 bg-blue-50/60 border border-blue-200/80 rounded-2xl">
@@ -1274,39 +1345,20 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
               <div>
                 <h3 className="text-base font-bold text-white font-manrope flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-blue-400" />
-                  <span>Assessment &amp; Bankability Completed</span>
+                  <span>Next Step: Project Financials</span>
                 </h3>
                 <p className="text-xs text-slate-300 mt-0.5">
-                  Your project details are ready. Go to your dashboard to track status or download the sample teaser directly.
+                  Please provide the detailed project cost breakup and means of finance.
                 </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
                 <button
                   type="button"
-                  onClick={handleDownloadTeaser}
-                  className="flex-1 sm:flex-none px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
-                >
-                  <Download className="w-4 h-4 text-blue-400" />
-                  <span>Download Sample Teaser</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={onOpenConsultation}
-                  className="flex-1 sm:flex-none px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-bold text-xs rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <PhoneCall className="w-4 h-4 text-emerald-400" />
-                  <span>Book Consultation</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleGoToDashboard}
+                  onClick={() => setStage('collect_financials')}
                   className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
                 >
-                  <LayoutDashboard className="w-4 h-4" />
-                  <span>Go to Dashboard</span>
+                  <span>Next: Financials</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
@@ -1314,6 +1366,230 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
           </div>
         )}
 
+        {/* ========================================================================= */}
+        {/* STAGE 3: COLLECT FINANCIALS                                                */}
+        {/* ========================================================================= */}
+        {/* STAGE 3: COLLECT FINANCIALS                                                */}
+        {/* ========================================================================= */}
+        {stage === 'collect_financials' && (() => {
+          const cCost = parseFloat(financials.consultancyCostCr) || 0;
+          const mCost = parseFloat(financials.machineryCostCr) || 0;
+          const lCost = parseFloat(financials.civilCostCr) || 0;
+          const oCost = parseFloat(financials.otherCostsCr) || 0;
+          const totalCost = cCost + mCost + lCost + oCost;
+          
+          const tLoan = parseFloat(financials.termLoanCr) || 0;
+          const pContrib = parseFloat(financials.promoterContributionCr) || 0;
+          const oFin = parseFloat(financials.otherFinanceCr) || 0;
+          const totalFin = tLoan + pContrib + oFin;
+          
+          const debtPct = totalFin > 0 ? ((tLoan / totalFin) * 100).toFixed(1) : '0.0';
+          const eqPct = totalFin > 0 ? ((pContrib / totalFin) * 100).toFixed(1) : '0.0';
+          
+          const isBalanced = Math.abs(totalCost - totalFin) < 0.01;
+
+          return (
+          <div className="bg-white rounded-3xl border border-gray-200 shadow-xl p-6 sm:p-8 space-y-8 animate-in slide-in-from-right-4 duration-500">
+            <div className="border-b border-gray-100 pb-4">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 font-manrope">Project Cost & Means of Finance</h2>
+              <p className="text-sm text-gray-500 mt-1">Provide an estimated breakdown of your project costs and funding (in ₹ Cr).</p>
+            </div>
+
+            <div className="space-y-6">
+              {/* Cost Breakup */}
+              <div>
+                <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                  <Calculator className="w-5 h-5 text-blue-500" />
+                  Project Cost Breakup
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-gray-600">Consultancy (Cr)</label>
+                    <input
+                      type="number"
+                      value={financials.consultancyCostCr}
+                      onChange={(e) => setFinancials({...financials, consultancyCostCr: e.target.value})}
+                      placeholder="Enter consultancy cost..."
+                      className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-blue-500 outline-none transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-gray-600">Plant & Machinery (Cr)</label>
+                    <input
+                      type="number"
+                      value={financials.machineryCostCr}
+                      onChange={(e) => setFinancials({...financials, machineryCostCr: e.target.value})}
+                      placeholder="Enter machinery cost..."
+                      className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-blue-500 outline-none transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-gray-600">Land & Civil Works (Cr)</label>
+                    <input
+                      type="number"
+                      value={financials.civilCostCr}
+                      onChange={(e) => setFinancials({...financials, civilCostCr: e.target.value})}
+                      placeholder="Enter civil works cost..."
+                      className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-blue-500 outline-none transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-gray-600">Other Project Costs</label>
+                    <input
+                      type="number"
+                      value={financials.otherCostsCr}
+                      onChange={(e) => setFinancials({...financials, otherCostsCr: e.target.value})}
+                      placeholder="Enter other costs..."
+                      className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-blue-500 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+                <div className="mt-3 p-3 bg-blue-50 rounded-xl flex justify-between items-center border border-blue-100">
+                  <span className="text-sm font-bold text-blue-900">Total Project Cost</span>
+                  <span className="text-base font-black text-blue-700">₹ {totalCost.toLocaleString('en-IN', { maximumFractionDigits: 2 })} Cr</span>
+                </div>
+              </div>
+
+              {/* Means of Finance */}
+              <div>
+                <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+                  <Calculator className="w-5 h-5 text-emerald-500" />
+                  Means of Finance
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-gray-600">Project Term Loan (Cr)</label>
+                    <input
+                      type="number"
+                      value={financials.termLoanCr}
+                      onChange={(e) => setFinancials({...financials, termLoanCr: e.target.value})}
+                      placeholder="Enter loan amount..."
+                      className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-emerald-500 outline-none transition-all"
+                    />
+                    {totalFin > 0 && <div className="text-[10px] font-medium text-emerald-600 text-right">{debtPct}%</div>}
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-gray-600">Promoter Contribution (Cr)</label>
+                    <input
+                      type="number"
+                      value={financials.promoterContributionCr}
+                      onChange={(e) => setFinancials({...financials, promoterContributionCr: e.target.value})}
+                      placeholder="Enter promoter contribution..."
+                      className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-emerald-500 outline-none transition-all"
+                    />
+                    {totalFin > 0 && <div className="text-[10px] font-medium text-emerald-600 text-right">{eqPct}%</div>}
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-gray-600">Other Sources</label>
+                    <input
+                      type="number"
+                      value={financials.otherFinanceCr}
+                      onChange={(e) => setFinancials({...financials, otherFinanceCr: e.target.value})}
+                      placeholder="Enter other sources..."
+                      className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-emerald-500 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+                <div className="mt-3 p-3 bg-emerald-50 rounded-xl flex justify-between items-center border border-emerald-100">
+                  <span className="text-sm font-bold text-emerald-900">Total Means of Finance</span>
+                  <span className="text-base font-black text-emerald-700">₹ {totalFin.toLocaleString('en-IN', { maximumFractionDigits: 2 })} Cr</span>
+                </div>
+              </div>
+            </div>
+            
+            {(!isBalanced && (totalCost > 0 || totalFin > 0)) && (
+               <div className="p-3 bg-red-50 text-red-600 text-sm font-medium rounded-xl border border-red-200">
+                 Note: Total Project Cost (₹{totalCost}) must equal Total Means of Finance (₹{totalFin}).
+               </div>
+            )}
+
+            <div className="pt-4 flex items-center justify-between border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => setStage('bankability_result')}
+                className="px-5 py-2.5 text-gray-600 font-bold hover:text-gray-900 transition-colors cursor-pointer"
+              >
+                Back
+              </button>
+              
+              {isDataSaved ? (
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-sm font-bold text-emerald-600 flex items-center gap-1">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Saved
+                  </span>
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleDownloadTeaser('preview');
+                    }}
+                    className="px-5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold rounded-xl transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span>Preview Teaser</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleDownloadTeaser('download');
+                    }}
+                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl transition-all shadow-sm flex items-center gap-2 cursor-pointer"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Download PDF</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onNavigateToDashboard) {
+                        onNavigateToDashboard();
+                      } else {
+                        window.location.href = '/dashboard';
+                      }
+                    }}
+                    className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer"
+                  >
+                    <span>Go to Dashboard</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (totalCost !== totalFin) {
+                      alert("Total Project Cost must match Total Means of Finance.");
+                      return;
+                    }
+                    
+                    // Update financials payload format correctly
+                    const updatedFinancials = {
+                      ...financials,
+                      totalProjectCost: totalCost.toString(),
+                      totalMeansOfFinance: totalFin.toString()
+                    };
+                    
+                    setFinancials(updatedFinancials);
+                    
+                    setTimeout(() => {
+                      handleSaveProjectEdits(true);
+                      setIsDataSaved(true);
+                    }, 100);
+                  }}
+                  disabled={!isBalanced || totalCost === 0}
+                  className="px-6 py-2.5 bg-blue-600 disabled:opacity-50 hover:bg-blue-700 text-white font-extrabold rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save Project Details</span>
+                </button>
+              )}
+            </div>
+          </div>
+          );
+        })()}
       </div>
     </div>
   );

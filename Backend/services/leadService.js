@@ -153,21 +153,10 @@ export const getAllLeads = async (query = {}) => {
 export const createLead = async (leadData) => {
   if (isDBConnected()) {
     try {
-      const recent = await Lead.findOne({
-        mobile: leadData.mobile,
-        createdAt: { $gte: new Date(Date.now() - 60 * 60 * 1000) }
+      const lead = await Lead.create({
+        ...leadData,
+        timestamp: new Date(),
       });
-
-      let lead;
-      if (recent) {
-        Object.assign(recent, leadData);
-        lead = await recent.save();
-      } else {
-        lead = await Lead.create({
-          ...leadData,
-          timestamp: new Date(),
-        });
-      }
 
       try {
         const isTeaser = lead.downloadedPDF || lead.source?.includes('PDF');
@@ -190,20 +179,13 @@ export const createLead = async (leadData) => {
   }
 
   // Memory fallback
-  const existingIdx = memoryLeads.findIndex((l) => l.mobile === leadData.mobile);
-  let created;
-  if (existingIdx >= 0) {
-    memoryLeads[existingIdx] = { ...memoryLeads[existingIdx], ...leadData, updatedAt: new Date() };
-    created = memoryLeads[existingIdx];
-  } else {
-    created = {
-      _id: `lead_${Date.now()}`,
-      ...leadData,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    memoryLeads.unshift(created);
-  }
+  const created = {
+    _id: `lead_${Date.now()}_${Math.floor(Math.random()*1000)}`,
+    ...leadData,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+  memoryLeads.unshift(created);
   return created;
 };
 

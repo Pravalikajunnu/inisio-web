@@ -141,7 +141,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
 
     // Fallback client session resolution
-    let detectedRole: UserRole = role || 'user';
+    let detectedRole: UserRole = mode === 'signup' ? role : 'user';
     let detectedName = name || cleanEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
     if (cleanEmail === 'admin@gmail.com' || cleanEmail.includes('admin')) {

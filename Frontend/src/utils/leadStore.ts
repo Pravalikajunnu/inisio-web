@@ -43,6 +43,15 @@ export interface LeadRecord {
   editHistory?: EditAuditRecord[];
   riskProfileData?: DetailedRiskProfileData;
   commercialData?: CommercialSupplyFundingData;
+  financials?: {
+    machineryCostCr?: string | number;
+    civilCostCr?: string | number;
+    consultancyCostCr?: string | number;
+    otherCostsCr?: string | number;
+    termLoanCr?: string | number;
+    promoterContributionCr?: string | number;
+    otherFinanceCr?: string | number;
+  };
   bankAppliedAt?: string;
   loanApprovedAt?: string;
   fundingDisbursedAt?: string;
@@ -97,9 +106,9 @@ const INITIAL_LEADS: LeadRecord[] = [
       requestedFacilityTypes: ['Term Loan (Machinery & Construction)', 'Working Capital Loan (CC / OD)', 'Letter of Credit (LC)'],
       moratoriumPeriodMonths: '18 Months',
       repaymentTenureYears: '8 to 10 Years',
-      machineryCostLakhs: '8160.00',
-      civilCostLakhs: '3600.00',
-      consultancyCostLakhs: '240.00',
+      machineryCostCr: '8160.00',
+      civilCostCr: '3600.00',
+      consultancyCostCr: '240.00',
       gstNumber: '24AAECS1234F1Z5'
     }
   },
@@ -148,9 +157,9 @@ const INITIAL_LEADS: LeadRecord[] = [
       requestedFacilityTypes: ['Term Loan (Machinery & Construction)', 'Working Capital Loan (CC / OD)'],
       moratoriumPeriodMonths: '12 Months',
       repaymentTenureYears: '7 Years',
-      machineryCostLakhs: '1258.00',
-      civilCostLakhs: '555.00',
-      consultancyCostLakhs: '37.00',
+      machineryCostCr: '1258.00',
+      civilCostCr: '555.00',
+      consultancyCostCr: '37.00',
       gstNumber: '36AAECB9876P1Z1'
     }
   },
@@ -199,9 +208,9 @@ const INITIAL_LEADS: LeadRecord[] = [
       requestedFacilityTypes: ['Term Loan (Machinery & Construction)', 'Working Capital Loan (CC / OD)', 'Bank Guarantee (BG)'],
       moratoriumPeriodMonths: '18 Months',
       repaymentTenureYears: '8 to 10 Years',
-      machineryCostLakhs: '1360.00',
-      civilCostLakhs: '600.00',
-      consultancyCostLakhs: '40.00',
+      machineryCostCr: '1360.00',
+      civilCostCr: '600.00',
+      consultancyCostCr: '40.00',
       gstNumber: '36AAJCP4412K1Z9'
     }
   },
@@ -307,7 +316,7 @@ export function saveLeadRecord(lead: Omit<LeadRecord, 'id' | 'timestamp'>): Lead
     timestamp: new Date().toISOString()
   };
 
-  const updatedLeads = [newLead, ...leads.filter(l => l.projectName !== lead.projectName || l.email !== lead.email)];
+  const updatedLeads = [newLead, ...leads];
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLeads));
     window.dispatchEvent(new CustomEvent('inisio_lead_added', { detail: newLead }));
@@ -386,7 +395,7 @@ export function updateLeadRecord(id: string, updates: Partial<LeadRecord>, edite
 
   if (updatedRecord) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLeads));
-    window.dispatchEvent(new CustomEvent('inisio_lead_added', { detail: updatedRecord }));
+    window.dispatchEvent(new CustomEvent('inisio_lead_added', { detail: { ...updatedRecord, localUpdate: true } }));
 
     // Notify admin about this update
     if (changes.length > 0) {
@@ -403,14 +412,19 @@ export function updateLeadRecord(id: string, updates: Partial<LeadRecord>, edite
       } catch (e) {}
     }
 
-    // Async sync to backend if valid backend ID
-    if (id && !id.startsWith('lead-')) {
-      fetch(`/api/leads/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates)
-      }).catch(() => {});
-    }
+  }
+
+  // Async sync to backend if valid backend ID (even if not found locally)
+  if (id && !id.startsWith('lead-')) {
+    fetch(`/api/leads/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates)
+    }).then(res => {
+      if (res.ok && !updatedRecord) {
+        window.dispatchEvent(new CustomEvent('inisio_lead_added'));
+      }
+    }).catch(() => {});
   }
 
   return updatedRecord;

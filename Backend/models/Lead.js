@@ -81,6 +81,22 @@ const leadSchema = new mongoose.Schema(
       enum: ['New', 'Contacted', 'In Appraisal', 'DPR Ready', 'Sanctioned', 'Archived'],
       default: 'New',
     },
+    photoOrLogo: {
+      type: String,
+      default: '',
+    },
+    dprFile: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    cmaFile: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    financials: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {}
+    },
     timestamp: {
       type: Date,
       default: Date.now,

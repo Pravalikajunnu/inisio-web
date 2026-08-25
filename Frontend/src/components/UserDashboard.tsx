@@ -42,6 +42,7 @@ import {
   AlertCircle,
   Sparkles,
   ArrowUpRight,
+  ArrowLeft,
   FileUp,
   Headphones,
   Users2,
@@ -49,7 +50,9 @@ import {
   Map as MapIcon,
   Filter,
   CheckCircle,
-  FileCheck
+  FileCheck,
+  ArrowRight,
+  Search
 } from 'lucide-react';
 
 interface UserDashboardProps {
@@ -79,6 +82,17 @@ export interface UserProjectDetail {
   stageNumber: number;
   assignedCA: string;
   assignedBank: string;
+  financials?: {
+    consultancyCostCr?: string;
+    machineryCostCr?: string;
+    civilCostCr?: string;
+    otherCostsCr?: string;
+    termLoanCr?: string;
+    promoterContributionCr?: string;
+    otherFinanceCr?: string;
+    totalProjectCost?: string;
+    totalMeansOfFinance?: string;
+  };
   downloadedDate: string;
   downloadedPDF: boolean;
   notes?: string;
@@ -160,7 +174,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
         const dscr = Math.round((1.35 + (score % 15) * 0.03) * 100) / 100;
         const interest = score >= 80 ? '8.65% - 9.15% p.a.' : '9.25% - 9.85% p.a.';
 
-        projectMap.set(lead.id, {
+        const dedupKey = `${lead.projectName}-${cost}`; if (!Array.from(projectMap.values()).some(p => `${p.projectName}-${p.totalCostCr}` === dedupKey)) { projectMap.set(lead.id, {
           id: lead.id,
           projectName: lead.projectName || `${lead.industry || 'Industrial'} Project`,
           industry: lead.industry || 'Greenfield Project',
@@ -200,8 +214,10 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           lastEditedBy: lead.lastEditedBy,
           lastEditedAt: lead.lastEditedAt,
           riskProfileData: lead.riskProfileData,
-          commercialData: lead.commercialData
+          commercialData: lead.commercialData,
+          financials: lead.financials
         });
+        }
       });
 
       apiProjects.forEach((proj) => {
@@ -222,7 +238,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
         const interest = score >= 80 ? '8.65% - 9.15% p.a.' : '9.25% - 9.85% p.a.';
 
         if (!projectMap.has(id)) {
-          projectMap.set(id, {
+          const dedupKey = `${proj.projectName || 'Greenfield Project'}-${cost}`; if (!Array.from(projectMap.values()).some(p => `${p.projectName}-${p.totalCostCr}` === dedupKey)) { projectMap.set(id, {
             id,
             projectName: proj.projectName || `${proj.industry || 'Industrial'} Project`,
             industry: proj.industry || 'Greenfield Project',
@@ -259,21 +275,28 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             bankAppliedAt: proj.bankAppliedAt,
             loanApprovedAt: proj.loanApprovedAt,
             fundingDisbursedAt: proj.fundingDisbursedAt,
-            lastEditedBy: proj.lastEditedBy,
+            financials: proj.financials,
+          lastEditedBy: proj.lastEditedBy,
             lastEditedAt: proj.lastEditedAt,
             riskProfileData: proj.riskProfileData,
             commercialData: proj.commercialData
           });
+        }
         }
       });
 
       const list = Array.from(projectMap.values());
       setUserProjects(list);
 
-      if (list.length > 0) {
+      if (list.length === 1) {
         setSelectedProjectId((prev) => {
           if (prev && list.some(p => p.id === prev)) return prev;
           return list[0].id;
+        });
+      } else if (list.length > 1) {
+        setSelectedProjectId((prev) => {
+          if (prev && list.some(p => p.id === prev)) return prev;
+          return ''; // Require user to select from list
         });
       }
     } catch (e) {
@@ -285,12 +308,19 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
 
   useEffect(() => {
     loadUserProjects();
-    const handleUpdate = () => loadUserProjects();
+    const handleUpdate = (e: any) => {
+      if (e.detail?.localUpdate) return;
+      loadUserProjects();
+    };
     window.addEventListener('inisio_lead_added', handleUpdate);
     return () => window.removeEventListener('inisio_lead_added', handleUpdate);
   }, [user.email]);
 
-  const activeProject = userProjects.find(p => p.id === selectedProjectId) || userProjects[0] || null;
+  const activeProject = selectedProjectId 
+    ? userProjects.find(p => p.id === selectedProjectId) || null
+    : userProjects.length === 1 
+      ? userProjects[0] 
+      : null;
 
   const handleSaveModalProject = (updates: Partial<UserProjectDetail>) => {
     if (!activeProject) return;
@@ -524,13 +554,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
         </div>
       )}
 
-      {/* Ultra-Minimalist Role Feature Banner */}
-      <div className="bg-slate-50 border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-6 py-2.5 flex items-center gap-2 text-xs">
-          <ShieldCheck className="w-4 h-4 text-slate-500 shrink-0" />
-          <span className="text-slate-700"><strong>User Access:</strong> You can browse materials, request trade services, and fill out application forms.</span>
-        </div>
-      </div>
+
 
       {/* Edit Modal */}
       {activeProject && (
@@ -563,11 +587,191 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
         onSave={handleSavePhotoOrLogo}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 pt-6">
+
+        {/* MULTIPLE PROJECTS DASHBOARD STATE */}
+        {!activeProject && userProjects.length > 0 && (() => {
+          const totalCostAll = userProjects.reduce((sum, p) => sum + (Number(p.totalCostCr) || 0), 0);
+          const totalLoanAll = userProjects.reduce((sum, p) => sum + (Number(p.loanRequiredCr) || 0), 0);
+          const totalEquityAll = userProjects.reduce((sum, p) => sum + (Number(p.promoterContribCr) || 0), 0);
+          const totalProjectsCount = userProjects.length;
+          
+          return (
+            <div className="space-y-6">
+              {/* Header UI */}
+              <div className="bg-white rounded-[2rem] p-6 sm:p-8 border border-zinc-100 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-6">
+                <div className="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-slate-200 border-4 border-white shadow-md overflow-hidden shrink-0 flex items-center justify-center text-slate-500 font-bold text-4xl">
+                    {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <div>
+                    <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-3 mb-4">
+                      <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{user.name || 'User'}</h1>
+                      <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-full">New Customer</span>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-8 gap-y-4 text-sm text-slate-500">
+                      <div>
+                        <p className="text-xs text-slate-400 mb-1">Email address:</p>
+                        <p className="font-semibold text-slate-800">{user.email}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400 mb-1">Phone number:</p>
+                        <p className="font-semibold text-slate-800">{userProjects[0]?.mobile || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400 mb-1">Location:</p>
+                        <p className="font-semibold text-slate-800">{userProjects[0]?.location || 'India'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="bg-white rounded-3xl p-6 border border-zinc-100 shadow-sm flex flex-col justify-between">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
+                      <div className="font-bold text-lg">₹</div>
+                    </div>
+                    <span className="font-semibold text-slate-600 text-sm">Total Project Cost</span>
+                  </div>
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <div className="text-[28px] font-black text-slate-800 tracking-tight">₹{totalCostAll.toFixed(2)}Cr</div>
+                      <div className="text-xs text-blue-500 flex items-center gap-1 mt-1 font-bold"><ArrowRight className="w-3 h-3 -rotate-45" /> Across {totalProjectsCount} projects</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white rounded-3xl p-6 border border-zinc-100 shadow-sm flex flex-col justify-between">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
+                      <Building2 className="w-5 h-5" />
+                    </div>
+                    <span className="font-semibold text-slate-600 text-sm">Total Loan Required</span>
+                  </div>
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <div className="text-[28px] font-black text-slate-800 tracking-tight">₹{totalLoanAll.toFixed(2)}Cr</div>
+                      <div className="text-xs text-blue-500 flex items-center gap-1 mt-1 font-bold"><ArrowRight className="w-3 h-3 -rotate-45" /> Bank Finance</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white rounded-3xl p-6 border border-zinc-100 shadow-sm flex flex-col justify-between">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
+                      <Layers className="w-5 h-5" />
+                    </div>
+                    <span className="font-semibold text-slate-600 text-sm">Promoter Equity</span>
+                  </div>
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <div className="text-[28px] font-black text-slate-800 tracking-tight">₹{totalEquityAll.toFixed(2)}Cr</div>
+                      <div className="text-xs text-blue-500 flex items-center gap-1 mt-1 font-bold"><ArrowRight className="w-3 h-3 -rotate-45" /> Total Contribution</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-blue-500 to-blue-700 rounded-3xl p-6 text-white flex flex-col justify-between shadow-lg relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-10 translate-x-10"></div>
+                  <div className="relative z-10 flex flex-col h-full justify-between">
+                    <div>
+                      <div className="text-sm font-semibold opacity-90 mb-1">Total Projects</div>
+                      <div className="text-5xl font-black">{totalProjectsCount}</div>
+                    </div>
+                    <button onClick={() => onOpenAssessment()} className="w-full mt-4 py-2.5 bg-white/20 hover:bg-white/30 rounded-xl text-sm font-bold backdrop-blur-sm transition-colors text-white cursor-pointer">
+                      Start Assessment
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tabs and Table */}
+              <div className="bg-white rounded-3xl border border-zinc-100 shadow-sm overflow-hidden mt-8">
+                <div className="border-b border-zinc-100">
+                  <div className="flex items-center gap-8 px-8 pt-6">
+                    <button className="pb-4 border-b-2 border-blue-600 text-blue-600 font-bold text-sm">Projects ({totalProjectsCount})</button>
+                    
+                  </div>
+                </div>
+                
+                <div className="p-5 border-b border-zinc-100 flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
+                    <div className="relative w-full sm:w-64">
+                      <div className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 flex items-center justify-center">
+                        <Search className="w-full h-full" />
+                      </div>
+                      <input type="text" placeholder="Search project" className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:border-blue-600 focus:bg-white transition-colors" />
+                    </div>
+                    <button className="px-4 py-2 border border-slate-200 bg-white rounded-xl text-sm font-semibold flex items-center gap-2 text-slate-600 hover:bg-slate-50 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="3" y2="18"></line></svg>
+                      Sort by
+                    </button>
+                  </div>
+                  <button onClick={() => onOpenAssessment()} className="px-4 py-2 border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors cursor-pointer w-full sm:w-auto justify-center">
+                    <span>Create project</span>
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                </div>
+                
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left text-slate-600 min-w-[800px]">
+                    <thead className="text-xs text-slate-400 font-semibold bg-white">
+                      <tr>
+                        <th className="px-6 py-4 font-medium border-b border-zinc-100">Project</th>
+                        <th className="px-6 py-4 font-medium border-b border-zinc-100">Industry</th>
+                        <th className="px-6 py-4 font-medium border-b border-zinc-100">Total Cost</th>
+                        <th className="px-6 py-4 font-medium border-b border-zinc-100">Loan Req.</th>
+                        <th className="px-6 py-4 font-medium border-b border-zinc-100">Status</th>
+                        <th className="px-6 py-4 font-medium border-b border-zinc-100">Created Date</th>
+                        <th className="px-6 py-4 font-medium border-b border-zinc-100 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-50">
+                      {userProjects.map((p) => (
+                        <tr key={p.id} className="hover:bg-slate-50 transition-colors group">
+                          <td className="px-6 py-4 font-bold text-slate-800 flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
+                              <Building2 className="w-4 h-4" />
+                            </div>
+                            <span className="truncate max-w-[200px]">{p.projectName || 'Untitled'}</span>
+                          </td>
+                          <td className="px-6 py-4 text-slate-500 font-medium truncate max-w-[150px]">{p.industry}</td>
+                          <td className="px-6 py-4 font-bold text-slate-700">₹{p.totalCostCr} Cr</td>
+                          <td className="px-6 py-4 font-bold text-slate-700">₹{p.loanRequiredCr} Cr</td>
+                          <td className="px-6 py-4">
+                            <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-bold border border-blue-100">
+                              {p.status || 'In Appraisal'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-slate-500 font-medium">
+                            {new Date(p.timestamp).toLocaleDateString('en-GB')}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <button 
+                              onClick={() => setSelectedProjectId(p.id)}
+                              className="px-4 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-xs font-bold flex items-center gap-1.5 ml-auto transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+                            >
+                              <ArrowRight className="w-3 h-3 -rotate-45" />
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ---------------------------------------------------- */}
         {/* 1. TOP MINIMALIST CONTROL & PROJECT SWITCHER BAR     */}
         {/* ---------------------------------------------------- */}
+        {activeProject && (
         <div className="border-b border-zinc-100 pb-4 pt-2">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             
@@ -578,6 +782,17 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                 <span className="text-zinc-300 text-lg">/</span>
                 <span className="text-base text-zinc-500 font-semibold">{user.name || user.email}</span>
               </div>
+
+              {/* Back to Projects List (if multiple projects exist) */}
+              {userProjects.length > 1 && (
+                <button 
+                  onClick={() => setSelectedProjectId('')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-zinc-50 border border-zinc-200 rounded-lg text-sm font-semibold text-zinc-600 transition-colors cursor-pointer"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>All Projects</span>
+                </button>
+              )}
 
               {/* Project Dropdown / Switcher */}
               {userProjects.length > 0 && (
@@ -685,6 +900,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             </div>
           </div>
         </div>
+        )}
 
         {/* ---------------------------------------------------- */}
         {/* EMPTY STATE IF NO PROJECTS                           */}
@@ -719,27 +935,36 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             {/* Project Header Bar */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-100 pb-5">
               <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setIsPhotoUploadModalOpen(true)}
-                  className="relative group w-14 h-14 rounded-xl overflow-hidden cursor-pointer shrink-0 border border-zinc-200 bg-zinc-50 hover:ring-2 hover:ring-blue-500/40 transition-all"
-                  title="Click to update project logo or photo"
-                >
-                  {activeProject.photoOrLogo ? (
-                    <img
-                      src={activeProject.photoOrLogo}
-                      alt="Project Logo"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-blue-600 text-white flex items-center justify-center font-bold text-xl">
-                      {activeProject.projectName.charAt(0).toUpperCase()}
+                <div className="relative shrink-0">
+                  <button
+                    onClick={() => setIsPhotoUploadModalOpen(true)}
+                    className="relative group w-14 h-14 rounded-xl overflow-hidden cursor-pointer border border-zinc-200 bg-zinc-50 hover:ring-2 hover:ring-blue-500/40 transition-all"
+                    title="Click to update project logo or photo"
+                  >
+                    {activeProject.photoOrLogo ? (
+                      <img
+                        src={activeProject.photoOrLogo}
+                        alt="Project Logo"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-blue-600 text-white flex items-center justify-center font-bold text-xl">
+                        {activeProject.projectName.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-zinc-900/60 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Camera className="w-4 h-4" />
+                      <span className="text-[9px] font-medium mt-0.5">Logo</span>
                     </div>
-                  )}
-                  <div className="absolute inset-0 bg-zinc-900/60 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Camera className="w-4 h-4" />
-                    <span className="text-[9px] font-medium mt-0.5">Logo</span>
-                  </div>
-                </button>
+                  </button>
+                  <button 
+                    onClick={() => setIsPhotoUploadModalOpen(true)}
+                    className="absolute -bottom-1 -right-1 w-5 h-5 bg-white border border-zinc-200 rounded-full flex items-center justify-center shadow-sm text-zinc-600 hover:text-blue-600 hover:border-blue-200 transition-colors cursor-pointer z-10"
+                    title="Add or change logo"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                </div>
 
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -974,93 +1199,144 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               </div>
             )}
 
-            {/* SECTION 2: FINANCIAL & DEBT STRUCTURE */}
-            {(activeSectionView === 'all' || activeSectionView === 'financials') && (
-              <div className="border border-zinc-200 rounded-2xl p-6 bg-white space-y-5">
-                <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
+                        {/* SECTION 2: PROJECT COST & MEANS OF FINANCE */}
+            {(activeSectionView === 'all' || activeSectionView === 'financials') && (() => {
+              const fin = activeProject.financials || {};
+              const cCost = parseFloat(fin.consultancyCostCr) || (activeProject.totalCostCr ? activeProject.totalCostCr * 5 : 0);
+              const mCost = parseFloat(fin.machineryCostCr) || (activeProject.totalCostCr ? activeProject.totalCostCr * 60 : 0);
+              const lCost = parseFloat(fin.civilCostCr) || (activeProject.totalCostCr ? activeProject.totalCostCr * 30 : 0);
+              const oCost = parseFloat(fin.otherCostsCr) || (activeProject.totalCostCr ? activeProject.totalCostCr * 5 : 0);
+              const totalCost = parseFloat(fin.totalProjectCost) || (cCost + mCost + lCost + oCost) || (activeProject.totalCostCr ? activeProject.totalCostCr * 100 : 0);
+
+              const tLoan = parseFloat(fin.termLoanCr) || (activeProject.loanRequiredCr ? activeProject.loanRequiredCr * 100 : 0);
+              const pContrib = parseFloat(fin.promoterContributionCr) || (activeProject.promoterContribCr ? activeProject.promoterContribCr * 100 : 0);
+              const oFin = parseFloat(fin.otherFinanceCr) || 0;
+              const totalFin = parseFloat(fin.totalMeansOfFinance) || (tLoan + pContrib + oFin) || totalCost;
+              
+              const debtPctNum = totalFin > 0 ? (tLoan / totalFin) * 100 : 0;
+              const eqPctNum = totalFin > 0 ? (pContrib / totalFin) * 100 : 0;
+              const oFinPctNum = totalFin > 0 ? (oFin / totalFin) * 100 : 0;
+
+              return (
+              <div className="border border-zinc-200 rounded-2xl p-6 bg-white space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-100 pb-4 gap-4">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
                       <Calculator className="w-4 h-4" />
                     </div>
                     <div>
-                      <h2 className="text-lg sm:text-xl font-bold text-zinc-900">Financial Appraisal &amp; Capital Structure</h2>
-                      <p className="text-sm text-zinc-500 mt-0.5">Detailed debt/equity split, cash flow coverage, and interest terms.</p>
+                      <h2 className="text-lg sm:text-xl font-bold text-zinc-900">Project Cost &amp; Means of Finance</h2>
+                      <p className="text-sm text-zinc-500 mt-0.5">Detailed breakdown of capital expenditure and funding structure.</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleOpenEditSection('bankability')}
-                    className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                    <span>Edit Financials</span>
-                  </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   
-                  {/* Capex Breakdown Box */}
-                  <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-100 space-y-3">
-                    <div className="text-xs font-bold text-zinc-900 uppercase tracking-wider">Capex Outlay</div>
-                    <div className="space-y-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-zinc-500">Total Project Capex:</span>
-                        <strong className="text-zinc-900">₹ {activeProject.totalCostCr} Cr</strong>
+                  {/* Cost Breakup Section */}
+                  <div className="bg-zinc-50 rounded-xl p-5 border border-zinc-100 space-y-4">
+                    <h3 className="text-sm font-bold text-zinc-900 flex items-center gap-2">
+                      <div className="w-1.5 h-4 bg-blue-500 rounded-full"></div>
+                      Project Cost Breakup
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-zinc-600">Consultancy</span>
+                        <span className="font-semibold text-zinc-900">₹ {cCost.toLocaleString('en-IN', {maximumFractionDigits: 2})} Cr</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-zinc-500">Term Loan Required:</span>
-                        <strong className="text-blue-600">₹ {activeProject.loanRequiredCr} Cr ({activeProject.debtPercent}%)</strong>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-zinc-600">Plant & Machinery</span>
+                        <span className="font-semibold text-zinc-900">₹ {mCost.toLocaleString('en-IN', {maximumFractionDigits: 2})} Cr</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-zinc-500">Promoter Equity:</span>
-                        <strong className="text-zinc-900">₹ {activeProject.promoterContribCr} Cr ({activeProject.equityPercent}%)</strong>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-zinc-600">Land & Civil Works</span>
+                        <span className="font-semibold text-zinc-900">₹ {lCost.toLocaleString('en-IN', {maximumFractionDigits: 2})} Cr</span>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Bank Terms & DSCR */}
-                  <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-100 space-y-3">
-                    <div className="text-xs font-bold text-zinc-900 uppercase tracking-wider">Underwriting Metrics</div>
-                    <div className="space-y-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-zinc-500">Projected DSCR:</span>
-                        <strong className="text-emerald-700 font-bold">{activeProject.dscrEstimate}x (Min 1.25x)</strong>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-zinc-600">Other Costs</span>
+                        <span className="font-semibold text-zinc-900">₹ {oCost.toLocaleString('en-IN', {maximumFractionDigits: 2})} Cr</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-zinc-500">Estimated Interest:</span>
-                        <strong className="text-zinc-900">{activeProject.estInterestRate}</strong>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-zinc-500">Target Consortium:</span>
-                        <span className="text-zinc-700 font-medium text-right truncate max-w-[150px]">{activeProject.assignedBank}</span>
+                      
+                      <div className="pt-3 border-t border-zinc-200 flex justify-between items-center">
+                        <span className="text-sm font-bold text-blue-900">Total Cost</span>
+                        <span className="text-lg font-black text-blue-700">₹ {totalCost.toLocaleString('en-IN', {maximumFractionDigits: 2})} Cr</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Location & Industry */}
-                  <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-100 space-y-3">
-                    <div className="text-xs font-bold text-zinc-900 uppercase tracking-wider">Project Identification</div>
-                    <div className="space-y-2 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-zinc-500">Industry / Sector:</span>
-                        <strong className="text-zinc-900 text-right truncate max-w-[150px]">{activeProject.industry}</strong>
+                  {/* Means of Finance Section */}
+                  <div className="bg-emerald-50/30 rounded-xl p-5 border border-emerald-100/50 space-y-4">
+                    <h3 className="text-sm font-bold text-zinc-900 flex items-center gap-2">
+                      <div className="w-1.5 h-4 bg-emerald-500 rounded-full"></div>
+                      Means of Finance
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm items-center">
+                        <span className="text-zinc-600">Project Term Loan</span>
+                        <div className="text-right">
+                          <span className="font-semibold text-zinc-900">₹ {tLoan.toLocaleString('en-IN', {maximumFractionDigits: 2})} Cr</span>
+                          <span className="text-xs text-emerald-600 ml-2">({debtPctNum.toFixed(1)}%)</span>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-zinc-500">State &amp; District:</span>
-                        <span className="text-zinc-800 font-medium">{activeProject.location}</span>
+                      <div className="flex justify-between text-sm items-center">
+                        <span className="text-zinc-600">Promoter Contribution</span>
+                        <div className="text-right">
+                          <span className="font-semibold text-zinc-900">₹ {pContrib.toLocaleString('en-IN', {maximumFractionDigits: 2})} Cr</span>
+                          <span className="text-xs text-emerald-600 ml-2">({eqPctNum.toFixed(1)}%)</span>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-zinc-500">Feasibility Rating:</span>
-                        <span className="text-blue-700 font-bold">{activeProject.bankabilityRating}</span>
+                      <div className="flex justify-between text-sm items-center">
+                        <span className="text-zinc-600">Other Sources</span>
+                        <div className="text-right">
+                          <span className="font-semibold text-zinc-900">₹ {oFin.toLocaleString('en-IN', {maximumFractionDigits: 2})} Cr</span>
+                          <span className="text-xs text-emerald-600 ml-2">({oFinPctNum.toFixed(1)}%)</span>
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-emerald-200/50 flex justify-between items-center">
+                        <span className="text-sm font-bold text-emerald-900">Total Finance</span>
+                        <span className="text-lg font-black text-emerald-700">₹ {totalFin.toLocaleString('en-IN', {maximumFractionDigits: 2})} Cr</span>
                       </div>
                     </div>
                   </div>
-
                 </div>
 
+                {/* Progress Bar Chart for Means of Finance */}
+                <div className="pt-4 border-t border-zinc-100 space-y-2">
+                  <div className="flex justify-between text-xs font-semibold text-zinc-500 mb-1">
+                    <span>Funding Distribution</span>
+                    <span>100%</span>
+                  </div>
+                  <div className="h-3 w-full rounded-full flex overflow-hidden bg-zinc-100">
+                    <div 
+                      className="bg-blue-500 h-full transition-all" 
+                      style={{ width: `${debtPctNum}%` }}
+                      title={`Debt: ${debtPctNum.toFixed(1)}%`}
+                    ></div>
+                    <div 
+                      className="bg-emerald-500 h-full transition-all" 
+                      style={{ width: `${eqPctNum}%` }}
+                      title={`Equity: ${eqPctNum.toFixed(1)}%`}
+                    ></div>
+                    <div 
+                      className="bg-amber-400 h-full transition-all" 
+                      style={{ width: `${oFinPctNum}%` }}
+                      title={`Other: ${oFinPctNum.toFixed(1)}%`}
+                    ></div>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs pt-1">
+                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div><span className="text-zinc-600">Debt ({debtPctNum.toFixed(0)}%)</span></div>
+                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div><span className="text-zinc-600">Equity ({eqPctNum.toFixed(0)}%)</span></div>
+                    {oFinPctNum > 0 && (
+                      <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div><span className="text-zinc-600">Other ({oFinPctNum.toFixed(0)}%)</span></div>
+                    )}
+                  </div>
+                </div>
 
               </div>
-            )}
-
+              );
+            })()}
+            
             {/* SECTION 3: DPR & CMA COMPLIANCE CENTER */}
             {(activeSectionView === 'all' || activeSectionView === 'documents') && (
               <div className="border border-zinc-200 rounded-2xl p-6 bg-white space-y-5">

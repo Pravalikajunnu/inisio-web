@@ -44,9 +44,13 @@ export interface TeaserPDFData {
   fundingFacilityTypes?: string[];
   moratoriumPeriodMonths?: string;
   repaymentTenureYears?: string;
-  machineryCostLakhs?: string | number;
-  civilCostLakhs?: string | number;
-  consultancyCostLakhs?: string | number;
+  machineryCostCr?: string | number;
+  civilCostCr?: string | number;
+  consultancyCostCr?: string | number;
+  otherCostsCr?: string | number;
+  termLoanCr?: string | number;
+  promoterContributionCr?: string | number;
+  otherFinanceCr?: string | number;
   gstNumber?: string;
   panNumber?: string;
 
@@ -55,7 +59,7 @@ export interface TeaserPDFData {
   buyersInfo?: string;
 }
 
-export function generateProjectTeaserPDF(data: TeaserPDFData) {
+export function generateProjectTeaserPDF(data: TeaserPDFData, action: 'download' | 'preview' = 'download') {
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -79,19 +83,20 @@ export function generateProjectTeaserPDF(data: TeaserPDFData) {
   };
 
   const costCr = parseFloat(String(data.totalCostCr)) || 0;
-  const costLakhs = (costCr * 100).toFixed(2);
+  const costCrFormatted = costCr.toFixed(2);
   const loanCr = parseFloat(String(data.loanRequiredCr)) || (costCr * (data.debtPct / 100));
-  const loanLakhs = (loanCr * 100).toFixed(2);
+  const loanCrFormatted = loanCr.toFixed(2);
   const contribCr = parseFloat(String(data.promoterContribCr)) || (costCr * (data.eqPct / 100));
-  const contribLakhs = (contribCr * 100).toFixed(2);
+  const contribCrFormatted = contribCr.toFixed(2);
 
-  const defaultConsultancy = (parseFloat(costLakhs) * 0.02).toFixed(2);
-  const defaultMachinery = (parseFloat(costLakhs) * 0.68).toFixed(2);
-  const defaultCivil = (parseFloat(costLakhs) * 0.30).toFixed(2);
-
-  const machineryLakhs = data.machineryCostLakhs ? String(data.machineryCostLakhs) : defaultMachinery;
-  const civilLakhs = data.civilCostLakhs ? String(data.civilCostLakhs) : defaultCivil;
-  const consultancyLakhs = data.consultancyCostLakhs ? String(data.consultancyCostLakhs) : defaultConsultancy;
+  const machineryCr = data.machineryCostCr ? Number(data.machineryCostCr).toFixed(2) : '0.00';
+  const civilCr = data.civilCostCr ? Number(data.civilCostCr).toFixed(2) : '0.00';
+  const consultancyCr = data.consultancyCostCr ? Number(data.consultancyCostCr).toFixed(2) : '0.00';
+  const otherCostsCr = data.otherCostsCr ? Number(data.otherCostsCr).toFixed(2) : '0.00';
+  
+  const userTermLoanCr = data.termLoanCr ? Number(data.termLoanCr).toFixed(2) : loanCrFormatted;
+  const userPromoterCr = data.promoterContributionCr ? Number(data.promoterContributionCr).toFixed(2) : contribCrFormatted;
+  const userOtherFinCr = data.otherFinanceCr ? Number(data.otherFinanceCr).toFixed(2) : '0.00';
 
   const companyLegalName = (data.projectName || 'GREENFIELD PROJECT PRIVATE LIMITED').toUpperCase();
   const rp = data.riskProfileData;
@@ -157,7 +162,7 @@ export function generateProjectTeaserPDF(data: TeaserPDFData) {
   y += splitP1.length * 4.2 + 3;
 
   const descText = data.description ? `${data.description}. ` : '';
-  const genP2 = `The company proposes to establish a state-of-the-art facility with an estimated total capital outlay of Rs ${data.totalCostCr} Crores (${costLakhs} Lakhs). ${descText}To ensure an uninterrupted operation and supply of raw materials, suitable land has been identified and arranged under ${data.landStatus} status (${data.collateralStatus || 'Freehold Clear Title'}), which is adequate for the proposed plant, storage facilities, and operational requirements.`;
+  const genP2 = `The company proposes to establish a state-of-the-art facility with an estimated total capital outlay of Rs ${data.totalCostCr} Crores (${costCrFormatted} Cr). ${descText}To ensure an uninterrupted operation and supply of raw materials, suitable land has been identified and arranged under ${data.landStatus} status (${data.collateralStatus || 'Freehold Clear Title'}), which is adequate for the proposed plant, storage facilities, and operational requirements.`;
   const splitP2 = doc.splitTextToSize(genP2, contentWidth);
   checkPageBreak(splitP2.length * 4.2 + 3);
   doc.text(splitP2, margin, y);
@@ -284,13 +289,14 @@ export function generateProjectTeaserPDF(data: TeaserPDFData) {
   doc.setFontSize(8.5);
   doc.setTextColor(15, 23, 42);
   doc.text('Particulars', margin + 4, y + 4.2);
-  doc.text('Amount (INR Lakhs)', margin + 110, y + 4.2);
+  doc.text('Amount (INR Cr)', margin + 110, y + 4.2);
   y += 6;
 
   const costRows = [
-    { name: 'Consultancy & Fees', amt: `${consultancyLakhs}` },
-    { name: 'Plant & Machinery', amt: `${machineryLakhs}` },
-    { name: 'Land Cost & Civil Works', amt: `${civilLakhs}` }
+    { name: 'Consultancy & Fees', amt: `${consultancyCr}` },
+    { name: 'Plant & Machinery', amt: `${machineryCr}` },
+    { name: 'Land Cost & Civil Works', amt: `${civilCr}` },
+    { name: 'Other Project Costs', amt: `${otherCostsCr}` }
   ];
 
   costRows.forEach((r, idx) => {
@@ -317,7 +323,7 @@ export function generateProjectTeaserPDF(data: TeaserPDFData) {
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(15, 23, 42);
   doc.text('Total Project Cost', margin + 4, y + 4.2);
-  doc.text(`${costLakhs} lakhs`, margin + 110, y + 4.2);
+  doc.text(`${costCrFormatted} Cr`, margin + 110, y + 4.2);
   y += 8;
 
   // Subheading 2: Means of Finance
@@ -331,13 +337,17 @@ export function generateProjectTeaserPDF(data: TeaserPDFData) {
   doc.setDrawColor(226, 232, 240);
   doc.rect(margin, y, contentWidth, 6, 'D');
   doc.text('Funding Source', margin + 4, y + 4.2);
-  doc.text('Amount (INR Lakhs)', margin + 85, y + 4.2);
+  doc.text('Amount (INR Cr)', margin + 85, y + 4.2);
   doc.text('Share (%)', margin + 140, y + 4.2);
   y += 6;
 
+  const totalFinCr = (parseFloat(userTermLoanCr) + parseFloat(userPromoterCr) + parseFloat(userOtherFinCr)).toFixed(2);
+  const calcPct = (amt) => totalFinCr > 0 ? ((parseFloat(amt) / totalFinCr) * 100).toFixed(1) + '%' : '0.0%';
+  
   const meansRows = [
-    { name: 'Project Term Loan', amt: `${loanLakhs} lakhs`, pct: `${data.debtPct}%` },
-    { name: 'Promoter Contribution', amt: `${contribLakhs} lakhs`, pct: `${data.eqPct}%` }
+    { name: 'Project Term Loan', amt: `${userTermLoanCr} Cr`, pct: calcPct(userTermLoanCr) },
+    { name: 'Promoter Contribution', amt: `${userPromoterCr} Cr`, pct: calcPct(userPromoterCr) },
+    { name: 'Other Sources', amt: `${userOtherFinCr} Cr`, pct: calcPct(userOtherFinCr) }
   ];
 
   meansRows.forEach((m, idx) => {
@@ -367,7 +377,7 @@ export function generateProjectTeaserPDF(data: TeaserPDFData) {
   doc.rect(margin, y, contentWidth, 6, 'D');
   doc.setFont('helvetica', 'bold');
   doc.text('Total Means of Finance', margin + 4, y + 4.2);
-  doc.text(`${costLakhs} lakhs`, margin + 85, y + 4.2);
+  doc.text(`${costCrFormatted} Cr`, margin + 85, y + 4.2);
   doc.text('100%', margin + 140, y + 4.2);
   y += 8;
 
@@ -485,7 +495,13 @@ export function generateProjectTeaserPDF(data: TeaserPDFData) {
   });
 
   const fileName = `Inisio_Teaser_${(data.projectName || data.fullName || 'Greenfield').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
-  doc.save(fileName);
+  
+  if (action === 'preview') {
+    const pdfBlobUrl = doc.output('bloburl');
+    window.open(pdfBlobUrl, '_blank');
+  } else {
+    doc.save(fileName);
+  }
 }
 
 export function sendLeadToWhatsApp(data: TeaserPDFData, adminPhone = '916302026462') {
