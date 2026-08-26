@@ -27,7 +27,7 @@ export const ProjectActionCards: React.FC<ProjectActionCardsProps> = ({
             />
           </div>
 
-          {/* Card 2: Get Your Project Loan Image */}
+          {/* Card 2: Get Your Project Assessment Image */}
           <div
             onClick={onNavigateToContact}
             className="group cursor-pointer rounded-2xl overflow-hidden shadow-xs hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 bg-white border border-slate-200/80 max-w-[320px] mx-auto w-full"

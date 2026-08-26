@@ -106,9 +106,9 @@ const INITIAL_LEADS: LeadRecord[] = [
       requestedFacilityTypes: ['Term Loan (Machinery & Construction)', 'Working Capital Loan (CC / OD)', 'Letter of Credit (LC)'],
       moratoriumPeriodMonths: '18 Months',
       repaymentTenureYears: '8 to 10 Years',
-      machineryCostCr: '8160.00',
-      civilCostCr: '3600.00',
-      consultancyCostCr: '240.00',
+      machineryCostCr: '81.60',
+      civilCostCr: '36.00',
+      consultancyCostCr: '2.40',
       gstNumber: '24AAECS1234F1Z5'
     }
   },
@@ -157,9 +157,9 @@ const INITIAL_LEADS: LeadRecord[] = [
       requestedFacilityTypes: ['Term Loan (Machinery & Construction)', 'Working Capital Loan (CC / OD)'],
       moratoriumPeriodMonths: '12 Months',
       repaymentTenureYears: '7 Years',
-      machineryCostCr: '1258.00',
-      civilCostCr: '555.00',
-      consultancyCostCr: '37.00',
+      machineryCostCr: '12.58',
+      civilCostCr: '5.55',
+      consultancyCostCr: '0.37',
       gstNumber: '36AAECB9876P1Z1'
     }
   },
@@ -208,9 +208,9 @@ const INITIAL_LEADS: LeadRecord[] = [
       requestedFacilityTypes: ['Term Loan (Machinery & Construction)', 'Working Capital Loan (CC / OD)', 'Bank Guarantee (BG)'],
       moratoriumPeriodMonths: '18 Months',
       repaymentTenureYears: '8 to 10 Years',
-      machineryCostCr: '1360.00',
-      civilCostCr: '600.00',
-      consultancyCostCr: '40.00',
+      machineryCostCr: '13.60',
+      civilCostCr: '6.00',
+      consultancyCostCr: '0.40',
       gstNumber: '36AAJCP4412K1Z9'
     }
   },

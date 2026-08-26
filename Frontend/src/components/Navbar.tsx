@@ -263,7 +263,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-all flex items-center gap-2 group cursor-pointer min-h-[40px]"
               >
                 <Calculator className="w-4 h-4 text-blue-100" />
-                <span>Start Assessment</span>
+                <span>Start Free Assessment</span>
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
               </button>
             </div>
@@ -271,7 +271,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Mobile Hamburger Toggle & Assess / Login Button */}
             <div className="flex items-center gap-2 lg:hidden">
               <button
-                onClick={onOpenAuth}
+                onClick={() => onOpenAuth('login')}
                 className="p-2 text-slate-700 bg-slate-100 rounded-xl flex items-center justify-center min-w-[40px] min-h-[40px]"
                 title="Login"
               >
@@ -283,7 +283,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className="px-3 py-2 text-xs font-bold text-white bg-blue-600 active:bg-blue-700 rounded-xl shadow-2xs cursor-pointer flex items-center gap-1.5 min-h-[40px] touch-manipulation"
               >
                 <Calculator className="w-3.5 h-3.5 text-blue-100" />
-                <span>Assess</span>
+                <span>Free Assessment</span>
               </button>
 
               <button
@@ -381,7 +381,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="w-full py-3.5 px-4 text-center text-base font-semibold text-white bg-blue-600 active:bg-blue-700 rounded-xl shadow-xs flex items-center justify-center gap-2 cursor-pointer min-h-[48px] touch-manipulation"
                 >
                   <Calculator className="w-5 h-5 text-blue-100" />
-                  <span>Start Assessment</span>
+                  <span>Start Free Assessment</span>
                 </button>
 
                 <button

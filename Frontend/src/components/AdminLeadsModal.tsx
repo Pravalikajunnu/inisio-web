@@ -252,7 +252,7 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
                     <th className="p-3">Date & Time</th>
                     <th className="p-3">Promoter Details</th>
                     <th className="p-3">Project & Industry</th>
-                    <th className="p-3">Total Capex / Loan</th>
+                    <th className="p-3">Total Capex / Funding</th>
                     <th className="p-3">Teaser PDF</th>
                     <th className="p-3">Actions</th>
                   </tr>
@@ -277,7 +277,7 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
                       const waText = encodeURIComponent(
                         `Hello ${lead.fullName || 'Promoter'},\n\n` +
                         `Thank you for evaluating your ${lead.industry || 'greenfield'} project on Inisio Greenfield Advisory Platform. ` +
-                        `We noticed your interest in financing ₹${lead.loanRequiredCr || lead.totalCostCr} Cr. How can we assist you with DPR and Debt Syndication?`
+                        `We noticed your interest in funding ₹${lead.loanRequiredCr || lead.totalCostCr} Cr. How can we assist you with DPR and Debt Syndication?`
                       );
 
                       return (
@@ -310,7 +310,7 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
 
                           <td className="p-3 whitespace-nowrap">
                             <div className="font-bold text-white">₹ {lead.totalCostCr} Cr</div>
-                            <div className="text-blue-400 text-[11px]">Loan: ₹ {lead.loanRequiredCr} Cr</div>
+                            <div className="text-blue-400 text-[11px]">Funding: ₹ {lead.loanRequiredCr} Cr</div>
                           </td>
 
                           <td className="p-3 whitespace-nowrap">

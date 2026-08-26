@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { generateProjectTeaserPDF, sendLeadToWhatsApp, TeaserPDFData } from '../utils/pdfGenerator';
+import { generateProjectTeaserDOCX } from '../utils/docxGenerator';
 import { getFeasibilityTerm } from '../types';
 import { LocationDropdowns } from './LocationDropdowns';
 import { validateIndianMobileNumber } from '../utils/validation';
@@ -30,7 +31,15 @@ import {
   AlertCircle,
   Save,
   ChevronLeft,
-  LayoutDashboard
+  LayoutDashboard,
+  FileType,
+  TrendingUp,
+  Percent,
+  Coins,
+  FileCheck,
+  ExternalLink,
+  Clock,
+  MapPin
 } from 'lucide-react';
 
 interface ProjectAssessmentPageProps {
@@ -48,7 +57,8 @@ type AssessmentStage =
   | 'feasibility_result'
   | 'collect_bankability'
   | 'bankability_result'
-  | 'collect_financials';
+  | 'collect_financials'
+  | 'final_assessment_results';
 
 export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
   onOpenConsultation,
@@ -64,22 +74,34 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
   const [saveSuccessMessage, setSaveSuccessMessage] = useState('');
   const [isDataSaved, setIsDataSaved] = useState(false);
   const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
+  const [isDownloadingDocx, setIsDownloadingDocx] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
   // Stage 2 Inputs: Risk Profile Data for Bankability Rating
   const [riskProfileData, setRiskProfileData] = useState<DetailedRiskProfileData | null>(null);
 
   // Stage 1 Form State: Initial 3 Steps (All blank by default - no forced pre-selection)
-  const [financials, setFinancials] = useState({
+  const [financials, setFinancials] = useState<{
+    consultancyCostCr: string;
+    machineryCostCr: string;
+    civilCostCr: string;
+    otherCostsCr: string;
+    termLoanCr: string;
+    promoterContributionCr: string;
+    otherFinanceCr: string;
+    totalProjectCost?: string;
+    totalMeansOfFinance?: string;
+  }>({
     consultancyCostCr: '',
     machineryCostCr: '',
     civilCostCr: '',
     otherCostsCr: '',
     termLoanCr: '',
     promoterContributionCr: '',
-    otherFinanceCr: ''
+    otherFinanceCr: '',
+    totalProjectCost: '',
+    totalMeansOfFinance: ''
   });
-
-
 
   const [formData, setFormData] = useState({
     projectName: '',
@@ -98,19 +120,6 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
   });
 
   const mobileValidation = validateIndianMobileNumber(formData.mobile);
-
-  React.useEffect(() => {
-    if (stage === 'collect_financials') {
-      const loanCr = parseFloat(formData.loanRequiredCr) || 0;
-      const promCr = parseFloat(formData.promoterContribCr) || 0;
-      
-      setFinancials(prev => ({
-        ...prev,
-        termLoanCr: prev.termLoanCr || (loanCr > 0 ? loanCr.toString() : ''),
-        promoterContributionCr: prev.promoterContributionCr || (promCr > 0 ? promCr.toString() : '')
-      }));
-    }
-  }, [stage, formData.loanRequiredCr, formData.promoterContribCr]);
 
   // Pre-fill inputs when editing a project
   React.useEffect(() => {
@@ -192,24 +201,22 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
           otherCostsCr: editingProject.financials.otherCostsCr ? String(editingProject.financials.otherCostsCr) : '',
           termLoanCr: editingProject.financials.termLoanCr ? String(editingProject.financials.termLoanCr) : '',
           promoterContributionCr: editingProject.financials.promoterContributionCr ? String(editingProject.financials.promoterContributionCr) : '',
-          otherFinanceCr: editingProject.financials.otherFinanceCr ? String(editingProject.financials.otherFinanceCr) : ''
+          otherFinanceCr: editingProject.financials.otherFinanceCr ? String(editingProject.financials.otherFinanceCr) : '',
+          totalProjectCost: editingProject.financials.totalProjectCost ? String(editingProject.financials.totalProjectCost) : '',
+          totalMeansOfFinance: editingProject.financials.totalMeansOfFinance ? String(editingProject.financials.totalMeansOfFinance) : ''
         });
       } else {
-        const tCost = parseFloat(String(editingProject.totalCostCr)) || 0;
-        const lReq = parseFloat(String(editingProject.loanRequiredCr)) || 0;
-        const pCont = parseFloat(String(editingProject.promoterContribCr)) || 0;
-        
-        if (tCost > 0) {
-          setFinancials({
-            consultancyCostCr: String(Math.round(tCost * 0.05 * 100) / 100),
-            machineryCostCr: String(Math.round(tCost * 0.60 * 100) / 100),
-            civilCostCr: String(Math.round(tCost * 0.30 * 100) / 100),
-            otherCostsCr: String(Math.round(tCost * 0.05 * 100) / 100),
-            termLoanCr: lReq > 0 ? String(lReq) : '',
-            promoterContributionCr: pCont > 0 ? String(pCont) : '',
-            otherFinanceCr: ''
-          });
-        }
+        setFinancials({
+          consultancyCostCr: '',
+          machineryCostCr: '',
+          civilCostCr: '',
+          otherCostsCr: '',
+          termLoanCr: '',
+          promoterContributionCr: '',
+          otherFinanceCr: '',
+          totalProjectCost: '',
+          totalMeansOfFinance: ''
+        });
       }
     } else if (defaultIndustry) {
       setFormData((prev) => ({
@@ -382,45 +389,136 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
   const comprehensiveRisk = calculateComprehensiveRiskScore(riskProfileData, results.feasibilityScore);
 
   // Map all inputs into the PDF payload (using ONLY user-provided information)
-  const getPDFData = (): TeaserPDFData => ({
-    // Step 1 Feasibility Inputs
-    fullName: formData.fullName,
-    mobile: formData.mobile,
-    email: formData.email,
-    projectName: formData.projectName || 'Greenfield Project',
-    industry: formData.industry,
-    location: formData.location,
-    totalCostCr: formData.totalCostCr,
-    promoterContribCr: formData.promoterContribCr,
-    loanRequiredCr: formData.loanRequiredCr,
-    landStatus: formData.landStatus,
-    collateralStatus: formData.collateralStatus,
-    promoterExp: formData.promoterExp,
-    description: formData.description,
-    feasibilityScore: results.feasibilityScore,
-    bankabilityRating: riskProfileData ? String(comprehensiveRisk.scoreOutOf10) : results.bankabilityRating,
-    estimatedLoan: results.estimatedLoan,
-    eqPct: results.eqPct,
-    debtPct: results.debtPct,
-    dscrEstimate: 1.45,
-    estInterestRate: '8.85% - 9.40%',
+  const getPDFData = (): TeaserPDFData => {
+    // Dynamic indicative DSCR calculation
+    const calculatedDscr = results.debtPct > 75 ? 1.48 : results.debtPct > 65 ? 1.72 : 1.95;
 
-    // Step 2 Bankability Underwriting Inputs
-    riskProfileData: riskProfileData || undefined,
-      financials: financials,
-    riskScoreOutOf10: comprehensiveRisk.scoreOutOf10,
-    machineryCostCr: financials.machineryCostCr || undefined,
-    civilCostCr: financials.civilCostCr || undefined,
-    consultancyCostCr: financials.consultancyCostCr || undefined,
-    otherCostsCr: financials.otherCostsCr || undefined,
-    termLoanCr: financials.termLoanCr || undefined,
-    promoterContributionCr: financials.promoterContributionCr || undefined,
-    otherFinanceCr: financials.otherFinanceCr || undefined
-  });
+    return {
+      // Step 1 Feasibility Inputs
+      fullName: formData.fullName,
+      mobile: formData.mobile,
+      email: formData.email,
+      projectName: formData.projectName || 'Greenfield Project',
+      industry: formData.industry,
+      location: formData.location,
+      totalCostCr: formData.totalCostCr,
+      promoterContribCr: formData.promoterContribCr,
+      loanRequiredCr: formData.loanRequiredCr,
+      landStatus: formData.landStatus,
+      collateralStatus: formData.collateralStatus,
+      promoterExp: formData.promoterExp,
+      description: formData.description,
+      feasibilityScore: results.feasibilityScore,
+      bankabilityRating: riskProfileData ? String(comprehensiveRisk.scoreOutOf10) : results.bankabilityRating,
+      estimatedLoan: results.estimatedLoan,
+      eqPct: results.eqPct,
+      debtPct: results.debtPct,
+      dscrEstimate: calculatedDscr,
+      estInterestRate: '8.85% - 9.40%',
+
+      // Step 2 Bankability Underwriting Inputs
+      riskProfileData: riskProfileData || undefined,
+      riskScoreOutOf10: comprehensiveRisk.scoreOutOf10,
+      machineryCostCr: financials.machineryCostCr || undefined,
+      civilCostCr: financials.civilCostCr || undefined,
+      consultancyCostCr: financials.consultancyCostCr || undefined,
+      otherCostsCr: financials.otherCostsCr || undefined,
+      termLoanCr: financials.termLoanCr || undefined,
+      promoterContributionCr: financials.promoterContributionCr || undefined,
+      otherFinanceCr: financials.otherFinanceCr || undefined
+    };
+  };
 
   const handleDownloadTeaser = (action: 'download' | 'preview' = 'download') => {
+    setIsDownloadingPdf(true);
     const pdfData = getPDFData();
     generateProjectTeaserPDF(pdfData, action);
+    setTimeout(() => setIsDownloadingPdf(false), 1000);
+  };
+
+  const handleDownloadDocxTeaser = async () => {
+    try {
+      setIsDownloadingDocx(true);
+      const pdfData = getPDFData();
+      await generateProjectTeaserDOCX(pdfData);
+    } catch (err) {
+      console.error('Failed to generate DOCX teaser:', err);
+      alert('Could not generate DOCX teaser. Please try again.');
+    } finally {
+      setIsDownloadingDocx(false);
+    }
+  };
+
+  const handleSaveAndRedirectToOutputs = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!formData.projectName.trim()) {
+      alert('Please enter your Project Name before saving.');
+      return;
+    }
+
+    const cCost = parseFloat(financials.consultancyCostCr) || 0;
+    const mCost = parseFloat(financials.machineryCostCr) || 0;
+    const lCost = parseFloat(financials.civilCostCr) || 0;
+    const oCost = parseFloat(financials.otherCostsCr) || 0;
+    const totalCost = cCost + mCost + lCost + oCost;
+    
+    const tLoan = parseFloat(financials.termLoanCr) || 0;
+    const pContrib = parseFloat(financials.promoterContributionCr) || 0;
+    const oFin = parseFloat(financials.otherFinanceCr) || 0;
+    const totalFin = tLoan + pContrib + oFin;
+
+    if (totalCost > 0 && totalFin > 0 && Math.abs(totalCost - totalFin) > 0.05) {
+      alert(`Total Project Cost (₹${totalCost.toFixed(2)} Cr) must equal Total Means of Finance (₹${totalFin.toFixed(2)} Cr).`);
+      return;
+    }
+
+    const updatedFinancials = {
+      ...financials,
+      totalProjectCost: totalCost > 0 ? totalCost.toString() : formData.totalCostCr,
+      totalMeansOfFinance: totalFin > 0 ? totalFin.toString() : formData.totalCostCr
+    };
+
+    setFinancials(updatedFinancials);
+
+    const computed = computeResults();
+    const activeBankability = riskProfileData ? String(comprehensiveRisk.scoreOutOf10) : String(computed.bankabilityRating);
+    const updatedPayload = {
+      projectName: formData.projectName || 'Greenfield Project',
+      industry: formData.industry,
+      location: formData.location,
+      totalCostCr: formData.totalCostCr,
+      promoterContribCr: formData.promoterContribCr,
+      loanRequiredCr: formData.loanRequiredCr,
+      landStatus: formData.landStatus,
+      collateralStatus: formData.collateralStatus,
+      promoterExp: formData.promoterExp,
+      notes: formData.description,
+      fullName: formData.fullName,
+      mobile: formData.mobile,
+      email: formData.email,
+      feasibilityScore: computed.feasibilityScore,
+      bankabilityRating: activeBankability,
+      riskProfileData: riskProfileData || undefined,
+      financials: updatedFinancials
+    };
+
+    // Guarantee idempotent save: Only save once in the dashboard
+    const activeId = editingProject?.id || createdProjectId;
+    if (activeId) {
+      updateLeadRecord(activeId, updatedPayload, formData.fullName || 'Promoter');
+    } else {
+      const saved = saveLeadRecord({
+        ...updatedPayload,
+        source: 'Project Assessment Flow',
+        downloadedPDF: false
+      });
+      setCreatedProjectId(saved.id);
+    }
+
+    setIsDataSaved(true);
+    setSaveSuccessMessage('Project assessment saved successfully to your dashboard!');
+    setStage('final_assessment_results');
+    window.scrollTo({ top: 120, behavior: 'smooth' });
   };
 
   const handleSaveProjectEdits = (skipRedirect = false) => {
@@ -529,21 +627,29 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
   return (
     <div className="min-h-screen bg-slate-50/70 pb-20">
       {/* Header Banner */}
-      <section className="bg-slate-900 text-white pt-20 pb-10 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-3xl mx-auto text-center">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-[11px] font-semibold uppercase tracking-wider mb-3">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>{editingProject ? 'Edit Project Assessment' : 'Project Evaluation'}</span>
+      <section className="bg-slate-900 text-white pt-20 pb-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto text-center space-y-3">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider">
+            <Award className="w-3.5 h-3.5 text-emerald-400" />
+            <span>100% Free First Project Assessment</span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-manrope">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight font-manrope">
             {editingProject ? `Edit: ${formData.projectName || editingProject.projectName}` : 'Greenfield Project Assessment'}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto mt-2">
+          <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto font-inter">
             {editingProject
               ? 'Update your project parameters, cost structure, land and risk inputs, and re-evaluate underwriting scores.'
-              : 'Calculate your project feasibility, underwriting bankability score, and sample executive teaser.'}
+              : 'Assess your project viability, debt-capacity, and bankability rating before approaching lenders and credit committees.'}
           </p>
+
+          {/* Tangible Outputs Chips */}
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-2 text-[11px] text-slate-300 font-medium">
+            <span className="bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700">✓ Bankability Rating (AAA to BBB)</span>
+            <span className="bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700">✓ DSCR & Debt Capacity</span>
+            <span className="bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700">✓ Means of Finance</span>
+            <span className="bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700">✓ Downloadable PDF Teaser</span>
+          </div>
         </div>
       </section>
 
@@ -570,7 +676,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
             <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
               <button
                 type="button"
-                onClick={handleSaveProjectEdits}
+                onClick={() => handleSaveProjectEdits()}
                 className="flex-1 sm:flex-none px-4 py-2 bg-white text-blue-700 hover:bg-blue-50 font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Check className="w-3.5 h-3.5 stroke-[3]" />
@@ -730,7 +836,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                     {editingProject ? (
                       <button
                         type="button"
-                        onClick={handleSaveProjectEdits}
+                        onClick={() => handleSaveProjectEdits()}
                         className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
                       >
                         <Save className="w-3.5 h-3.5" />
@@ -810,7 +916,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
 
                     <div>
                       <label className="block text-xs font-bold text-gray-700 mb-1">
-                        Loan Needed (₹ Cr)
+                        Funding Needed (₹ Cr)
                       </label>
                       <div className="relative">
                         <span className="absolute left-3 top-2.5 text-xs font-bold text-gray-400">₹</span>
@@ -838,7 +944,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                       }`}
                     >
                       <span className="font-bold">
-                        Equity: {equityPercent}% | Loan: {debtPercent}%
+                        Equity: {equityPercent}% | Debt: {debtPercent}%
                       </span>
                       <span className={`font-bold flex items-center gap-1 ${isEquityEligible ? 'text-emerald-700' : 'text-rose-700'}`}>
                         {isEquityEligible ? (
@@ -870,7 +976,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                       {editingProject && (
                         <button
                           type="button"
-                          onClick={handleSaveProjectEdits}
+                          onClick={() => handleSaveProjectEdits()}
                           className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
                         >
                           <Save className="w-3.5 h-3.5" />
@@ -1076,7 +1182,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                       {editingProject && (
                         <button
                           type="button"
-                          onClick={handleSaveProjectEdits}
+                          onClick={() => handleSaveProjectEdits()}
                           className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
                         >
                           <Save className="w-3.5 h-3.5" />
@@ -1130,7 +1236,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
               <div className="flex items-center gap-2">
                 {editingProject && (
                   <button
-                    onClick={handleSaveProjectEdits}
+                    onClick={() => handleSaveProjectEdits()}
                     className="px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
                   >
                     <Save className="w-3.5 h-3.5" />
@@ -1162,7 +1268,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
 
               <div className="p-5 bg-blue-50 border border-blue-200 rounded-2xl">
                 <span className="text-[11px] font-bold text-blue-900 uppercase tracking-wider block mb-1">
-                  Estimated Loan Needed
+                  Estimated Funding Needed
                 </span>
                 <div className="text-2xl sm:text-3xl font-black text-blue-950 font-manrope">
                   ₹ {results.estimatedLoan} <span className="text-sm font-semibold">Cr</span>
@@ -1216,7 +1322,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                 {editingProject && (
                   <button
                     type="button"
-                    onClick={handleSaveProjectEdits}
+                    onClick={() => handleSaveProjectEdits()}
                     className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm cursor-pointer"
                   >
                     <Save className="w-3.5 h-3.5" />
@@ -1267,7 +1373,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                 {editingProject && (
                   <button
                     type="button"
-                    onClick={handleSaveProjectEdits}
+                    onClick={() => handleSaveProjectEdits()}
                     className="px-3.5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center gap-1.5 shadow-sm cursor-pointer"
                   >
                     <Save className="w-3.5 h-3.5" />
@@ -1328,7 +1434,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
               </div>
 
               <div className="p-4 bg-blue-50/60 border border-blue-200/80 rounded-2xl">
-                <div className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">Required Bank Loan</div>
+                <div className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">Required Institutional Debt</div>
                 <div className="text-lg font-black text-blue-900 font-manrope mt-0.5">₹ {results.estimatedLoan} Cr</div>
                 <div className="text-xs text-blue-700 mt-0.5">{results.debtPct}% Debt allocation</div>
               </div>
@@ -1458,12 +1564,12 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-gray-600">Project Term Loan (Cr)</label>
+                    <label className="text-xs font-semibold text-gray-600">Project Term Debt (Cr)</label>
                     <input
                       type="number"
                       value={financials.termLoanCr}
                       onChange={(e) => setFinancials({...financials, termLoanCr: e.target.value})}
-                      placeholder="Enter loan amount..."
+                      placeholder="Enter debt amount..."
                       className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-emerald-500 outline-none transition-all"
                     />
                     {totalFin > 0 && <div className="text-[10px] font-medium text-emerald-600 text-right">{debtPct}%</div>}
@@ -1506,91 +1612,395 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
             <div className="pt-4 flex items-center justify-between border-t border-gray-100">
               <button
                 type="button"
-                onClick={() => setStage('bankability_result')}
-                className="px-5 py-2.5 text-gray-600 font-bold hover:text-gray-900 transition-colors cursor-pointer"
+                onClick={() => {
+                  setStage('bankability_result');
+                  window.scrollTo({ top: 120, behavior: 'smooth' });
+                }}
+                className="px-5 py-2.5 text-gray-600 font-bold hover:text-gray-900 transition-colors flex items-center gap-1.5 cursor-pointer text-sm"
               >
-                Back
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back</span>
               </button>
               
-              {isDataSaved ? (
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-sm font-bold text-emerald-600 flex items-center gap-1">
-                    <CheckCircle2 className="w-4 h-4" />
-                    Saved
-                  </span>
-                  
-                  <button
-                    type="button"
-                    onClick={() => {
-                      handleDownloadTeaser('preview');
-                    }}
-                    className="px-5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold rounded-xl transition-all shadow-sm flex items-center gap-2 cursor-pointer"
-                  >
-                    <FileText className="w-4 h-4" />
-                    <span>Preview Teaser</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      handleDownloadTeaser('download');
-                    }}
-                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl transition-all shadow-sm flex items-center gap-2 cursor-pointer"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>Download PDF</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (onNavigateToDashboard) {
-                        onNavigateToDashboard();
-                      } else {
-                        window.location.href = '/dashboard';
-                      }
-                    }}
-                    className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer"
-                  >
-                    <span>Go to Dashboard</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (totalCost !== totalFin) {
-                      alert("Total Project Cost must match Total Means of Finance.");
-                      return;
-                    }
-                    
-                    // Update financials payload format correctly
-                    const updatedFinancials = {
-                      ...financials,
-                      totalProjectCost: totalCost.toString(),
-                      totalMeansOfFinance: totalFin.toString()
-                    };
-                    
-                    setFinancials(updatedFinancials);
-                    
-                    setTimeout(() => {
-                      handleSaveProjectEdits(true);
-                      setIsDataSaved(true);
-                    }, 100);
-                  }}
-                  disabled={!isBalanced || totalCost === 0}
-                  className="px-6 py-2.5 bg-blue-600 disabled:opacity-50 hover:bg-blue-700 text-white font-extrabold rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>Save Project Details</span>
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => {
+                  if (totalCost > 0 && totalFin > 0 && Math.abs(totalCost - totalFin) > 0.05) {
+                    alert(`Total Project Cost (₹${totalCost.toFixed(2)} Cr) must equal Total Means of Finance (₹${totalFin.toFixed(2)} Cr).`);
+                    return;
+                  }
+                  handleSaveAndRedirectToOutputs();
+                }}
+                disabled={!isBalanced && (totalCost > 0 || totalFin > 0)}
+                className="px-6 py-3 bg-blue-600 disabled:opacity-50 hover:bg-blue-700 text-white font-extrabold text-sm rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer"
+              >
+                <Save className="w-4 h-4" />
+                <span>Save &amp; View Assessment Results</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
           </div>
+          );
+        })()}
+
+        {/* ========================================================================= */}
+        {/* STAGE 4: FINAL ASSESSMENT RESULTS & DOWNLOADS                              */}
+        {/* ========================================================================= */}
+        {stage === 'final_assessment_results' && (() => {
+          const cCost = parseFloat(financials.consultancyCostCr) || (cost * 0.05);
+          const mCost = parseFloat(financials.machineryCostCr) || (cost * 0.60);
+          const lCost = parseFloat(financials.civilCostCr) || (cost * 0.30);
+          const oCost = parseFloat(financials.otherCostsCr) || (cost * 0.05);
+          const totalCost = parseFloat(financials.totalProjectCost || '') || (cCost + mCost + lCost + oCost) || cost;
+          
+          const tLoan = parseFloat(financials.termLoanCr) || (cost * (results.debtPct / 100));
+          const pContrib = parseFloat(financials.promoterContributionCr) || (cost * (results.eqPct / 100));
+          const oFin = parseFloat(financials.otherFinanceCr) || 0;
+          const totalFin = parseFloat(financials.totalMeansOfFinance || '') || (tLoan + pContrib + oFin) || totalCost;
+          
+          const debtPctCalc = totalFin > 0 ? ((tLoan / totalFin) * 100).toFixed(1) : results.debtPct.toString();
+          const eqPctCalc = totalFin > 0 ? ((pContrib / totalFin) * 100).toFixed(1) : results.eqPct.toString();
+          const dscrValue = (results.debtPct > 75 ? 1.48 : results.debtPct > 65 ? 1.72 : 1.95).toFixed(2);
+          const activeBankability = riskProfileData ? comprehensiveRisk.scoreOutOf10.toFixed(1) : results.bankabilityRating;
+
+          return (
+            <div className="space-y-6 animate-in fade-in zoom-in-95 duration-400">
+              {/* Header Card */}
+              <div className="bg-white rounded-3xl border border-gray-200 shadow-xl p-6 sm:p-8 space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold mb-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Project Saved to Dashboard (1 Record)</span>
+                    </div>
+                    <h2 className="text-2xl sm:text-3xl font-black text-slate-900 font-manrope">
+                      Executive Project Assessment Outputs
+                    </h2>
+                    <p className="text-xs sm:text-sm text-slate-500 mt-1 flex flex-wrap items-center gap-2">
+                      <span className="font-semibold text-slate-700">{formData.projectName || 'Greenfield Project'}</span>
+                      <span>•</span>
+                      <span>{formData.industry}</span>
+                      <span>•</span>
+                      <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-slate-400" /> {formData.location}</span>
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStage('collect_financials');
+                        window.scrollTo({ top: 120, behavior: 'smooth' });
+                      }}
+                      className="px-3.5 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Adjust Cost &amp; Finance</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (onNavigateToDashboard) {
+                          onNavigateToDashboard();
+                        } else if (onFinishEditing) {
+                          onFinishEditing();
+                        } else {
+                          window.location.href = '/dashboard';
+                        }
+                      }}
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold rounded-xl flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                    >
+                      <LayoutDashboard className="w-3.5 h-3.5" />
+                      <span>View in Dashboard</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Top 6 Key Outputs Cards Grid */}
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Key Assessment &amp; Underwriting Metrics</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Output 1: Bankability */}
+                    <div className="p-5 bg-gradient-to-br from-blue-900 to-slate-900 text-white rounded-2xl shadow-md border border-blue-800 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[11px] font-bold text-blue-300 uppercase tracking-wider">
+                            1. Bankability Rating
+                          </span>
+                          <span className="px-2 py-0.5 bg-blue-500/30 border border-blue-400/40 rounded-full text-[10px] font-extrabold text-blue-200">
+                            {comprehensiveRisk.ratingLabel || 'AAA Rating'}
+                          </span>
+                        </div>
+                        <div className="text-3xl sm:text-4xl font-black font-manrope my-2 text-white">
+                          {activeBankability} <span className="text-base font-normal text-blue-300">/ 10</span>
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-blue-200/90 font-medium pt-2 border-t border-blue-800/80">
+                        {riskProfileData?.isNewToCredit ? 'New-to-Credit Profile' : `CIBIL: ${riskProfileData?.cibilScore || '785'} • Collateral: ${riskProfileData?.collateralCoveragePct || '100'}%`}
+                      </p>
+                    </div>
+
+                    {/* Output 2: Feasibility */}
+                    <div className="p-5 bg-gradient-to-br from-emerald-900 to-slate-900 text-white rounded-2xl shadow-md border border-emerald-800 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[11px] font-bold text-emerald-300 uppercase tracking-wider">
+                            2. Feasibility Status
+                          </span>
+                          <span className="px-2 py-0.5 bg-emerald-500/30 border border-emerald-400/40 rounded-full text-[10px] font-extrabold text-emerald-200">
+                            {getFeasibilityTerm(results.feasibilityScore)}
+                          </span>
+                        </div>
+                        <div className="text-3xl sm:text-4xl font-black font-manrope my-2 text-white">
+                          {results.feasibilityScore} <span className="text-base font-normal text-emerald-300">/ 100</span>
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-emerald-200/90 font-medium pt-2 border-t border-emerald-800/80">
+                        Land: {formData.landStatus || 'In Progress'} • Experience: {formData.promoterExp || '5+ Yrs'}
+                      </p>
+                    </div>
+
+                    {/* Output 3: Total Project CAPEX */}
+                    <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col justify-between">
+                      <div>
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                          3. Total Project CAPEX
+                        </span>
+                        <div className="text-2xl sm:text-3xl font-black text-slate-900 font-manrope my-2">
+                          ₹ {totalCost.toLocaleString('en-IN', { maximumFractionDigits: 2 })} <span className="text-base font-bold text-slate-500">Cr</span>
+                        </div>
+                      </div>
+                      <div className="text-[11px] text-slate-600 pt-2 border-t border-slate-200">
+                        Machinery: ₹{mCost.toFixed(1)} Cr • Civil: ₹{lCost.toFixed(1)} Cr
+                      </div>
+                    </div>
+
+                    {/* Output 4: Proposed Debt */}
+                    <div className="p-5 bg-blue-50/70 border border-blue-200 rounded-2xl flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">
+                            4. Proposed Debt
+                          </span>
+                          <span className="text-xs font-black text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
+                            {debtPctCalc}% Outlay
+                          </span>
+                        </div>
+                        <div className="text-2xl sm:text-3xl font-black text-blue-900 font-manrope my-2">
+                          ₹ {tLoan.toLocaleString('en-IN', { maximumFractionDigits: 2 })} <span className="text-base font-bold text-blue-700">Cr</span>
+                        </div>
+                      </div>
+                      <div className="text-[11px] text-blue-700/90 font-medium pt-2 border-t border-blue-200">
+                        Target Institutional Term Debt
+                      </div>
+                    </div>
+
+                    {/* Output 5: Promoter Contribution */}
+                    <div className="p-5 bg-emerald-50/70 border border-emerald-200 rounded-2xl flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">
+                            5. Promoter Contribution
+                          </span>
+                          <span className="text-xs font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                            {eqPctCalc}% Equity
+                          </span>
+                        </div>
+                        <div className="text-2xl sm:text-3xl font-black text-emerald-900 font-manrope my-2">
+                          ₹ {pContrib.toLocaleString('en-IN', { maximumFractionDigits: 2 })} <span className="text-base font-bold text-emerald-700">Cr</span>
+                        </div>
+                      </div>
+                      <div className="text-[11px] text-emerald-700/90 font-medium pt-2 border-t border-emerald-200">
+                        Required In-Hand Equity / Capital Margin
+                      </div>
+                    </div>
+
+                    {/* Output 6: Indicative DSCR */}
+                    <div className="p-5 bg-amber-50/70 border border-amber-200 rounded-2xl flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider">
+                            6. Indicative DSCR
+                          </span>
+                          <span className="text-xs font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md">
+                            Min: &gt;1.35x
+                          </span>
+                        </div>
+                        <div className="text-2xl sm:text-3xl font-black text-amber-950 font-manrope my-2">
+                          {dscrValue}x <span className="text-xs font-semibold text-amber-800">(Avg 7-10 Yrs)</span>
+                        </div>
+                      </div>
+                      <div className="text-[11px] text-amber-800/90 font-medium pt-2 border-t border-amber-200">
+                        Strong Debt Servicing Coverage Capacity
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Statutory / Methodology Notice */}
+                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Methodology Disclaimer:</strong> Key underwriting outputs (Bankability Rating, Indicative DSCR, Debt Capacity, and Feasibility Score) are subject to actual statutory audit, Detailed Project Report (DPR), CMA financial modeling, and formal lender credit committee sanction methodology.
+                  </span>
+                </div>
+
+                {/* Breakdown Summary Tables */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                  {/* CAPEX Breakdown */}
+                  <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 space-y-3">
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 font-manrope">
+                      <Building2 className="w-4 h-4 text-blue-600" />
+                      <span>CAPEX (Project Cost) Breakdown</span>
+                    </h3>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between py-1.5 border-b border-slate-200">
+                        <span className="text-slate-600">Plant &amp; Machinery</span>
+                        <span className="font-bold text-slate-900">₹ {mCost.toFixed(2)} Cr ({totalCost > 0 ? ((mCost / totalCost) * 100).toFixed(0) : 0}%)</span>
+                      </div>
+                      <div className="flex justify-between py-1.5 border-b border-slate-200">
+                        <span className="text-slate-600">Land &amp; Civil Works</span>
+                        <span className="font-bold text-slate-900">₹ {lCost.toFixed(2)} Cr ({totalCost > 0 ? ((lCost / totalCost) * 100).toFixed(0) : 0}%)</span>
+                      </div>
+                      <div className="flex justify-between py-1.5 border-b border-slate-200">
+                        <span className="text-slate-600">Consultancy &amp; Pre-op</span>
+                        <span className="font-bold text-slate-900">₹ {cCost.toFixed(2)} Cr ({totalCost > 0 ? ((cCost / totalCost) * 100).toFixed(0) : 0}%)</span>
+                      </div>
+                      <div className="flex justify-between py-1.5 border-b border-slate-200">
+                        <span className="text-slate-600">Other Capex &amp; Contingency</span>
+                        <span className="font-bold text-slate-900">₹ {oCost.toFixed(2)} Cr ({totalCost > 0 ? ((oCost / totalCost) * 100).toFixed(0) : 0}%)</span>
+                      </div>
+                      <div className="flex justify-between pt-1 font-bold text-slate-900 text-sm">
+                        <span>Total CAPEX Outlay</span>
+                        <span className="text-blue-700">₹ {totalCost.toFixed(2)} Cr</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Means of Finance Breakdown */}
+                  <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 space-y-3">
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 font-manrope">
+                      <Landmark className="w-4 h-4 text-emerald-600" />
+                      <span>Means of Finance Structure</span>
+                    </h3>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between py-1.5 border-b border-slate-200">
+                        <span className="text-slate-600">Institutional Term Loan</span>
+                        <span className="font-bold text-blue-700">₹ {tLoan.toFixed(2)} Cr ({debtPctCalc}%)</span>
+                      </div>
+                      <div className="flex justify-between py-1.5 border-b border-slate-200">
+                        <span className="text-slate-600">Promoter Equity Contribution</span>
+                        <span className="font-bold text-emerald-700">₹ {pContrib.toFixed(2)} Cr ({eqPctCalc}%)</span>
+                      </div>
+                      <div className="flex justify-between py-1.5 border-b border-slate-200">
+                        <span className="text-slate-600">Other Sources / Grants</span>
+                        <span className="font-bold text-slate-900">₹ {oFin.toFixed(2)} Cr</span>
+                      </div>
+                      <div className="flex justify-between py-1.5 border-b border-slate-200">
+                        <span className="text-slate-600">Debt-to-Equity Ratio</span>
+                        <span className="font-bold text-slate-900">{debtPctCalc}:{eqPctCalc}</span>
+                      </div>
+                      <div className="flex justify-between pt-1 font-bold text-slate-900 text-sm">
+                        <span>Total Means of Finance</span>
+                        <span className="text-emerald-700">₹ {totalFin.toFixed(2)} Cr</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Immediate Download & Next Actions Box */}
+              <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-800 space-y-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs font-bold mb-2">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Executive Deliverable Ready</span>
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-black font-manrope text-white">
+                      Download AI Project Teaser in DOCX
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
+                      Download an editable Microsoft Word (.docx) executive teaser with complete underwriting scorecard, CAPEX breakup, and means of finance.
+                    </p>
+                  </div>
+
+                  {/* Primary DOCX Download Button */}
+                  <div className="shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadDocxTeaser()}
+                      disabled={isDownloadingDocx}
+                      className="w-full sm:w-auto px-7 py-3.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-black text-sm rounded-xl transition-all shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-2.5 cursor-pointer"
+                    >
+                      <Download className="w-4 h-4 stroke-[2.5]" />
+                      <span>{isDownloadingDocx ? 'Generating DOCX...' : 'Download AI Project Teaser in DOCX'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Secondary Actions Row */}
+                <div className="pt-4 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadTeaser('download')}
+                      disabled={isDownloadingPdf}
+                      className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 border border-slate-700 cursor-pointer"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-slate-400" />
+                      <span>{isDownloadingPdf ? 'Generating PDF...' : 'Download PDF (Optional)'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadTeaser('preview')}
+                      className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 border border-slate-700 cursor-pointer"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Preview Teaser</span>
+                    </button>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={onOpenConsultation}
+                      className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 border border-slate-700 cursor-pointer"
+                    >
+                      <PhoneCall className="w-3.5 h-3.5" />
+                      <span>Consult CA &amp; Project Advisor</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (onNavigateToDashboard) {
+                          onNavigateToDashboard();
+                        } else if (onFinishEditing) {
+                          onFinishEditing();
+                        } else {
+                          window.location.href = '/dashboard';
+                        }
+                      }}
+                      className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span>Go to Dashboard</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           );
         })()}
       </div>
     </div>
   );
 };
+

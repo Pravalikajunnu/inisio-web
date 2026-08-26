@@ -177,7 +177,8 @@ export const ProjectEditModal: React.FC<ProjectEditModalProps> = ({
       cibilScore: formData.cibilScore,
       managementTeamSize: formData.managementTeamSize,
       technicalWorkforceCount: formData.technicalWorkforceCount,
-      debtEquityRatio: `${100 - eqPct}:${eqPct}`
+      debtEquityRatio: `${100 - eqPct}:${eqPct}`,
+      isNewToCredit: Boolean(project.riskProfileData?.isNewToCredit)
     };
 
     onSave({

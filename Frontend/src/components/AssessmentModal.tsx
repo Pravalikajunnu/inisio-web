@@ -220,8 +220,8 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
               <Calculator className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] font-extrabold text-blue-700 uppercase tracking-widest block">
-                Project Assessment Engine v4.2
+              <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 uppercase tracking-widest inline-block mb-1">
+                100% Free Initial Assessment
               </span>
               <h3 className="font-display font-bold text-xl text-gray-900">
                 Greenfield Feasibility & Bankability Calculator

@@ -53,12 +53,6 @@ export const CommercialSupplyFundingForm: React.FC<CommercialSupplyFundingFormPr
   onSubmitSuccess,
   sectionId = 'commercial-funding-section'
 }) => {
-  // Compute default estimates in lakhs based on cost
-  const totalCr = initialCostCr ? initialCostCr : 0;
-  const defaultMachinery = totalCr ? (totalCr * 0.68).toFixed(2) : '';
-  const defaultCivil = totalCr ? (totalCr * 0.30).toFixed(2) : '';
-  const defaultConsultancy = totalCr ? (totalCr * 0.02).toFixed(2) : '';
-
   const [formData, setFormData] = useState<CommercialSupplyFundingData>({
     rawMaterialSource: initialData?.rawMaterialSource || 'Industrial Vendors & Distributors',
     keySuppliersList: initialData?.keySuppliersList || '',
@@ -72,9 +66,9 @@ export const CommercialSupplyFundingForm: React.FC<CommercialSupplyFundingFormPr
       : ['Term Loan (Machinery & Construction)', 'Working Capital Loan (CC / OD)'],
     moratoriumPeriodMonths: initialData?.moratoriumPeriodMonths || '12 Months',
     repaymentTenureYears: initialData?.repaymentTenureYears || '8 to 10 Years',
-    machineryCostCr: initialData?.machineryCostCr || defaultMachinery,
-    civilCostCr: initialData?.civilCostCr || defaultCivil,
-    consultancyCostCr: initialData?.consultancyCostCr || defaultConsultancy,
+    machineryCostCr: initialData?.machineryCostCr || '',
+    civilCostCr: initialData?.civilCostCr || '',
+    consultancyCostCr: initialData?.consultancyCostCr || '',
     gstNumber: initialData?.gstNumber || ''
   });
 
@@ -83,12 +77,12 @@ export const CommercialSupplyFundingForm: React.FC<CommercialSupplyFundingFormPr
       setFormData(prev => ({
         ...prev,
         ...initialData,
-        machineryCostCr: initialData.machineryCostCr || prev.machineryCostCr || defaultMachinery,
-        civilCostCr: initialData.civilCostCr || prev.civilCostCr || defaultCivil,
-        consultancyCostCr: initialData.consultancyCostCr || prev.consultancyCostCr || defaultConsultancy
+        machineryCostCr: initialData.machineryCostCr || '',
+        civilCostCr: initialData.civilCostCr || '',
+        consultancyCostCr: initialData.consultancyCostCr || ''
       }));
     }
-  }, [initialData, defaultMachinery, defaultCivil, defaultConsultancy]);
+  }, [initialData]);
 
   const [formError, setFormError] = useState('');
 

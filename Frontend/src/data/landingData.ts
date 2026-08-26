@@ -57,7 +57,7 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Punjab', 'Haryana', 'Uttar Pradesh', 'Telangana'],
     overview: 'A basmati rice processing & export unit involves cleaning, grading, polishing, packaging, and exporting premium basmati rice to international markets in the Middle East, Europe, and USA.',
     projectCostRange: 'Medium Scale: ₹3 Cr – ₹10 Cr | Large Export-Oriented: ₹10 Cr – ₹30 Cr+',
-    fundingStructure: 'Promoter Equity: 25% – 35% | Bank Loan / Debt: 65% – 75%',
+    fundingStructure: 'Promoter Equity: 25% – 35% | Institutional Debt / Debt: 65% – 75%',
     dscrNorms: 'DSCR ≥ 1.8 | Repayment: 7 – 10 years (Moratorium: 6 – 12 months)',
     roiAndPayback: 'EBITDA Margins: 10% – 18% | Payback Period: 3 – 5 years',
     subsidiesAndSchemes: [
@@ -103,7 +103,7 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Uttar Pradesh', 'Madhya Pradesh', 'Rajasthan', 'Bihar'],
     overview: 'A flour mill (atta chakki) unit processes wheat and grains into everyday essentials. It is a low-risk, high-volume MSME activity backed by consistent household and institutional demand.',
     projectCostRange: 'Small Scale: ₹10–25 Lakh | Medium Scale: ₹25–80 Lakh | Large Commercial: ₹80 Lakh – ₹2 Cr+',
-    fundingStructure: 'Promoter Equity: 25% – 35% | Bank Loan: 65% – 75%',
+    fundingStructure: 'Promoter Equity: 25% – 35% | Institutional Debt: 65% – 75%',
     dscrNorms: 'DSCR ≥ 1.6 | Moratorium: 3 – 6 months',
     roiAndPayback: 'EBITDA Margins: 8% – 12% | Payback Period: 2 – 4 years',
     subsidiesAndSchemes: [
@@ -126,7 +126,7 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Telangana', 'Andhra Pradesh', 'Gujarat', 'Kerala'],
     overview: 'Spice processing converts raw agricultural spices into value-added ground powders and blended masalas. India dominates over 1.5M tons of global spice exports annually.',
     projectCostRange: 'Small Scale: ₹5–15 Lakh | Medium Scale: ₹15–50 Lakh | Large Automatic Unit: ₹50 Lakh – ₹5 Cr+',
-    fundingStructure: 'Promoter Equity: 10% – 30% | Bank Loan: 60% – 75% | Subsidy Gap: 10% – 20%',
+    fundingStructure: 'Promoter Equity: 10% – 30% | Institutional Debt: 60% – 75% | Subsidy Gap: 10% – 20%',
     dscrNorms: 'DSCR ≥ 1.8 | Repayment: 5 – 10 years',
     roiAndPayback: 'EBITDA Margins: 15% – 35% (up to 45% on oleoresins) | Payback Period: 2 – 5 years',
     subsidiesAndSchemes: [
@@ -149,7 +149,7 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Maharashtra', 'Karnataka', 'Gujarat', 'Delhi NCR'],
     overview: 'Ready-to-Eat (RTE) manufacturing produces convenient, shelf-stable meals and instant ethnic dishes. Backed by urbanization and busy lifestyles, RTE is a high-growth PLI-supported sector.',
     projectCostRange: 'Small Scale: ₹20–50 Lakh | Medium Scale: ₹50 Lakh – ₹1 Cr | Large Scale: ₹1 Cr – ₹5 Cr+',
-    fundingStructure: 'Promoter Equity: 25% – 35% | Bank Loan: 65% – 75%',
+    fundingStructure: 'Promoter Equity: 25% – 35% | Institutional Debt: 65% – 75%',
     dscrNorms: 'DSCR ≥ 1.8 | Tenure: 5 – 10 years',
     roiAndPayback: 'EBITDA Margins: 12% – 20% | Payback Period: 3 – 5 years',
     subsidiesAndSchemes: [
@@ -172,7 +172,7 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Uttar Pradesh', 'Gujarat', 'Maharashtra', 'Telangana'],
     overview: 'A dairy processing plant processes raw milk into liquid packaged milk and value-added items. The industry is backed by high recurring cash flows and essential commodity status.',
     projectCostRange: 'Dairy Farm (10-50 animals): ₹8–60 Lakh | Processing Plant: ₹1.16 Cr – ₹15 Cr+',
-    fundingStructure: 'Promoter Equity: 25% – 35% | Bank Loan: 65% – 75% | Subsidy: 15% – 33%',
+    fundingStructure: 'Promoter Equity: 25% – 35% | Institutional Debt: 65% – 75% | Subsidy: 15% – 33%',
     dscrNorms: 'DSCR ≥ 1.8 | Effective Interest: 6% - 9% with subvention',
     roiAndPayback: 'EBITDA Margins: 8% – 15% | Payback Period: 3 – 5 years',
     subsidiesAndSchemes: [
@@ -195,7 +195,7 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Uttar Pradesh', 'Punjab', 'Maharashtra', 'West Bengal'],
     overview: 'Cold storage facilities preserve perishable goods (fruits, vegetables, dairy, frozen items), reducing post-harvest losses and receiving top priority sector lending status.',
     projectCostRange: 'Small Scale: ₹2–8 Cr | Medium Scale: ₹8–25 Cr | Large Scale: ₹25–50 Cr+',
-    fundingStructure: 'Promoter Equity: 20% – 30% | Bank Loan: 70% – 80%',
+    fundingStructure: 'Promoter Equity: 20% – 30% | Institutional Debt: 70% – 80%',
     dscrNorms: 'DSCR ≥ 1.5–1.8 | Repayment: 8 – 12 years',
     roiAndPayback: 'EBITDA Margins: 18% – 25% | Payback Period: 5 – 7 years',
     subsidiesAndSchemes: [
@@ -218,7 +218,7 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Maharashtra', 'Karnataka', 'Delhi NCR', 'Telangana'],
     overview: 'Plant-based meat manufacturing is an emerging high-growth sector (>50% CAGR) producing protein-rich alternatives using twin-screw wet extrusion technology.',
     projectCostRange: 'Small Pilot: ₹1–2 Cr | Medium Unit: ₹11 Cr benchmark | Large Plant: ₹20 Cr+',
-    fundingStructure: 'Promoter Equity: 20% – 30% | Bank Loan: 70% – 80%',
+    fundingStructure: 'Promoter Equity: 20% – 30% | Institutional Debt: 70% – 80%',
     dscrNorms: 'DSCR ≥ 1.53–2.16 | Repayment: 3 – 7 years',
     roiAndPayback: 'EBITDA Margins: 20% – 25% | Payback Period: 4 – 6 years',
     subsidiesAndSchemes: [
@@ -241,7 +241,7 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Andhra Pradesh', 'Odisha', 'Telangana', 'West Bengal'],
     overview: 'Fish farming (aquaculture) involves cultivating fish in ponds or biofloc systems for domestic and export markets, supported strongly under central Blue Revolution initiatives.',
     projectCostRange: 'Small (1 acre): ₹8–15 Lakh | Medium (3-5 acres): ₹25–60 Lakh | Commercial: ₹1 Cr – ₹5 Cr+',
-    fundingStructure: 'Promoter Equity: 15% – 25% | Bank Loan: 75% – 85%',
+    fundingStructure: 'Promoter Equity: 15% – 25% | Institutional Debt: 75% – 85%',
     dscrNorms: 'DSCR ≥ 1.8 | Repayment: up to 48 months',
     roiAndPayback: 'EBITDA Margins: 8% – 18% | Payback Period: 3 – 5 years',
     subsidiesAndSchemes: [
@@ -266,7 +266,7 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Gujarat', 'Tamil Nadu', 'Kerala', 'Maharashtra'],
     overview: 'A rubber gloves manufacturing unit produces disposable latex and nitrile medical/industrial gloves. Driven by expanding healthcare, nitrile glove manufacturing is a high-growth PLI sector.',
     projectCostRange: 'Small Unit: ₹5–10 Cr | Medium Unit: ₹10–25 Cr | Large Scale: ₹25–60 Cr',
-    fundingStructure: 'Promoter Equity: 25% – 35% | Bank Loan: 65% – 75%',
+    fundingStructure: 'Promoter Equity: 25% – 35% | Institutional Debt: 65% – 75%',
     dscrNorms: 'DSCR ≥ 1.8 | Tenure: 5 – 7 years',
     roiAndPayback: 'EBITDA Margins: 8% – 15% | Payback Period: 5 – 8 years',
     subsidiesAndSchemes: [
@@ -289,13 +289,13 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Telangana', 'Maharashtra', 'Gujarat', 'Tamil Nadu'],
     overview: 'Packaging units manufacture plastic flexible films and corrugated shipping boxes essential for logistics, e-commerce, and retail supply chains.',
     projectCostRange: 'Small Scale: ₹20L – ₹1 Cr | Medium Scale: ₹1 Cr – ₹5 Cr | Large Automatic: ₹5 Cr – ₹20 Cr+',
-    fundingStructure: 'Promoter Equity: 25% – 35% | Bank Loan: 65% – 75%',
+    fundingStructure: 'Promoter Equity: 25% – 35% | Institutional Debt: 65% – 75%',
     dscrNorms: 'DSCR ≥ 1.8 | Tenure: 5 – 10 years',
     roiAndPayback: 'EBITDA Margins: 8% – 18% | Payback Period: 1.5 – 4 years',
     subsidiesAndSchemes: [
       'T-IDEA & T-PRIDE State Industrial Policies (Telangana)',
       'PMEGP Subsidy (15%-35%)',
-      'SIDBI Machinery Loan & CGTMSE Cover'
+      'SIDBI Machinery Debt & CGTMSE Cover'
     ],
     eligibleBanks: ['State Bank of India', 'Bank of Baroda', 'Punjab National Bank', 'Union Bank of India', 'ICICI Bank', 'SIDBI'],
     keyRisks: ['Kraft paper / plastic granule price swings', 'Local market price competition', 'High electricity load requirement']
@@ -312,7 +312,7 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Telangana', 'Gujarat', 'Maharashtra', 'Odisha'],
     overview: 'Steel fabrication units produce structural steel columns, beams, PEB sheds, and custom machinery components required for construction and industrial infrastructure.',
     projectCostRange: 'Small Scale: ₹20–50 Lakh | Medium Scale: ₹50 Lakh – ₹15 Cr | Large Scale: ₹15 Cr – ₹50 Cr+',
-    fundingStructure: 'Promoter Equity: 25% – 30% | Bank Loan: 70% – 75%',
+    fundingStructure: 'Promoter Equity: 25% – 30% | Institutional Debt: 70% – 75%',
     dscrNorms: 'DSCR ≥ 1.5–1.7 | Repayment: 5 – 7 years',
     roiAndPayback: 'EBITDA Margins: 10% – 15% (Specialty: 20-30%) | Payback Period: 2 – 5 years',
     subsidiesAndSchemes: [
@@ -335,12 +335,12 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Karnataka', 'Tamil Nadu', 'Rajasthan', 'Telangana'],
     overview: 'A furniture manufacturing unit converts timber, plywood, and engineered boards into modular home and office furniture to meet expanding urban real estate demand.',
     projectCostRange: 'Small Scale: ₹5–30 Lakh | Medium Scale: ₹30–92 Lakh | Large Scale: ₹92 Lakh – ₹2 Cr+',
-    fundingStructure: 'Promoter Equity: 20% – 30% | Bank Loan: 70% – 80%',
+    fundingStructure: 'Promoter Equity: 20% – 30% | Institutional Debt: 70% – 80%',
     dscrNorms: 'DSCR ≥ 1.5 | Repayment: 3 – 7 years',
     roiAndPayback: 'EBITDA Margins: 25% – 30% | Payback Period: 5 – 6 years',
     subsidiesAndSchemes: [
-      'MSME Mudra Loans & PMEGP',
-      'CGTMSE Collateral Waiver for Small Loans',
+      'MSME Mudra Debts & PMEGP',
+      'CGTMSE Collateral Waiver for Small Projects',
       'State MSME Capital Grants'
     ],
     eligibleBanks: ['State Bank of India', 'HDFC Bank', 'SIDBI', 'ICICI Bank', 'Lendingkart', 'Bank of Baroda'],
@@ -358,7 +358,7 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Maharashtra', 'Delhi NCR', 'Tamil Nadu', 'Karnataka'],
     overview: 'Produces stainless steel professional kitchen equipment for hotels, cloud kitchens, hospitals, and restaurants. Backed by the Capital Goods PLI scheme.',
     projectCostRange: 'Micro: ₹15–40 Lakh | Small: ₹30–75 Lakh | Medium: ₹80 Lakh – ₹2 Cr | Large: ₹2 Cr – ₹10 Cr+',
-    fundingStructure: 'Promoter Equity: 25% – 40% | Term Loan: 50% – 60% | Working Capital: 10% – 20%',
+    fundingStructure: 'Promoter Equity: 25% – 40% | Term Debt: 50% – 60% | Working Capital: 10% – 20%',
     dscrNorms: 'DSCR ≥ 1.5–1.7 | Repayment: 3 – 7 years',
     roiAndPayback: 'EBITDA Margins: 12% – 22% (Customized: 20-35%) | Payback Period: 3 – 6 years',
     subsidiesAndSchemes: [
@@ -381,7 +381,7 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Gujarat', 'Telangana', 'Maharashtra', 'Uttar Pradesh'],
     overview: 'Glass bottle plants produce sustainable, eco-friendly glass containers for beverages, pharmaceuticals, and cosmetics, benefiting from the global shift away from single-use plastics.',
     projectCostRange: 'Small Unit: ₹5–20 Cr | Medium Unit: ₹20–100 Cr | Large Unit: ₹100–500 Cr+',
-    fundingStructure: 'Promoter Equity: 25% – 30% | Term Loan: 70% – 75% | Working Capital: 25%',
+    fundingStructure: 'Promoter Equity: 25% – 30% | Term Debt: 70% – 75% | Working Capital: 25%',
     dscrNorms: 'DSCR ≥ 1.5–1.7 | Repayment: 1 – 10 years',
     roiAndPayback: 'EBITDA Margins: 12% – 30% | Payback Period: 5 – 7 years',
     subsidiesAndSchemes: [
@@ -406,13 +406,13 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Gujarat', 'Rajasthan', 'Telangana', 'Maharashtra'],
     overview: 'Solar panel manufacturing units assemble high-efficiency PV modules for residential, commercial, and utility-scale projects. The sector is supported by National PLI Tranche I & II and ALMM mandates.',
     projectCostRange: 'Small (10-20 MW): ₹8–15 Cr | Medium (50-100 MW): ₹35–70 Cr | Large (500 MW+): ₹250–600 Cr+',
-    fundingStructure: 'Promoter Equity: 25% – 35% | Bank Loan: 65% – 75% (IREDA up to 80%)',
+    fundingStructure: 'Promoter Equity: 25% – 35% | Institutional Debt: 65% – 75% (IREDA up to 80%)',
     dscrNorms: 'DSCR ≥ 1.5–1.7 | Repayment: 5 – 15 years',
     roiAndPayback: 'EBITDA Margins: 8% – 15% (Integrated: 20-35%) | Payback Period: 5 – 8 years',
     subsidiesAndSchemes: [
       'National PLI Scheme for High Efficiency Solar PV Modules (₹24,000 Cr outlay)',
       'ALMM Mandate Protection against imports',
-      'IREDA Concessional Green Loans & State SGST Reimbursement (up to 100%)'
+      'IREDA Concessional Green Funding & State SGST Reimbursement (up to 100%)'
     ],
     eligibleBanks: ['State Bank of India', 'Bank of Baroda', 'Punjab National Bank', 'Union Bank of India', 'Canara Bank', 'IREDA', 'SIDBI'],
     keyRisks: ['Global solar cell price volatility', 'Rapid solar cell technology obsolescence', 'Import dependence on polysilicon']
@@ -429,7 +429,7 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Gujarat', 'Odisha', 'Andhra Pradesh', 'Tamil Nadu'],
     overview: 'Green hydrogen plants produce zero-carbon hydrogen via water electrolysis powered by renewable electricity. Driven by the National Hydrogen Mission, it serves steel, fertilizer, and refinery sectors.',
     projectCostRange: 'Pilot Plant: ₹1.5–12 Cr | Medium Plant: ₹10–15 Cr | Industrial Scale: ₹2,120 Cr benchmark',
-    fundingStructure: 'Promoter Equity: 25% – 35% | Bank Loan: 65% – 75%',
+    fundingStructure: 'Promoter Equity: 25% – 35% | Institutional Debt: 65% – 75%',
     dscrNorms: 'DSCR ≥ 1.30 | Repayment: 15 – 25 years (Moratorium: 2 – 3 years)',
     roiAndPayback: 'LCOH Target: ₹250-350/kg | EBITDA Margins: 15% – 25% | Payback Period: 6 – 10 years',
     subsidiesAndSchemes: [
@@ -452,12 +452,12 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Maharashtra', 'Delhi-Jaipur Highway', 'Karnataka', 'Telangana'],
     overview: 'Highway EV charging hubs feature ultra-fast DC chargers for electric vehicles. Supported by PM E-DRIVE and state EV policies, highway hubs generate revenue from charging fees, ads, and shops.',
     projectCostRange: 'Small (2-4 chargers): ₹15–30 Lakh | Medium (4-8 chargers): ₹1–2 Cr | Highway Hub (10+ chargers): ₹10–16 Cr',
-    fundingStructure: 'Promoter Equity: 20% – 30% | Bank Loan: 70% – 80%',
+    fundingStructure: 'Promoter Equity: 20% – 30% | Institutional Debt: 70% – 80%',
     dscrNorms: 'DSCR ≥ 1.3–1.4 | Repayment: 5 – 10 years under EV Mitra',
     roiAndPayback: 'EBITDA Margins: 25% – 40% | Payback Period: 3 – 5 years (Average IRR: 32%)',
     subsidiesAndSchemes: [
       'PM E-DRIVE Central Government Capital Subsidies (up to 50%-100% on infrastructure)',
-      'SBI EV Mitra Loan Scheme (2% Interest Reimbursement)',
+      'SBI EV Mitra Funding Scheme (2% Interest Reimbursement)',
       'SIDBI EV4ECO Scheme for MSME Charging Hubs'
     ],
     eligibleBanks: ['State Bank of India (EV Mitra)', 'Bank of India', 'IREDA', 'SIDBI', 'NABARD', 'PFC'],
@@ -475,7 +475,7 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Uttar Pradesh', 'Maharashtra', 'Karnataka', 'Bihar'],
     overview: 'Ethanol plants convert grain or molasses into fuel-grade anhydrous ethanol for supply to Oil Marketing Companies (OMCs) under India’s 20% EBP blending mandate.',
     projectCostRange: 'Mini/Pilot: ₹5–20 Cr | Small Commercial: ₹25–80 Cr | Medium/Large: ₹80–200 Cr+',
-    fundingStructure: 'Promoter Equity: 25% – 30% | Bank Loan: 70% – 75%',
+    fundingStructure: 'Promoter Equity: 25% – 30% | Institutional Debt: 70% – 75%',
     dscrNorms: 'DSCR ≥ 1.3–1.4 | Repayment: 7 – 15 years',
     roiAndPayback: 'EBITDA Margins: 12% – 18% | Payback Period: 7 – 9 years',
     subsidiesAndSchemes: [
@@ -498,7 +498,7 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Delhi NCR', 'Maharashtra', 'Karnataka', 'Tamil Nadu'],
     overview: 'Waste-to-Energy (WTE) plants process municipal solid waste into electricity or RDF fuel, solving urban waste disposal while generating contracted power revenue and tipping fees.',
     projectCostRange: 'Small Scale (50 TPD): ₹20–45 Cr | Medium Scale: ₹45–80 Cr | Large Scale: ₹80–120 Cr+',
-    fundingStructure: 'Promoter Equity: 25% – 35% | Bank Loan: 65% – 75%',
+    fundingStructure: 'Promoter Equity: 25% – 35% | Institutional Debt: 65% – 75%',
     dscrNorms: 'DSCR ≥ 1.3–1.6 | Repayment: 10 – 15 years',
     roiAndPayback: 'EBITDA Margins: 20% – 30% | Payback Period: 7 – 10 years',
     subsidiesAndSchemes: [
@@ -521,7 +521,7 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Telangana', 'Maharashtra', 'Gujarat', 'Haryana'],
     overview: 'Tyre recycling plants process waste tyres into crumb rubber for rubberized roads, pyrolysis oil, and carbon black. Backed by India’s Waste Tyre Extended Producer Responsibility (EPR) 2022 policy.',
     projectCostRange: 'Small Scale: ₹20–50 Lakh | Medium Scale: ₹50 Lakh – ₹1.5 Cr | Large Scale: ₹1.5 Cr – ₹15 Cr+',
-    fundingStructure: 'Promoter Equity: 25% – 30% | Term Loan: 70% – 75%',
+    fundingStructure: 'Promoter Equity: 25% – 30% | Term Debt: 70% – 75%',
     dscrNorms: 'DSCR ≥ 1.5–1.7 | Repayment: 5 – 10 years',
     roiAndPayback: 'EBITDA Margins: 15% – 25% | Payback Period: 2 – 4 years (ROI: 20-30%)',
     subsidiesAndSchemes: [
@@ -570,11 +570,11 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Bengaluru', 'Mumbai', 'Hyderabad', 'Delhi NCR'],
     overview: 'Quick commerce dark store hubs fulfill instant online grocery orders via digital apps. The sector relies on urban micro-fulfillment, fast inventory turn, and ONDC digital infrastructure.',
     projectCostRange: 'Small Pilot (1-2 stores): ₹50 Lakh – ₹1.5 Cr | Medium Cluster (3-5 cities): ₹1.5 – ₹3.5 Cr | Regional Mother Hub: ₹3.5 – ₹8 Cr+',
-    fundingStructure: 'Promoter Equity: 30% – 40% | Bank Debt / MSME Retail Loan: 60% – 70%',
+    fundingStructure: 'Promoter Equity: 30% – 40% | Bank Debt / MSME Retail Funding: 60% – 70%',
     dscrNorms: 'DSCR ≥ 1.30–1.50 | Repayment: 3 – 5 years',
     roiAndPayback: 'EBITDA Margins: 4% – 7% (ultra-high velocity) | Payback Period: 1.5 – 3 years',
     subsidiesAndSchemes: [
-      'PMEGP & Mudra Loan Scheme (up to ₹20 Lakh)',
+      'PMEGP & Mudra Debt Scheme (up to ₹20 Lakh)',
       'ONDC Free Onboarding & Low Transaction Incentives',
       'Telangana Startup SGST Reimbursement & Pavala Vaddi Scheme'
     ],
@@ -595,7 +595,7 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Karnataka', 'Telangana', 'Delhi NCR', 'Maharashtra'],
     overview: 'A 50-bed multi-specialty hospital provides essential healthcare across surgery, pediatrics, general medicine, and diagnostics. It benefits from social infra priority funding and Ayushman Bharat empanelment.',
     projectCostRange: 'Small (30-50 beds): ₹15–30 Cr | Medium (50-100 beds): ₹30–80 Cr | Large: ₹80–200 Cr+',
-    fundingStructure: 'Promoter Equity: 25% – 35% | Bank Loan: 65% – 75%',
+    fundingStructure: 'Promoter Equity: 25% – 35% | Institutional Debt: 65% – 75%',
     dscrNorms: 'DSCR ≥ 1.3–1.7 | Repayment: 10 – 15 years (Moratorium: 12 – 24 months)',
     roiAndPayback: 'EBITDA Margins: 15% – 25% | Payback Period: 6 – 10 years',
     subsidiesAndSchemes: [
@@ -620,7 +620,7 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Coimbatore', 'Lucknow', 'Indore', 'Vizag'],
     overview: 'Budget business hotels cater to corporate travelers and domestic tourists in secondary markets. Lower land acquisition costs enable high return on investment and fast payback.',
     projectCostRange: 'Small (40 rooms): ₹13.5–30 Cr | Medium (60-80 rooms): ₹35–55 Cr | Large (100+ rooms): ₹50–70 Cr',
-    fundingStructure: 'Promoter Equity: 20% – 30% | Bank Loan: 70% – 80%',
+    fundingStructure: 'Promoter Equity: 20% – 30% | Institutional Debt: 70% – 80%',
     dscrNorms: 'DSCR ≥ 1.3–1.4 | Tenure: 7 – 10 years (Moratorium: 6 – 12 months)',
     roiAndPayback: 'EBITDA Margins: 9% – 15% | Average IRR: 26% | Payback Period: 3 – 10 years',
     subsidiesAndSchemes: [
@@ -648,7 +648,7 @@ export const INDUSTRIES: Industry[] = [
     roiAndPayback: 'EBITDA Margins: 15% – 28% | Payback Period: 3 – 5 years',
     subsidiesAndSchemes: [
       'State Tourism Policy Capital Subsidy (25% up to ₹1 Cr)',
-      'State Financial Corporation (KSFC/SFC) Tourism Loans',
+      'State Financial Corporation (KSFC/SFC) Tourism Funding',
       'PRASAD & Swadesh Darshan Scheme Benefits'
     ],
     eligibleBanks: ['State Financial Corporations (KSFC)', 'State Bank of India', 'HDFC Bank', 'Bank of Baroda', 'Canara Bank'],
@@ -666,7 +666,7 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Hyderabad (Shadnagar/Shankarpally)', 'Bengaluru', 'Pune', 'Chennai'],
     overview: 'Gated community villa projects cater to rising demand for luxury living space. Projects benefit from milestone-based pre-sale cash flows and strict debt-equity discipline.',
     projectCostRange: 'Small (10-50 villas): ₹27–125 Cr | Medium (50 villas): ₹135 Cr | Large (100+ villas): ₹270 Cr+',
-    fundingStructure: 'Promoter Equity: 27% – 40% | Bank Loan: 65% – 80%',
+    fundingStructure: 'Promoter Equity: 27% – 40% | Institutional Debt: 65% – 80%',
     dscrNorms: 'DSCR ≥ 1.2–1.5 | Moratorium: 12 – 24 months',
     roiAndPayback: 'EBITDA Margins: 20% – 35% | Project IRR: 18% – 25% | Payback: 3 – 5 years',
     subsidiesAndSchemes: [
@@ -689,7 +689,7 @@ export const INDUSTRIES: Industry[] = [
     popularRegions: ['Tier-1 Metros', 'Tier-2 District Capitals', 'Telangana', 'Maharashtra'],
     overview: 'Shopping malls and multi-brand supermarkets operate on lease and inventory models, benefiting from organized retail growth and steady daily cash flows.',
     projectCostRange: 'Supermarket: ₹15L–2 Cr | Small Mall: ₹75–200 Cr | Large Mall: ₹200–800 Cr+',
-    fundingStructure: 'Promoter Equity: 25% – 40% | Bank Loan: 60% – 75%',
+    fundingStructure: 'Promoter Equity: 25% – 40% | Institutional Debt: 60% – 75%',
     dscrNorms: 'DSCR ≥ 1.50–1.90 | Repayment: 5 – 15 years',
     roiAndPayback: 'EBITDA Margins: 7% – 10% (Supermarket) / 35% – 55% (Mall) | Payback: 1.5 – 12 years',
     subsidiesAndSchemes: [
@@ -756,7 +756,7 @@ export const SERVICES: Service[] = [
   },
   {
     id: 'loan_processing',
-    name: 'Debt Syndication & Loan Advisory',
+    name: 'Debt Syndication & Funding Advisory',
     tag: 'Debt Syndication',
     shortDesc: 'End-to-end liaison with PSU & Private bank credit committees, TEV audit representation, and sanction letter terms.',
     fullDesc: 'End-to-end liaison with PSU & Private bank credit committees, TEV audit representation, and sanction letter terms.',
@@ -828,7 +828,7 @@ export const TIMELINE_STEPS: TimelineStep[] = [
     title: 'Expert Consultation',
     description: '1-on-1 strategy session with ex-bankers and sector specialists to refine loan structure and select target banks.',
     duration: 'Day 6',
-    keyDeliverable: 'Bank Selection & Loan Strategy',
+    keyDeliverable: 'Bank Selection & Funding Strategy',
     badge: '1-on-1 Advisory',
     iconName: 'UserCheck'
   },
@@ -843,7 +843,7 @@ export const TIMELINE_STEPS: TimelineStep[] = [
   },
   {
     stepNumber: 7,
-    title: 'Loan Processing',
+    title: 'Funding Processing',
     description: 'Submission to PSU and Private Banks, credit committee query resolution, and TEV inspection support.',
     duration: 'Week 2 - 3',
     keyDeliverable: 'Credit Committee Clearance',
@@ -852,7 +852,7 @@ export const TIMELINE_STEPS: TimelineStep[] = [
   },
   {
     stepNumber: 8,
-    title: 'Loan Sanction',
+    title: 'Funding Sanction',
     description: 'Final sanction letter issuance, terms optimization, pre-disbursement compliance, and capital release.',
     duration: 'Week 3 - 4',
     keyDeliverable: 'Sanction Letter & Disbursement',
@@ -880,7 +880,7 @@ export const WHY_CHOOSE_INISIO = [
   },
   {
     id: 'faster_loan',
-    title: '3x Faster Loan Sanctions',
+    title: '3x Faster Funding Sanctions',
     description: 'By addressing credit officer queries prior to submission, we reduce typical bank approval cycles from 4 months down to 28 days.',
     iconName: 'Zap',
     stat: '28 Days',
@@ -916,7 +916,7 @@ export const FREE_RESOURCES: Resource[] = [
     description: 'Step-by-step roadmap to navigate PSU vs Private Bank debt syndication, CGTMSE limits, and state capital subsidies.',
     pagesOrSize: '36 Pages • PDF',
     downloadCount: 4890,
-    tags: ['Debt Syndication', 'Subsidies', 'Term Loan'],
+    tags: ['Debt Syndication', 'Subsidies', 'Term Debt'],
     imageUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=800&auto=format&fit=crop&q=80'
   },
   {
@@ -950,7 +950,7 @@ export const TESTIMONIALS: Testimonial[] = [
     title: 'Managing Director',
     company: 'Vanguard Polymers Pvt Ltd',
     industry: 'Manufacturing',
-    fundingAmount: '₹38.5 Cr Term Loan',
+    fundingAmount: '₹38.5 Cr Term Debt',
     quote: 'Inisio turned our initial concept into a rock-solid, bank-grade DPR in 10 days. The bank credit committee cleared our ₹38.5 Cr loan without asking for a single revision.',
     rating: 5,
     location: 'Ahmedabad, Gujarat',
@@ -1015,7 +1015,7 @@ export const FAQS: FAQItem[] = [
   },
   {
     id: 'faq_4',
-    category: 'Loan Process',
+    category: 'Funding Process',
     question: 'How long does the loan syndication process take with Inisio?',
     answer: 'While traditional bank loan approvals take 3 to 5 months, Inisio streamlined process typically achieves official loan sanction letters within 21 to 28 days by eliminating back-and-forth query cycles through pre-sanction diligence.'
   },
@@ -1027,7 +1027,7 @@ export const FAQS: FAQItem[] = [
   },
   {
     id: 'faq_6',
-    category: 'Loan Process',
+    category: 'Funding Process',
     question: 'What size of projects does Inisio handle?',
     answer: 'We specialize in greenfield projects ranging from ₹3 Crore to ₹500 Crore capital expenditure across manufacturing, solar, healthcare, food processing, warehousing, textiles, hospitality, and tech infrastructure.'
   }

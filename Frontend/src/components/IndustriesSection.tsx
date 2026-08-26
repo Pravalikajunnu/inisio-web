@@ -726,6 +726,7 @@ export const DETAILED_INDUSTRIES: SectorDetailData[] = [
 
 export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
   onSelectIndustryForAssessment,
+  onOpenAssessment,
   onOpenConsultation,
   selectedIndustryName
 }) => {
@@ -1083,7 +1084,7 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                       onClick={() => onSelectIndustryForAssessment(activeSector.title)}
                       className="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl transition-all shadow-xs flex items-center justify-center cursor-pointer font-manrope font-bold"
                     >
-                      <span>Start {activeSector.shortName} Assessment</span>
+                      <span>Start {activeSector.shortName} Free Assessment</span>
                     </button>
 
                     <button
@@ -1221,7 +1222,7 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                             onClick={() => onSelectIndustryForAssessment(ind.title)}
                             className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-manrope font-bold text-xs rounded-xl transition-all cursor-pointer shadow-2xs"
                           >
-                            Check Eligibility
+                            Start Free Assessment
                           </button>
                         </div>
                       </div>
@@ -1240,22 +1241,32 @@ export const IndustriesSection: React.FC<IndustriesSectionProps> = ({
                   </div>
 
                   <h2 className="text-xl sm:text-2xl font-bold text-white font-manrope tracking-tight leading-[1.2]">
-                    Ready to Start Your Greenfield Project?
+                    Ready to Validate Your Greenfield Project?
                   </h2>
 
                   <p className="text-xs sm:text-sm text-slate-300 font-inter leading-[1.6]">
-                    "Let Inisio guide you from idea to funding with expert project planning and bank loan assistance."
+                    "Let Inisio guide you from idea to funding readiness with expert feasibility analysis, bankability scoring, and institutional syndication support."
                   </p>
 
                   <div className="pt-1 flex flex-wrap justify-center gap-3">
                     <button
-                      onClick={onOpenConsultation}
-                      className="px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold font-manrope text-xs sm:text-sm rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+                      onClick={onOpenAssessment || (() => onSelectIndustryForAssessment('Manufacturing & Heavy Industry'))}
+                      className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold font-manrope text-xs sm:text-sm rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-sm"
                     >
-                      <PhoneCall className="w-4 h-4" />
-                      <span>Book Free Consultation</span>
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Start Free Assessment</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
+
+                    {onOpenConsultation && (
+                      <button
+                        onClick={onOpenConsultation}
+                        className="px-5 py-3 bg-white/10 hover:bg-white/20 text-white border border-white/20 font-semibold font-manrope text-xs sm:text-sm rounded-xl transition-all flex items-center gap-2 cursor-pointer"
+                      >
+                        <PhoneCall className="w-4 h-4" />
+                        <span>Book Free Consultation</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

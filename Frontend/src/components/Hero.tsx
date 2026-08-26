@@ -39,7 +39,7 @@ export const Hero: React.FC<HeroProps> = ({
   const industries = [
     {
       name: 'Manufacturing',
-      desc: 'Machinery & Expansion Loans',
+      desc: 'Machinery & Expansion Viability',
       icon: 'https://res.cloudinary.com/aessymvl/image/upload/v1786539430/icons8-manufacturing_jalqmq.gif'
     },
     {
@@ -49,7 +49,7 @@ export const Hero: React.FC<HeroProps> = ({
     },
     {
       name: 'Education Institutions',
-      desc: 'Infrastructure & Campus Loans',
+      desc: 'Infrastructure & Campus Assessment',
       icon: 'https://res.cloudinary.com/aessymvl/image/upload/v1786539577/icons8-education-48_xhbfm7.png'
     },
     {
@@ -82,34 +82,34 @@ export const Hero: React.FC<HeroProps> = ({
   const slides = [
     {
       id: 'slide-1',
-      badge: 'Easy & Fast Business Financing',
-      headline: 'Need a Project Loan?',
-      description: 'We help you get the right project loan.',
-      primaryBtnText: 'Check Your Eligibility',
+      badge: '100% Free Initial Assessment',
+      headline: 'Planning a New Project?',
+      description: 'Assess its feasibility, understand its bankability and prepare it for funding.',
+      primaryBtnText: 'Start Free Assessment',
       secondaryBtnText: 'Talk to an Expert',
-      trustPoints: ['Easy Process', 'Expert Support', 'Trusted Guidance'],
+      trustPoints: ['100% Free First Assessment', 'Instant Bankability Rating', 'Bank-Grade Teaser PDF'],
       image: 'https://res.cloudinary.com/aessymvl/image/upload/v1786547187/ChatGPT_Image_Aug_12_2026_08_34_57_PM_hb8xi9.png',
-      imageAlt: 'Indian entrepreneur meeting a financial advisor for a project loan'
+      imageAlt: 'Indian entrepreneur meeting an advisor for project assessment'
     },
     {
       id: 'slide-2',
-      badge: 'Turn Your Idea Into Reality',
-      headline: 'Start Your Business',
-      description: "We'll help you prepare everything you need to apply for a project loan.",
-      primaryBtnText: 'Start Your Project',
+      badge: 'Greenfield Feasibility & Bankability',
+      headline: 'Validate Your Greenfield Project',
+      description: 'Evaluate financial viability, equity-debt structure, and lender readiness before approaching banks and institutional funds.',
+      primaryBtnText: 'Start Free Assessment',
       secondaryBtnText: 'Free Consultation',
-      trustPoints: ['Project Planning', 'Document Support', 'Loan Assistance'],
+      trustPoints: ['Debt-to-Equity & DSCR Checks', 'Capex & Means of Finance', 'Bankability Scorecard'],
       image: 'https://res.cloudinary.com/aessymvl/image/upload/v1786536547/start_your_business_fx8g11.png',
       imageAlt: 'Young entrepreneur reviewing project plans with financial advisor'
     },
     {
       id: 'slide-3',
-      badge: 'Scale & Modernize Operations',
-      headline: 'Grow Your Business',
-      description: 'Get the funding you need to take your business to the next level.',
-      primaryBtnText: 'Get Funding',
+      badge: 'Institutional Funding Readiness',
+      headline: 'Prepare for Institutional Funding',
+      description: 'Get bank-grade feasibility scores, CMA models, and expert CA guidance for term debt syndication.',
+      primaryBtnText: 'Start Free Assessment',
       secondaryBtnText: 'Contact Us',
-      trustPoints: ['Business Expansion', 'Machinery Funding', 'Expert Guidance'],
+      trustPoints: ['Credit Committee Ready', 'Detailed Risk Scorer', 'Dedicated CA Advisory'],
       image: 'https://res.cloudinary.com/aessymvl/image/upload/v1786543850/Business_ootwt8.png',
       imageAlt: 'Business owner walking through factory discussing growth with consultant'
     }
@@ -191,7 +191,7 @@ export const Hero: React.FC<HeroProps> = ({
     {
       icon: Layers,
       title: '3. Track Your Project',
-      description: 'Use our interactive dashboard to manage documents and monitor loan application progress.'
+      description: 'Use our interactive dashboard to manage documents and monitor project readiness.'
     },
     {
       icon: Users2,
@@ -323,13 +323,10 @@ export const Hero: React.FC<HeroProps> = ({
 
       {/* INDUSTRIES / SECTORS CAROUSEL */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 sm:mt-8">
-        <div className="mb-6 text-center max-w-2xl mx-auto space-y-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+        <div className="mb-3 text-center max-w-2xl mx-auto">
+          <span className="inline-block text-[11px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
             Sectors & Industries
           </span>
-          <h2 className="font-manrope text-lg sm:text-xl lg:text-2xl font-semibold text-slate-900 tracking-tight">
-            Loans Customized for Every Industry
-          </h2>
         </div>
 
         {/* Carousel Container with Continuous Motion */}
@@ -373,17 +370,17 @@ export const Hero: React.FC<HeroProps> = ({
       </section>
 
 
-      {/* HOW INISIO HELPS YOU GET A LOAN (Simple Everyday English) */}
+      {/* HOW INISIO HELPS WITH PROJECT ASSESSMENT (Simple Everyday English) */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 sm:mt-12 space-y-8">
         <div className="text-center max-w-2xl mx-auto space-y-2">
           <span className="text-xs font-semibold uppercase tracking-wider text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
             How Inisio Helps You
           </span>
           <h2 className="font-manrope text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight">
-            Getting a Bank Project Loan Made Simple
+            Greenfield Project Assessment Made Simple
           </h2>
           <p className="text-xs sm:text-sm text-slate-600">
-            We handle the hard work so you can get loan approval from top banks without hassle.
+            We handle the hard work so you can ensure your project is viable, bankable, and ready for institutional funding.
           </p>
         </div>
 
@@ -414,18 +411,101 @@ export const Hero: React.FC<HeroProps> = ({
       </section>
 
 
+      {/* TANGIBLE OUTPUTS OF YOUR FREE ASSESSMENT */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 sm:mt-16">
+        <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-10 border border-slate-800 shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative z-10 space-y-8">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-800 pb-6">
+              <div className="space-y-2 text-left">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider">
+                  <Award className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>100% Free First Project Assessment</span>
+                </div>
+                <h2 className="font-manrope text-xl sm:text-2xl lg:text-3xl font-extrabold text-white tracking-tight">
+                  Tangible Outputs You Receive in Your Free Report
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-300 max-w-2xl font-inter">
+                  Evaluate your greenfield project with bank-grade precision before spending on expensive DPRs or approaching lenders.
+                </p>
+              </div>
+              <button
+                onClick={onOpenAssessment}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-manrope font-bold text-xs sm:text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+              >
+                <Calculator className="w-4 h-4" />
+                <span>Start Free Assessment</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-left">
+              <div className="p-4 bg-slate-800/60 rounded-2xl border border-slate-700/70 space-y-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-sm">
+                  01
+                </div>
+                <h3 className="font-manrope font-bold text-sm text-white">Bankability Rating (AAA to BBB)</h3>
+                <p className="text-xs text-slate-300 leading-relaxed font-inter">
+                  Instant credit rating estimate assessing promoter margin, collateral coverage, and experience benchmarks.
+                </p>
+              </div>
+
+              <div className="p-4 bg-slate-800/60 rounded-2xl border border-slate-700/70 space-y-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm">
+                  02
+                </div>
+                <h3 className="font-manrope font-bold text-sm text-white">Debt Capacity & DSCR Estimates</h3>
+                <p className="text-xs text-slate-300 leading-relaxed font-inter">
+                  Underwriting debt-to-equity ratios and debt service coverage thresholds aligned with institutional lending norms.
+                </p>
+              </div>
+
+              <div className="p-4 bg-slate-800/60 rounded-2xl border border-slate-700/70 space-y-2">
+                <div className="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-sm">
+                  03
+                </div>
+                <h3 className="font-manrope font-bold text-sm text-white">Means of Finance & Capex Model</h3>
+                <p className="text-xs text-slate-300 leading-relaxed font-inter">
+                  Detailed capital outlay distribution across plant & machinery, civil structures, and working capital buffers.
+                </p>
+              </div>
+
+              <div className="p-4 bg-slate-800/60 rounded-2xl border border-slate-700/70 space-y-2">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-sm">
+                  04
+                </div>
+                <h3 className="font-manrope font-bold text-sm text-white">Bankable Executive Teaser (PDF)</h3>
+                <p className="text-xs text-slate-300 leading-relaxed font-inter">
+                  Downloadable institutional teaser summary formatted for lender appraisal desks and credit committees.
+                </p>
+              </div>
+
+              <div className="p-4 bg-slate-800/60 rounded-2xl border border-slate-700/70 space-y-2">
+                <div className="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-sm">
+                  05
+                </div>
+                <h3 className="font-manrope font-bold text-sm text-white">Dedicated CA Advisory Guidance</h3>
+                <p className="text-xs text-slate-300 leading-relaxed font-inter">
+                  Direct consultation option with senior project finance CAs to refine financial models and address query gaps.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* WHY CHOOSE INISIO (Simple Comparison - Light Theme) */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 sm:mt-16">
         <div className="bg-gradient-to-b from-blue-50/70 to-slate-50 rounded-3xl p-6 sm:p-10 border border-blue-100 shadow-sm space-y-8">
           <div className="text-center max-w-xl mx-auto space-y-2">
             <span className="text-xs font-semibold uppercase tracking-wider text-blue-700 bg-white px-3 py-1 rounded-full border border-blue-200 shadow-2xs">
-              Why Apply With Inisio
+              Why Assess With Inisio
             </span>
             <h2 className="font-manrope text-xl sm:text-2xl font-semibold text-slate-900 tracking-tight">
               Higher Approval. Zero Stress.
             </h2>
             <p className="text-xs sm:text-sm text-slate-600">
-              See why thousands of business owners trust Inisio for bank loans.
+              See why thousands of project promoters trust Inisio for greenfield project assessment.
             </p>
           </div>
 
@@ -439,7 +519,7 @@ export const Hero: React.FC<HeroProps> = ({
               <ul className="space-y-2.5 text-xs sm:text-sm text-slate-700 leading-relaxed">
                 <li className="flex items-start gap-2">
                   <span className="text-rose-500 font-bold">•</span>
-                  <span>High risk of bank loan rejection due to missing or wrongly formatted documents.</span>
+                  <span>High risk of project rejection due to missing or wrongly formatted documents.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-rose-500 font-bold">•</span>
@@ -456,7 +536,7 @@ export const Hero: React.FC<HeroProps> = ({
             <div className="bg-white rounded-2xl p-6 border border-blue-500/80 shadow-xs space-y-3 text-left relative overflow-hidden">
               <div className="flex items-center gap-2 text-blue-700 font-bold text-xs uppercase tracking-wider">
                 <CheckCircle2 className="w-4 h-4 text-blue-600" />
-                <span>Applying With Inisio</span>
+                <span>Assessing With Inisio</span>
               </div>
               <ul className="space-y-2.5 text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
                 <li className="flex items-start gap-2">
@@ -465,11 +545,11 @@ export const Hero: React.FC<HeroProps> = ({
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-blue-600 font-bold">•</span>
-                  <span>Dedicated loan advisor handles your application from start to finish.</span>
+                  <span>Dedicated assessment advisor handles your evaluation from start to finish.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-blue-600 font-bold">•</span>
-                  <span>Maximized loan sanction amount with complete advice on bank schemes.</span>
+                  <span>Comprehensive feasibility report with complete advice on institutional requirements.</span>
                 </li>
               </ul>
             </div>
@@ -481,7 +561,7 @@ export const Hero: React.FC<HeroProps> = ({
               className="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all inline-flex items-center gap-2 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
             >
               <Calculator className="w-4 h-4" />
-              <span>Check Your Project Loan Eligibility Now</span>
+              <span>Start Free Assessment</span>
             </button>
           </div>
 

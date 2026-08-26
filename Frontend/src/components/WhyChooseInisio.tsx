@@ -41,7 +41,7 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
     {
       step: '2',
       title: 'PREPARE',
-      desc: 'We assess loan eligibility and compile bank-grade documents.',
+      desc: 'We assess funding readiness and compile bank-grade documents.',
       icon: FileText
     },
     {
@@ -53,7 +53,7 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
     {
       step: '4',
       title: 'GET FUNDED',
-      desc: 'Secure the business loan you need to grow and expand.',
+      desc: 'Secure the institutional funding you need to grow and expand.',
       icon: CheckCircle2,
       isSuccess: true
     }
@@ -62,13 +62,13 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
   // SECTION 2: What We Help You With
   const whatWeHelpWith = [
     {
-      title: 'Loan Eligibility',
-      desc: 'Understand your funding requirements and loan eligibility.',
+      title: 'Funding Readiness',
+      desc: 'Understand your funding requirements and institutional readiness.',
       icon: CheckSquare
     },
     {
       title: 'Documentation',
-      desc: 'Prepare the necessary documents for your business loan application.',
+      desc: 'Prepare the necessary documents for your project funding application.',
       icon: FileText
     },
     {
@@ -94,7 +94,7 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
     {
       num: '02',
       title: 'Eligibility Check',
-      desc: 'Assess your loan eligibility and funding requirements.',
+      desc: 'Assess your funding readiness and requirements.',
       icon: Calculator
     },
     {
@@ -111,7 +111,7 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
     },
     {
       num: '05',
-      title: 'Loan Application',
+      title: 'Funding Application',
       desc: 'Support you through the application process.',
       icon: Send
     },
@@ -128,7 +128,7 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
   const whyChooseBenefits = [
     {
       title: 'Create Your Own Dashboard',
-      desc: 'Track your project progress and manage your loan application seamlessly.'
+      desc: 'Track your project progress and manage your assessment seamlessly.'
     },
     {
       title: 'Business-Focused Guidance',
@@ -190,12 +190,12 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
             </div>
 
             <h1 className="font-manrope text-2xl sm:text-3xl lg:text-4xl font-bold text-[#111827] leading-tight tracking-tight">
-              Your Business Needs Funding. We Help You Get the Right Loan.
+              Your Project Needs Institutional Funding. We Help You Prepare.
             </h1>
 
             <div className="space-y-4 font-inter text-sm sm:text-base text-[#4B5563] leading-relaxed">
               <p>
-                Starting or growing a business often requires funding. But finding the right loan, understanding eligibility, preparing documents, and approaching banks can be difficult.
+                Starting or growing a project often requires funding. But finding the right structure, understanding eligibility, preparing documents, and approaching institutions can be difficult.
               </p>
 
               <p className="font-semibold text-blue-700 text-base sm:text-lg">
@@ -203,7 +203,7 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
               </p>
 
               <p>
-                Inisio makes the business loan process simpler. We understand your business and funding requirements, help you assess your loan eligibility, prepare the necessary documents, and guide you toward suitable banks and financial institutions for your business loan.
+                Inisio makes the project assessment process simpler. We understand your project and funding requirements, help you assess your institutional readiness, prepare the necessary documents, and guide you toward suitable banks and financial institutions for your project funding.
               </p>
 
               <p>
@@ -214,7 +214,7 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
             {/* Highlighted Statement */}
             <div className="bg-blue-50/80 border-l-4 border-blue-600 p-4 sm:p-5 rounded-r-xl shadow-xs">
               <p className="font-manrope text-base sm:text-lg font-bold text-blue-950">
-                “We help you go from business plan to business loan.”
+                “We help you go from business plan to funding ready.”
               </p>
             </div>
           </div>
@@ -299,7 +299,7 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
                     </div>
                     <div>
                       <div className="text-xs font-bold text-emerald-950 flex items-center gap-1">
-                        Business Loan Disbursal
+                        Institutional Funding Readied
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                       </div>
                       <div className="text-[11px] text-emerald-800">Approved funding for growth</div>
@@ -584,11 +584,11 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
           <div className="relative max-w-[620px] mx-auto space-y-4">
             <div className="inline-flex items-center gap-1.5 text-xs font-semibold tracking-wider text-blue-300 bg-blue-900/60 px-3.5 py-1 rounded-full border border-blue-700/50 uppercase">
               <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
-              <span>Inisio Loan Advisory</span>
+              <span>Inisio Project Assessment</span>
             </div>
 
             <h2 className="font-manrope text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
-              Looking for a Project Loan?
+              Ready to Assess Your Greenfield Project?
             </h2>
 
             <p className="font-inter text-sm sm:text-base text-slate-300 leading-relaxed max-w-lg mx-auto">
@@ -601,7 +601,8 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
                 className="w-full sm:w-auto px-6 py-3.5 text-sm font-bold text-slate-950 bg-blue-400 hover:bg-blue-300 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
               >
                 <Calculator className="w-4 h-4 text-slate-950" />
-                <span>Check Loan Eligibility →</span>
+                <span>Start Free Assessment</span>
+                <ArrowRight className="w-4 h-4" />
               </button>
 
               {onOpenConsultation && (

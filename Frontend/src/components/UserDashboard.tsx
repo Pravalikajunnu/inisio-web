@@ -83,15 +83,15 @@ export interface UserProjectDetail {
   assignedCA: string;
   assignedBank: string;
   financials?: {
-    consultancyCostCr?: string;
-    machineryCostCr?: string;
-    civilCostCr?: string;
-    otherCostsCr?: string;
-    termLoanCr?: string;
-    promoterContributionCr?: string;
-    otherFinanceCr?: string;
-    totalProjectCost?: string;
-    totalMeansOfFinance?: string;
+    consultancyCostCr?: string | number;
+    machineryCostCr?: string | number;
+    civilCostCr?: string | number;
+    otherCostsCr?: string | number;
+    termLoanCr?: string | number;
+    promoterContributionCr?: string | number;
+    otherFinanceCr?: string | number;
+    totalProjectCost?: string | number;
+    totalMeansOfFinance?: string | number;
   };
   downloadedDate: string;
   downloadedPDF: boolean;
@@ -489,7 +489,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
     {
       id: 2,
       name: 'Bankability Rating',
-      description: 'Evaluate your project’s loan eligibility and financial strength.',
+      description: 'Evaluate your project’s funding eligibility and financial strength.',
       icon: Gauge,
       isCompleted: isRatingCompleted,
       isInProgress: isAssessmentCompleted && !isRatingCompleted,
@@ -507,7 +507,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
     {
       id: 4,
       name: 'Bank Application',
-      description: 'Submit your loan application to suitable banks.',
+      description: 'Submit your funding application to suitable institutions.',
       icon: Landmark,
       isCompleted: isBankAppCompleted,
       isInProgress: isDocCompleted && !isBankAppCompleted,
@@ -515,8 +515,8 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
     },
     {
       id: 5,
-      name: 'Loan Approval',
-      description: 'Get approval from the bank with loan terms.',
+      name: 'Funding Approval',
+      description: 'Get approval from the institution with funding terms.',
       icon: ShieldCheck,
       isCompleted: isLoanApproved,
       isInProgress: isBankAppCompleted && !isLoanApproved,
@@ -649,7 +649,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                     <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500">
                       <Building2 className="w-5 h-5" />
                     </div>
-                    <span className="font-semibold text-slate-600 text-sm">Total Loan Required</span>
+                    <span className="font-semibold text-slate-600 text-sm">Total Funding Required</span>
                   </div>
                   <div className="flex justify-between items-end">
                     <div>
@@ -723,7 +723,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                         <th className="px-6 py-4 font-medium border-b border-zinc-100">Project</th>
                         <th className="px-6 py-4 font-medium border-b border-zinc-100">Industry</th>
                         <th className="px-6 py-4 font-medium border-b border-zinc-100">Total Cost</th>
-                        <th className="px-6 py-4 font-medium border-b border-zinc-100">Loan Req.</th>
+                        <th className="px-6 py-4 font-medium border-b border-zinc-100">Funding Req.</th>
                         <th className="px-6 py-4 font-medium border-b border-zinc-100">Status</th>
                         <th className="px-6 py-4 font-medium border-b border-zinc-100">Created Date</th>
                         <th className="px-6 py-4 font-medium border-b border-zinc-100 text-right">Action</th>
@@ -1015,7 +1015,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               </div>
 
               <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-100">
-                <span className="text-[11px] font-medium text-zinc-400 block uppercase tracking-wider">Bank Term Loan</span>
+                <span className="text-[11px] font-medium text-zinc-400 block uppercase tracking-wider">Institutional Term Debt</span>
                 <div className="text-lg font-bold text-blue-600 mt-1">₹ {activeProject.loanRequiredCr} Cr</div>
                 <span className="text-[11px] text-zinc-500 font-medium">{activeProject.debtPercent}% Debt Ratio</span>
               </div>
@@ -1085,7 +1085,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                     </div>
                     <div>
                       <h2 className="text-lg sm:text-xl font-bold text-zinc-900">Your Journey with Inisio</h2>
-                      <p className="text-sm text-zinc-500 mt-0.5">Track real-time progress of your greenfield bank loan syndication.</p>
+                      <p className="text-sm text-zinc-500 mt-0.5">Track real-time progress of your greenfield funding syndication.</p>
                     </div>
                   </div>
                   <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
@@ -1202,16 +1202,49 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                         {/* SECTION 2: PROJECT COST & MEANS OF FINANCE */}
             {(activeSectionView === 'all' || activeSectionView === 'financials') && (() => {
               const fin = activeProject.financials || {};
-              const cCost = parseFloat(fin.consultancyCostCr) || (activeProject.totalCostCr ? activeProject.totalCostCr * 5 : 0);
-              const mCost = parseFloat(fin.machineryCostCr) || (activeProject.totalCostCr ? activeProject.totalCostCr * 60 : 0);
-              const lCost = parseFloat(fin.civilCostCr) || (activeProject.totalCostCr ? activeProject.totalCostCr * 30 : 0);
-              const oCost = parseFloat(fin.otherCostsCr) || (activeProject.totalCostCr ? activeProject.totalCostCr * 5 : 0);
-              const totalCost = parseFloat(fin.totalProjectCost) || (cCost + mCost + lCost + oCost) || (activeProject.totalCostCr ? activeProject.totalCostCr * 100 : 0);
+              const projTotalCost = parseFloat(String(activeProject.totalCostCr || '0')) || 0;
+              const projLoanReq = parseFloat(String(activeProject.loanRequiredCr || '0')) || 0;
+              const projPromoterContrib = parseFloat(String(activeProject.promoterContribCr || '0')) || 0;
 
-              const tLoan = parseFloat(fin.termLoanCr) || (activeProject.loanRequiredCr ? activeProject.loanRequiredCr * 100 : 0);
-              const pContrib = parseFloat(fin.promoterContributionCr) || (activeProject.promoterContribCr ? activeProject.promoterContribCr * 100 : 0);
-              const oFin = parseFloat(fin.otherFinanceCr) || 0;
-              const totalFin = parseFloat(fin.totalMeansOfFinance) || (tLoan + pContrib + oFin) || totalCost;
+              // Read user's actual entered values if present in financials object
+              const hasExplicitFin = (fin.consultancyCostCr !== undefined && fin.consultancyCostCr !== '') ||
+                                     (fin.machineryCostCr !== undefined && fin.machineryCostCr !== '') ||
+                                     (fin.civilCostCr !== undefined && fin.civilCostCr !== '') ||
+                                     (fin.otherCostsCr !== undefined && fin.otherCostsCr !== '');
+
+              const cCost = hasExplicitFin && fin.consultancyCostCr !== undefined && fin.consultancyCostCr !== '' 
+                ? (parseFloat(String(fin.consultancyCostCr)) || 0) 
+                : (projTotalCost > 0 ? (Math.round(projTotalCost * 0.05 * 100) / 100) : 0);
+
+              const mCost = hasExplicitFin && fin.machineryCostCr !== undefined && fin.machineryCostCr !== '' 
+                ? (parseFloat(String(fin.machineryCostCr)) || 0) 
+                : (projTotalCost > 0 ? (Math.round(projTotalCost * 0.60 * 100) / 100) : 0);
+
+              const lCost = hasExplicitFin && fin.civilCostCr !== undefined && fin.civilCostCr !== '' 
+                ? (parseFloat(String(fin.civilCostCr)) || 0) 
+                : (projTotalCost > 0 ? (Math.round(projTotalCost * 0.30 * 100) / 100) : 0);
+
+              const oCost = hasExplicitFin && fin.otherCostsCr !== undefined && fin.otherCostsCr !== '' 
+                ? (parseFloat(String(fin.otherCostsCr)) || 0) 
+                : (projTotalCost > 0 ? (Math.round(projTotalCost * 0.05 * 100) / 100) : 0);
+
+              const totalCost = fin.totalProjectCost !== undefined && fin.totalProjectCost !== '' && parseFloat(String(fin.totalProjectCost)) > 0
+                ? parseFloat(String(fin.totalProjectCost))
+                : ((cCost + mCost + lCost + oCost) > 0 ? (cCost + mCost + lCost + oCost) : projTotalCost);
+
+              const tLoan = fin.termLoanCr !== undefined && fin.termLoanCr !== '' && parseFloat(String(fin.termLoanCr)) > 0
+                ? parseFloat(String(fin.termLoanCr))
+                : (projLoanReq > 0 ? projLoanReq : (projTotalCost > 0 ? (Math.round(projTotalCost * 0.70 * 100) / 100) : 0));
+
+              const pContrib = fin.promoterContributionCr !== undefined && fin.promoterContributionCr !== '' && parseFloat(String(fin.promoterContributionCr)) > 0
+                ? parseFloat(String(fin.promoterContributionCr))
+                : (projPromoterContrib > 0 ? projPromoterContrib : (projTotalCost > 0 ? (Math.round(projTotalCost * 0.30 * 100) / 100) : 0));
+
+              const oFin = fin.otherFinanceCr !== undefined && fin.otherFinanceCr !== '' ? (parseFloat(String(fin.otherFinanceCr)) || 0) : 0;
+
+              const totalFin = fin.totalMeansOfFinance !== undefined && fin.totalMeansOfFinance !== '' && parseFloat(String(fin.totalMeansOfFinance)) > 0
+                ? parseFloat(String(fin.totalMeansOfFinance))
+                : ((tLoan + pContrib + oFin) > 0 ? (tLoan + pContrib + oFin) : totalCost);
               
               const debtPctNum = totalFin > 0 ? (tLoan / totalFin) * 100 : 0;
               const eqPctNum = totalFin > 0 ? (pContrib / totalFin) * 100 : 0;
@@ -1272,7 +1305,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                     </h3>
                     <div className="space-y-3">
                       <div className="flex justify-between text-sm items-center">
-                        <span className="text-zinc-600">Project Term Loan</span>
+                        <span className="text-zinc-600">Project Term Debt</span>
                         <div className="text-right">
                           <span className="font-semibold text-zinc-900">₹ {tLoan.toLocaleString('en-IN', {maximumFractionDigits: 2})} Cr</span>
                           <span className="text-xs text-emerald-600 ml-2">({debtPctNum.toFixed(1)}%)</span>

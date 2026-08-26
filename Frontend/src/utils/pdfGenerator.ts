@@ -342,7 +342,8 @@ export function generateProjectTeaserPDF(data: TeaserPDFData, action: 'download'
   y += 6;
 
   const totalFinCr = (parseFloat(userTermLoanCr) + parseFloat(userPromoterCr) + parseFloat(userOtherFinCr)).toFixed(2);
-  const calcPct = (amt) => totalFinCr > 0 ? ((parseFloat(amt) / totalFinCr) * 100).toFixed(1) + '%' : '0.0%';
+  const totalFinNum = parseFloat(totalFinCr);
+  const calcPct = (amt: string | number) => totalFinNum > 0 ? ((parseFloat(String(amt || 0)) / totalFinNum) * 100).toFixed(1) + '%' : '0.0%';
   
   const meansRows = [
     { name: 'Project Term Loan', amt: `${userTermLoanCr} Cr`, pct: calcPct(userTermLoanCr) },

@@ -68,7 +68,7 @@ export interface Testimonial {
 
 export interface FAQItem {
   id: string;
-  category: 'Assessment' | 'Loan Process' | 'DPR' | 'Feasibility';
+  category: 'Assessment' | 'Funding Process' | 'DPR' | 'Feasibility';
   question: string;
   answer: string;
 }

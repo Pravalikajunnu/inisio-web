@@ -22,7 +22,10 @@ import {
   Users2,
   BarChart3,
   BadgeCheck,
-  Layers
+  Layers,
+  FileText,
+  CreditCard,
+  Target
 } from 'lucide-react';
 
 interface HowItWorksProps {
@@ -46,83 +49,99 @@ interface StepItem {
 export const HOW_IT_WORKS_STEPS: StepItem[] = [
   {
     number: 1,
-    id: 'assessment',
-    title: 'Project Assessment',
-    shortTitle: 'Assessment',
-    timeframe: 'Minute 1',
-    description: 'Answer a few simple questions about your greenfield project, including cost, location, and industry, to get started.',
-    icon: FileSearch,
+    id: 'tell-us',
+    title: 'Tell Us About Your Project',
+    shortTitle: 'Project Details',
+    timeframe: 'Step 01',
+    description: 'Share initial information about your project vision, target industry, land status, planned capacity, and capital requirements.',
+    icon: MessageSquare,
     points: [
-      'Basic project details',
-      'Capital cost breakdown',
-      'Location and industry',
-      'Promoter experience'
+      'Industry sector & project concept',
+      'Proposed location & land acquisition status',
+      'Target production capacity & machinery scope',
+      'Estimated capital expenditure & timeline'
     ],
-    deliverables: ['Instant Data Processing', 'Initial Review']
+    deliverables: ['Project Intake Record', 'Initial Parameter Setup']
   },
   {
     number: 2,
-    id: 'rating',
-    title: 'Bankability Rating',
-    shortTitle: 'Bankability',
-    timeframe: 'Minute 2',
-    description: 'Our proprietary algorithm instantly calculates your project\'s feasibility score and bankability rating.',
-    icon: BarChart3,
+    id: 'assess-project',
+    title: 'Assess Your Project',
+    shortTitle: 'Assess Project',
+    timeframe: 'Step 02',
+    description: 'Structure your project financial model, capital cost breakdown (civil, machinery, consultancy), and means of finance.',
+    icon: FileSearch,
     points: [
-      'Debt Service Coverage Ratio (DSCR)',
-      'Equity contribution check',
-      'Financial feasibility score',
-      'Automated risk analysis'
+      'Civil works & plant machinery cost analysis',
+      'Promoter equity vs debt capital sizing',
+      'Operational expense & revenue projections',
+      'Capacity utilization & breakeven modeling'
     ],
-    deliverables: ['Bankability Rating', 'Feasibility Score']
+    deliverables: ['Feasibility Analysis', 'Capex & Means of Finance']
   },
   {
     number: 3,
-    id: 'confidence',
-    title: 'Get Confidence',
-    shortTitle: 'Confidence',
-    timeframe: 'Minute 3',
-    description: 'Receive an instant Executive Teaser and a risk profile summary to understand your project\'s strengths before approaching banks.',
-    icon: ShieldCheck,
+    id: 'credit-profile',
+    title: 'Check Your Credit Profile',
+    shortTitle: 'Credit Profile',
+    timeframe: 'Step 03',
+    description: 'Evaluate promoter background, management track record, existing credit history, and equity contribution readiness.',
+    icon: CreditCard,
     points: [
-      'Executive Teaser generation',
-      'Risk profile summary',
-      'Strengths and weaknesses',
-      'Project readiness check'
+      'Promoter net worth & solvency review',
+      'Past project execution experience',
+      'Collateral & security coverage ratio',
+      'Institutional banking compliance checks'
     ],
-    deliverables: ['Executive Teaser PDF', 'Risk Profile Report']
+    deliverables: ['Promoter Risk Score', 'Equity Readiness Check']
   },
   {
     number: 4,
-    id: 'dashboard',
-    title: 'Interactive Dashboard',
-    shortTitle: 'Dashboard',
-    timeframe: 'Ongoing',
-    description: 'Track your project\'s progress, manage documents, and monitor your loan application stages in real-time.',
-    icon: Layers,
+    id: 'bankability-insights',
+    title: 'Get Bankability Insights',
+    shortTitle: 'Bankability Insights',
+    timeframe: 'Step 04',
+    description: 'Receive instant institutional underwriting metrics including DSCR thresholds, debt service capacity, and a bankability rating from AAA to BBB.',
+    icon: BarChart3,
     points: [
-      'Real-time status tracking',
-      'Document management',
-      'Stage-by-stage progress',
-      'Centralized communication'
+      'Proprietary Bankability Scorecard (AAA to BBB)',
+      'DSCR, ISCR & Debt-to-Equity benchmarks',
+      'Sensitivity stress testing for raw material & revenue shocks',
+      'Credit committee approval probability'
     ],
-    deliverables: ['Client Portal Access', 'Document Vault']
+    deliverables: ['Bankability Rating', 'DSCR & Debt Capacity Matrix']
   },
   {
     number: 5,
-    id: 'advisory',
-    title: 'Immediate Advisory Support',
-    shortTitle: 'Advisory',
-    timeframe: 'On-Demand',
-    description: 'Get connected with dedicated Chartered Accountants and banking experts for DPR drafting, CMA modeling, and financial structuring.',
-    icon: Users2,
+    id: 'download-teaser',
+    title: 'Download AI Project Teaser',
+    shortTitle: 'AI Teaser PDF',
+    timeframe: 'Step 05',
+    description: 'Generate and download a comprehensive, professional Executive Project Teaser formatted specifically for institutional lenders and investors.',
+    icon: FileText,
     points: [
-      'DPR preparation',
-      'CMA data modeling',
-      'Bank negotiation support',
-      'Chartered Accountant guidance'
+      'Institutional-grade Executive Summary',
+      'Means of Finance & Capital Outlay summary',
+      'Key financial ratios & DSCR metrics',
+      'Downloadable high-resolution PDF document'
     ],
-    deliverables: ['Bank-Ready DPR', 'Dedicated CA Support']
+    deliverables: ['Executive Project Teaser PDF', 'Summary Risk Profile']
+  },
+  {
+    number: 6,
+    id: 'next-step-funding',
+    title: 'Choose Your Next Step / Move Towards Funding',
+    shortTitle: 'Move Towards Funding',
+    timeframe: 'Step 06',
+    description: 'Collaborate with dedicated Chartered Accountants and Project Finance specialists for bank-ready DPR preparation, CMA modeling, and institutional sanction support.',
+    icon: Target,
+    points: [
+      'Comprehensive Bank-Grade DPR preparation',
+      'CMA data modeling & 7-10 year financial projections',
+      'Bank appraisal & TEV study coordination',
+      'End-to-end guidance towards loan sanction'
+    ],
+    deliverables: ['Bank-Ready DPR', 'Dedicated CA Advisory Support']
   }
 ];
 
@@ -143,22 +162,22 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
         <section className="text-center max-w-3xl mx-auto space-y-4">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-[11px] font-semibold uppercase tracking-wider shadow-2xs">
             <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-            <span>Project Loan Advisory Platform (Not a Bank)</span>
+            <span>Project Assessment Platform (Not a Bank)</span>
           </div>
 
           <h1 className="font-manrope text-2xl sm:text-3xl lg:text-4xl font-semibold text-slate-900 tracking-tight leading-snug">
-            Your Step-by-Step Journey to a <span className="text-blue-600 font-bold">Successful Project Loan</span>
+            Your Step-by-Step Journey to <span className="text-blue-600 font-bold">Institutional Funding Readiness</span>
           </h1>
 
           <p className="font-inter text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl mx-auto font-normal">
-            From your business idea to project loan sanction and fund disbursement, Inisio guides you through every stage with expert advisory, bank-ready documentation, and complete project finance support.
+            From your business idea to funding readiness, Inisio guides you through every stage with expert advisory, bank-ready documentation, and complete project finance support.
           </p>
 
           {/* Highlight Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 max-w-3xl mx-auto">
             <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl text-center shadow-2xs hover:border-blue-300 transition-colors">
               <Briefcase className="w-5 h-5 text-blue-600 mx-auto mb-1.5" />
-              <h3 className="text-xs sm:text-sm font-bold text-slate-900 font-manrope">Project Loan Experts</h3>
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900 font-manrope">Project Finance Experts</h3>
             </div>
             <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl text-center shadow-2xs hover:border-blue-300 transition-colors">
               <FileCheck className="w-5 h-5 text-blue-600 mx-auto mb-1.5" />
@@ -166,7 +185,7 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
             </div>
             <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl text-center shadow-2xs hover:border-blue-300 transition-colors">
               <Clock className="w-5 h-5 text-blue-600 mx-auto mb-1.5" />
-              <h3 className="text-xs sm:text-sm font-bold text-slate-900 font-manrope">Faster Loan Processing</h3>
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900 font-manrope">Faster Due Diligence</h3>
             </div>
             <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl text-center shadow-2xs hover:border-blue-300 transition-colors">
               <ShieldCheck className="w-5 h-5 text-blue-600 mx-auto mb-1.5" />
@@ -180,7 +199,7 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
               onClick={onOpenAssessment}
               className="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-manrope font-bold text-sm sm:text-base rounded-xl transition-all shadow-md hover:shadow-blue-500/25 flex items-center gap-2 cursor-pointer"
             >
-              <span>Start Project Assessment</span>
+              <span>Start Free Assessment</span>
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
@@ -202,10 +221,10 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
             <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-200/80">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-800 uppercase tracking-wider font-manrope">
-                  5-Step Project Loan Process
+                  6-Step Project Journey
                 </span>
                 <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
-                  Step {activeStep} of 5: {HOW_IT_WORKS_STEPS[activeStep - 1]?.title}
+                  Step {activeStep} of 6: {HOW_IT_WORKS_STEPS[activeStep - 1]?.title}
                 </span>
               </div>
 
@@ -224,11 +243,11 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
                 </button>
                 <button
                   onClick={() => {
-                    const next = Math.min(5, activeStep + 1);
+                    const next = Math.min(6, activeStep + 1);
                     setActiveStep(next);
                     document.getElementById(`step-${next}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                   }}
-                  disabled={activeStep === 5}
+                  disabled={activeStep === 6}
                   className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-2xs"
                 >
                   Next →
@@ -237,7 +256,7 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
             </div>
 
             {/* Step Selector Buttons Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
               {HOW_IT_WORKS_STEPS.map((step) => {
                 const isActive = activeStep === step.number;
                 const isCompleted = activeStep > step.number;
@@ -396,7 +415,7 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
               Proven Advisory Track Record
             </span>
             <h2 className="font-manrope text-2xl sm:text-3xl font-extrabold text-white">
-              Greenfield Project Loan Expertise
+              Greenfield Project Assessment Expertise
             </h2>
           </div>
 
@@ -433,7 +452,7 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
               Why Choose Inisio
             </span>
             <h2 className="font-manrope text-2xl sm:text-3xl font-extrabold text-slate-900">
-              Your Trusted Project Loan Advisory Partner
+              Your Trusted Project Assessment Partner
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 font-inter">
               We help you prepare, apply, and secure Greenfield Project funding without confusion or delays.
@@ -447,7 +466,7 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
                 <Briefcase className="w-5 h-5" />
               </div>
               <h3 className="font-manrope text-base font-bold text-slate-900">
-                Project Loan Specialists
+                Project Assessment Specialists
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
                 Experts in Greenfield Project financing.
@@ -473,7 +492,7 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
                 <Clock className="w-5 h-5" />
               </div>
               <h3 className="font-manrope text-base font-bold text-slate-900">
-                Faster Loan Processing
+                Faster Due Diligence
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
                 Reduce delays with complete documentation and dedicated support.
@@ -489,7 +508,7 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
                 Complete Project Finance Support
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                From idea validation to loan disbursement.
+                From idea validation to funding readiness.
               </p>
             </div>
           </div>
@@ -511,11 +530,11 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
               </div>
 
               <h2 className="font-manrope text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
-                Ready to Get Your Project Loan?
+                Ready to Assess Your Greenfield Project?
               </h2>
 
               <p className="font-inter text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl mx-auto">
-                Whether you're setting up a manufacturing unit, food processing plant, warehouse, hospital, hotel, renewable energy project, or any other Greenfield Project, Inisio helps you prepare, apply, and secure the right Project Loan with confidence.
+                Whether you're setting up a manufacturing unit, food processing plant, warehouse, hospital, hotel, renewable energy project, or any other Greenfield Project, Inisio helps you evaluate its viability and prepare for institutional funding with confidence.
               </p>
 
               {/* Action Buttons */}
@@ -524,7 +543,7 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
                   onClick={onOpenAssessment}
                   className="px-7 py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-manrope font-bold text-sm sm:text-base rounded-xl transition-all shadow-md hover:shadow-blue-500/25 flex items-center gap-2.5 cursor-pointer"
                 >
-                  <span>Start Project Assessment</span>
+                  <span>Start Free Assessment</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
 
@@ -533,7 +552,7 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
                   className="px-7 py-3.5 bg-white/10 hover:bg-white/15 text-white border border-white/20 font-manrope font-semibold text-sm sm:text-base rounded-xl transition-all hover:border-white/40 cursor-pointer flex items-center gap-2"
                 >
                   <PhoneCall className="w-4 h-4" />
-                  <span>Talk to a Project Loan Expert</span>
+                  <span>Talk to an Assessment Expert</span>
                 </button>
               </div>
 

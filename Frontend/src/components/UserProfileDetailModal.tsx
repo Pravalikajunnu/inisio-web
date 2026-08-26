@@ -265,7 +265,7 @@ export const UserProfileDetailModal: React.FC<UserProfileDetailModalProps> = ({
             <div className="flex items-center justify-between border-b border-zinc-100 pb-2">
               <h3 className="font-bold text-zinc-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-blue-600" />
-                <span>Project Loan Progress Lifecycle</span>
+                <span>Project Assessment Progress Lifecycle</span>
               </h3>
               <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
                 Stage 3 of 9 Active

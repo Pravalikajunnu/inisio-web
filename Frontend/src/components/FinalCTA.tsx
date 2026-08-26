@@ -40,12 +40,20 @@ export const FinalCTA: React.FC<FinalCTAProps> = ({
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 font-inter">
               <button
-                onClick={onOpenConsultation}
-                className="w-full sm:w-auto px-6 py-3 text-xs sm:text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-md shadow-blue-500/20 hover:shadow-blue-glow transition-all flex items-center justify-center gap-2 group cursor-pointer"
+                onClick={onOpenAssessment}
+                className="w-full sm:w-auto px-7 py-3.5 text-xs sm:text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-xl shadow-md shadow-blue-500/20 hover:shadow-blue-glow transition-all flex items-center justify-center gap-2 group cursor-pointer"
               >
-                <PhoneCall className="w-4 h-4 text-white" />
-                <span>Book 1-on-1 Consultation</span>
+                <Calculator className="w-4 h-4 text-blue-100" />
+                <span>Start Free Assessment</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+
+              <button
+                onClick={onOpenConsultation}
+                className="w-full sm:w-auto px-6 py-3.5 text-xs sm:text-sm font-semibold text-white bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <PhoneCall className="w-4 h-4 text-blue-400" />
+                <span>Book 1-on-1 Consultation</span>
               </button>
             </div>
 

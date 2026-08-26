@@ -126,7 +126,7 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
     { id: 3, name: 'DPR & CMA Audit in Progress', desc: 'Balance sheet reconciliation & DSCR audit' },
     { id: 4, name: 'Financial Model Signed Off', desc: 'DSCR norms verified (>1.25x RBI standard)' },
     { id: 5, name: 'Bank Credit Committee Filing', desc: 'Targeting SBI, Canara, and HDFC Consortium' },
-    { id: 6, name: 'Sanction Letter Issuance', desc: 'Formal loan sanction approval' }
+    { id: 6, name: 'Sanction Letter Issuance', desc: 'Formal funding sanction approval' }
   ];
 
   return (
@@ -358,7 +358,7 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
                       <strong className="text-zinc-900 text-sm font-bold">₹ {selectedAudit.capexCr} Cr</strong>
                     </div>
                     <div>
-                      <span className="text-zinc-400 block text-[10px] uppercase font-medium">Loan Required</span>
+                      <span className="text-zinc-400 block text-[10px] uppercase font-medium">Funding Required</span>
                       <strong className="text-blue-600 text-sm font-bold">₹ {selectedAudit.loanCr} Cr</strong>
                     </div>
                     <div>
@@ -377,10 +377,10 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
                   </div>
                 </div>
 
-                {/* Vertical Loan Lifecycle Progress Line */}
+                {/* Vertical Funding Lifecycle Progress Line */}
                 <div className="space-y-2 pt-1">
                   <span className="text-zinc-400 font-semibold uppercase tracking-wider text-[10px] block">
-                    Loan Lifecycle Milestones
+                    Funding Lifecycle Milestones
                   </span>
 
                   <div className="space-y-3 relative before:absolute before:inset-0 before:left-3 before:h-full before:w-0.5 before:bg-zinc-200 before:z-0 pl-0.5 pt-1">

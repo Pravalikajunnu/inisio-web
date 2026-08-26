@@ -32,18 +32,18 @@ export interface BlogPost {
 export const SAMPLE_BLOGS: BlogPost[] = [
   {
     id: 'get-business-loan-india',
-    title: 'How to Get a Business Loan in India',
+    title: 'How to Prepare for Institutional Funding in India',
     category: 'Debt Syndication',
     date: '10 Aug 2026',
     readTime: '5 min read',
-    image: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=800&q=80',
-    summary: 'A step-by-step guide to applying for MSME and corporate business loans with bankable document preparation and interest rate optimization.',
+    image: 'https://images.unsplash.com/photo-1553729459-efe14ef6055d?auto=format&fit=crop&w=800&q=80',
+    summary: 'A step-by-step guide to applying for MSME and corporate institutional funding with bankable document preparation and interest rate optimization.',
     content: {
-      intro: 'Securing a business loan in India requires more than just filling out bank application forms. Indian PSU and private sector banks follow stringent credit underwriting frameworks that scrutinize promoter experience, collateral strength, cash flow projections, and debt-service coverage ratio (DSCR).',
+      intro: 'Securing a project funding in India requires more than just filling out bank application forms. Indian PSU and private sector banks follow stringent credit underwriting frameworks that scrutinize promoter experience, collateral strength, cash flow projections, and debt-service coverage ratio (DSCR).',
       sections: [
         {
-          heading: '1. Choose the Right Loan Structure',
-          body: 'Determine whether your project requires a Term Loan for capital assets (land, building, plant machinery) or a Working Capital Facility (Cash Credit / Overdraft) for raw materials and operational cycles.'
+          heading: '1. Understand the Right Funding Structure',
+          body: 'Determine whether your project requires a Term Debt for capital assets (land, building, plant machinery) or a Working Capital Facility (Cash Credit / Overdraft) for raw materials and operational cycles.'
         },
         {
           heading: '2. Prepare Bankable DPR & Financial Models',
@@ -70,7 +70,7 @@ export const SAMPLE_BLOGS: BlogPost[] = [
     image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80',
     summary: 'Learn what credit committees look for in Detailed Project Reports (DPR), debt-equity ratios, DSCR projections, and financial modeling.',
     content: {
-      intro: 'A Detailed Project Report (DPR) is the single most critical document submitted to bank credit committees. A poorly structured DPR leads to rejection or delays, whereas a professionally prepared DPR accelerates loan sanction.',
+      intro: 'A Detailed Project Report (DPR) is the single most critical document submitted to bank credit committees. A poorly structured DPR leads to rejection or delays, whereas a professionally prepared DPR accelerates funding sanction.',
       sections: [
         {
           heading: '1. Detailed Technical & Civil Estimates',
@@ -94,12 +94,12 @@ export const SAMPLE_BLOGS: BlogPost[] = [
   },
   {
     id: 'business-loan-eligibility-checklist',
-    title: 'Business Loan Eligibility Checklist',
+    title: 'Funding Readiness Checklist',
     category: 'Financial Checklist',
     date: '28 Jul 2026',
     readTime: '4 min read',
-    image: 'https://images.unsplash.com/photo-1554224154-26032ffc0d07?auto=format&fit=crop&w=800&q=80',
-    summary: 'Essential documents and eligibility parameters required by Indian public and private banks for fast-track loan sanction.',
+    image: 'https://images.unsplash.com/photo-1664575602554-2087b04935a5?auto=format&fit=crop&w=800&q=80',
+    summary: 'Essential documents and eligibility parameters required by Indian public and private banks for fast-track funding sanction.',
     content: {
       intro: 'To avoid back-and-forth bank queries, promoters should compile a complete credit dossier before approaching lenders. Having all documents ready reduces sanction turnaround time from months to weeks.',
       sections: [
@@ -125,14 +125,14 @@ export const SAMPLE_BLOGS: BlogPost[] = [
   },
   {
     id: 'top-reasons-loans-rejected',
-    title: 'Top Reasons Business Loans Get Rejected',
+    title: 'Top Reasons Project Funding Gets Rejected',
     category: 'Credit Underwriting',
     date: '20 Jul 2026',
     readTime: '5 min read',
     image: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=800&q=80',
     summary: 'Understand key red flags like low DSCR, improper land documentation, weak promoter contribution, and how Inisio resolves them.',
     content: {
-      intro: 'Over 40% of greenfield and expansion business loan applications in India face rejection during initial credit appraisal due to preventable technical or financial mismatches.',
+      intro: 'Over 40% of greenfield and expansion project funding applications in India face rejection during initial credit appraisal due to preventable technical or financial mismatches.',
       sections: [
         {
           heading: '1. Weak Promoter Contribution or Lack of Skin in the Game',
@@ -156,17 +156,17 @@ export const SAMPLE_BLOGS: BlogPost[] = [
   },
   {
     id: 'working-capital-vs-term-loan',
-    title: 'Working Capital vs Term Loan',
+    title: 'Working Capital vs Term Debt',
     category: 'Corporate Finance',
     date: '14 Jul 2026',
     readTime: '4 min read',
     image: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=800&q=80',
-    summary: 'Key differences between Cash Credit (CC) / Overdraft (OD) limits and Term Loans for capital expenditure and plant expansion.',
+    summary: 'Key differences between Cash Credit (CC) / Overdraft (OD) limits and Term Debts for capital expenditure and plant expansion.',
     content: {
       intro: 'Matching the right financial instrument to the right business need is essential for optimal interest costs and healthy working capital cycles.',
       sections: [
         {
-          heading: 'Term Loans for Long-Term Asset Creation',
+          heading: 'Term Debts for Long-Term Asset Creation',
           body: 'Term loans feature fixed repayment schedules (5 to 10 years) with moratorium periods. They are used exclusively for land, factory construction, and heavy machinery.'
         },
         {
@@ -175,19 +175,19 @@ export const SAMPLE_BLOGS: BlogPost[] = [
         },
         {
           heading: 'Hybrid Financing Strategy',
-          body: 'Successful greenfield ventures tie term loans to long-term assets while establishing a sanctioned CC limit to absorb seasonal inventory holding periods.'
+          body: 'Successful greenfield ventures tie term debts to long-term assets while establishing a sanctioned CC limit to absorb seasonal inventory holding periods.'
         }
       ],
       keyTakeaways: [
         'Never use short-term working capital funds for long-term land or Capex.',
-        'Negotiate moratorium periods on term loans until commercial operation date (COD).',
+        'Negotiate moratorium periods on term debts until commercial operation date (COD).',
         'Review drawing power (DP) calculations regularly to maintain CC limits.'
       ]
     }
   },
   {
     id: 'msme-loan-schemes-explained',
-    title: 'MSME Loan Schemes Explained',
+    title: 'MSME Funding Schemes Explained',
     category: 'Government Schemes',
     date: '02 Jul 2026',
     readTime: '6 min read',
@@ -223,13 +223,13 @@ export const SAMPLE_BLOGS: BlogPost[] = [
     date: '15 Aug 2026',
     readTime: '4 min read',
     image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=800&q=80',
-    summary: 'Decode the complex terminology used by bankers and financial advisors when discussing greenfield project loans.',
+    summary: 'Decode the complex terminology used by bankers and financial advisors when discussing greenfield project funding.',
     content: {
       intro: 'Understanding banking terminology is crucial when pitching your greenfield project. From DSCR to Moratorium, we break down the most common jargon used in project finance.',
       sections: [
         {
           heading: '1. DSCR (Debt Service Coverage Ratio)',
-          body: 'This ratio measures the cash flow available to pay current debt obligations. A DSCR above 1.5x is generally preferred by most banks for term loan sanction.'
+          body: 'This ratio measures the cash flow available to pay current debt obligations. A DSCR above 1.5x is generally preferred by most banks for term debt sanction.'
         },
         {
           heading: '2. Moratorium Period',
@@ -237,11 +237,11 @@ export const SAMPLE_BLOGS: BlogPost[] = [
         },
         {
           heading: '3. Margin Money (Promoter Equity)',
-          body: 'The percentage of the project cost that the business owner (promoter) must invest from their own funds before the bank releases the loan amount.'
+          body: 'The percentage of the project cost that the business owner (promoter) must invest from their own funds before the bank releases the funding amount.'
         }
       ],
       keyTakeaways: [
-        'Understand key terms to negotiate better loan conditions.',
+        'Understand key terms to negotiate better funding conditions.',
         'DSCR and Margin Money are the most critical factors for approval.',
         'A moratorium period helps manage cash flow during construction.'
       ]
@@ -276,7 +276,7 @@ export const LatestBlogs: React.FC<LatestBlogsProps> = ({
             Latest Blogs &amp; Financial Guides
           </h2>
           <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-            Expert guidance on debt syndication, bankable DPR preparation, MSME loan schemes, and financial risk assessment.
+            Expert guidance on debt syndication, bankable DPR preparation, MSME funding schemes, and financial risk assessment.
           </p>
         </div>
 
@@ -432,7 +432,7 @@ export const LatestBlogs: React.FC<LatestBlogsProps> = ({
               {/* CTA Inside Modal */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-5 rounded-2xl border border-blue-100 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div>
-                  <h4 className="font-bold text-slate-900 text-sm">Need Bank Loan Advisory for Your Business?</h4>
+                  <h4 className="font-bold text-slate-900 text-sm">Need Project Assessment for Your Business?</h4>
                   <p className="text-xs text-slate-600">Calculate eligibility or request a consultation with Inisio advisors.</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -445,7 +445,7 @@ export const LatestBlogs: React.FC<LatestBlogsProps> = ({
                       className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
                     >
                       <Calculator className="w-3.5 h-3.5" />
-                      <span>Check Loan Eligibility</span>
+                      <span>Check Project Bankability</span>
                     </button>
                   )}
                   {onOpenConsultation && (
