@@ -72,8 +72,12 @@ export const CommercialSupplyFundingForm: React.FC<CommercialSupplyFundingFormPr
     gstNumber: initialData?.gstNumber || ''
   });
 
+  const initialDataRef = React.useRef<string>(JSON.stringify(initialData || {}));
+
   React.useEffect(() => {
-    if (initialData) {
+    const currentJson = JSON.stringify(initialData || {});
+    if (initialData && currentJson !== initialDataRef.current) {
+      initialDataRef.current = currentJson;
       setFormData(prev => ({
         ...prev,
         ...initialData,

@@ -13,68 +13,16 @@ export interface AdminNotification {
 
 const NOTIFICATIONS_STORAGE_KEY = 'inisio_admin_notifications_v1';
 
-const INITIAL_NOTIFICATIONS: AdminNotification[] = [
-  {
-    id: 'notif-1',
-    timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-    type: 'TEASER_DOWNLOAD',
-    title: 'Project Teaser Downloaded',
-    message: 'Suraj Kanu (kanusuraj15@gmail.com) downloaded Executive Teaser PDF for Solar Panel Cell Manufacturing Unit (₹120 Cr).',
-    userEmail: 'kanusuraj15@gmail.com',
-    userName: 'Suraj Kanu',
-    projectName: 'Solar Panel Cell Manufacturing Unit',
-    read: false,
-    metadata: { capexCr: 120, loanCr: 90, grade: 'A+' }
-  },
-  {
-    id: 'notif-2',
-    timestamp: new Date(Date.now() - 1000 * 60 * 18).toISOString(),
-    type: 'TEASER_DOWNLOAD',
-    title: 'Project Teaser Downloaded',
-    message: 'Suraj Kanu (kanusuraj15@gmail.com) downloaded Executive Teaser PDF for Bio-Pharma Formulation Plant (₹18.5 Cr).',
-    userEmail: 'kanusuraj15@gmail.com',
-    userName: 'Suraj Kanu',
-    projectName: 'Bio-Pharma Formulation Plant',
-    read: false,
-    metadata: { capexCr: 18.5, loanCr: 13.8, grade: 'A+' }
-  },
-  {
-    id: 'notif-3',
-    timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-    type: 'ASSESSMENT_SUBMITTED',
-    title: 'New Greenfield Feasibility Assessment',
-    message: 'Pravalika Junnu submitted assessment for Hotel Greenfield Resort & Convention (₹20 Cr).',
-    userEmail: 'pravalikajunnu14@gmail.com',
-    userName: 'Pravalika Junnu',
-    projectName: 'Hotel Greenfield Resort & Convention',
-    read: false,
-    metadata: { capexCr: 20, loanCr: 10, grade: 'A+' }
-  },
-  {
-    id: 'notif-4',
-    timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-    type: 'CA_AUDIT_UPDATE',
-    title: 'CA Audit Stage Updated',
-    message: 'CA Rajesh Sharma approved TEFR Appraisal for High-Purity Chemical Refinery.',
-    userEmail: 'rajesh.patel@dahejchem.com',
-    userName: 'Rajesh Patel',
-    projectName: 'High-Purity Chemical Refinery',
-    read: true,
-    metadata: { status: 'CA Approved', dscr: 1.62 }
-  }
-];
-
 export function getAdminNotifications(): AdminNotification[] {
   try {
     const raw = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
     if (!raw) {
-      localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(INITIAL_NOTIFICATIONS));
-      return INITIAL_NOTIFICATIONS;
+      return [];
     }
     return JSON.parse(raw);
   } catch (e) {
     console.error('Failed to parse notifications:', e);
-    return INITIAL_NOTIFICATIONS;
+    return [];
   }
 }
 

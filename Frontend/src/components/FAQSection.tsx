@@ -32,7 +32,7 @@ export const FAQSection: React.FC<FAQSectionProps> = ({
             Frequently Asked Questions
           </span>
           <h2 className="font-display text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
-            Everything You Need to Know About <span className="text-blue-600">Greenfield Loans</span>
+            Everything You Need to Know About <span className="text-blue-600">Greenfield Project Assessment &amp; Bankability</span>
           </h2>
           <p className="text-xs sm:text-sm text-gray-600">
             Got questions about DPR preparation, bankability ratings, or term loan debt ratios? We have answers.

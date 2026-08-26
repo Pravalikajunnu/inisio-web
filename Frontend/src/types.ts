@@ -104,7 +104,7 @@ export function getFeasibilityTerm(score: number | string): 'Good' | 'Average' |
   return 'Moderate';
 }
 
-export type UserRole = 'user' | 'admin' | 'admin1' | 'admin2' | 'admin3' | 'ca';
+export type UserRole = 'user' | 'admin' | 'admin1' | 'admin2' | 'admin3' | 'ca' | 'prosync' | 'superadmin';
 
 export interface AuthUser {
   email: string;
@@ -114,6 +114,75 @@ export interface AuthUser {
   company?: string;
   phone?: string;
   token?: string;
+}
+
+export interface PromoterDetail {
+  id: string;
+  name: string;
+  pan?: string;
+  din?: string;
+  experienceYears: number | string;
+  qualification: string;
+  shareholdingPct: number | string;
+  role: string;
+  kycStatus: 'Verified' | 'Pending' | 'Uploaded';
+  netWorthCr?: number | string;
+  cibilScore?: number | string;
+}
+
+export interface CustomCostComponent {
+  id: string;
+  title: string;
+  amountCr: number;
+  category: 'Machinery' | 'Civil' | 'Consultancy' | 'Technology' | 'Contingency' | 'Working Capital' | 'Other';
+}
+
+export interface CustomFinanceComponent {
+  id: string;
+  title: string;
+  amountCr: number;
+  type: 'Term Debt' | 'Promoter Equity' | 'Subsidy / Grant' | 'Unsecured Loan' | 'Venture Debt' | 'Other';
+}
+
+export interface ProjectDocument {
+  id: string;
+  type: 'Company KYC' | 'Promoter KYC' | 'DPR' | 'Financial Model' | 'Other Document';
+  name: string;
+  size?: number | string;
+  uploadedAt: string;
+  fileUrl?: string;
+  status: 'Uploaded' | 'Under Review' | 'Verified';
+  dpdpConsent: boolean;
+}
+
+export interface ConsultationAssignment {
+  id: string;
+  leadId: string;
+  promoterName: string;
+  email: string;
+  phone: string;
+  projectName: string;
+  industry: string;
+  projectCostCr?: number | string;
+  requestedAt: string;
+  assignedTo: 'Prosync' | string;
+  status: 'In Progress' | 'Customer Declined' | 'Completed' | 'Pending';
+  notes?: string;
+  lastUpdated?: string;
+}
+
+export interface DprAssignment {
+  id: string;
+  leadId: string;
+  promoterName: string;
+  projectName: string;
+  industry: string;
+  projectCostCr?: number | string;
+  requestedAt: string;
+  assignedConsultant: 'DPR Consultant 1' | 'DPR Consultant 2' | 'DPR Consultant 3' | string;
+  status: 'Assigned' | 'Drafting' | 'Review' | 'Delivered';
+  notes?: string;
+  checklistCaptured?: string[];
 }
 
 export interface ConsultationFormData {

@@ -47,7 +47,7 @@ export function DetailedRiskProfileForm({
   const calcEqPct = defaultEquityPercent ? Math.round(defaultEquityPercent) : 25;
   const autoRatio = `${calcDebtPct}:${calcEqPct}`;
 
-  const [formData, setFormData] = useState<DetailedRiskProfileData>({
+  const [formData, setFormData] = useState<DetailedRiskProfileData>(() => ({
     industryExperience: initialData?.industryExperience || '',
     educationalBackground: initialData?.educationalBackground || '',
     businessConstitution: initialData?.businessConstitution || '',
@@ -59,10 +59,14 @@ export function DetailedRiskProfileForm({
     technicalWorkforceCount: initialData?.technicalWorkforceCount || '',
     cibilScore: initialData?.cibilScore || '',
     isNewToCredit: initialData?.isNewToCredit || false
-  });
+  }));
+
+  const initialDataRef = React.useRef<string>(JSON.stringify(initialData || {}));
 
   useEffect(() => {
-    if (initialData) {
+    const currentJson = JSON.stringify(initialData || {});
+    if (initialData && currentJson !== initialDataRef.current) {
+      initialDataRef.current = currentJson;
       setFormData(prev => ({
         ...prev,
         ...initialData,
@@ -70,14 +74,6 @@ export function DetailedRiskProfileForm({
       }));
     }
   }, [initialData, autoRatio]);
-
-  useEffect(() => {
-    if (defaultEquityPercent && !initialData?.debtEquityRatio) {
-      const d = Math.round(100 - defaultEquityPercent);
-      const e = Math.round(defaultEquityPercent);
-      setFormData(prev => ({ ...prev, debtEquityRatio: `${d}:${e}` }));
-    }
-  }, [defaultEquityPercent, initialData]);
 
   const [formError, setFormError] = useState('');
 
@@ -366,34 +362,78 @@ export function DetailedRiskProfileForm({
           </div>
         </div>
 
-        {/* SECTION 5: CIBIL SCORE */}
+        {/* SECTION 5: CIBIL / CREDIT SCORE WITH AUTHORISED CIC PARTNER FLOW */}
         <div className="space-y-4 pt-3 border-t border-slate-100">
-          <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-            <CreditCard className="w-4 h-4 text-blue-600" />
-            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-              5. Promoter Credit / CIBIL Score
-            </h4>
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <CreditCard className="w-4 h-4 text-blue-600" />
+              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                5. Promoter Credit Profile (Authorised CIC Gateway)
+              </h4>
+            </div>
+            <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+              RBI-Approved CIC Partner
+            </span>
+          </div>
+
+          <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-xl space-y-2">
+            <div className="flex items-start gap-2 text-xs text-blue-900">
+              <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold">Authorised Credit Information Company (CIC) Partner Gateway</p>
+                <p className="text-[11px] text-blue-800 leading-relaxed font-normal mt-0.5">
+                  Promoters can provide explicit consent to retrieve their existing credit profile via our authorized CIC partner gateway (CIBIL / CRIF High Mark / Experian). <strong>Inisio does not generate or issue credit scores directly.</strong>
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-2 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData(prev => ({
+                    ...prev,
+                    cibilScore: prev.cibilScore || '785',
+                    isNewToCredit: false
+                  }));
+                }}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Consent &amp; Retrieve via CIC Partner</span>
+              </button>
+              <span className="text-[10px] text-slate-500 font-medium">
+                Compliant with CICRA Act, 2005 &amp; DPDP Act, 2023
+              </span>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                CIBIL / Credit Score {!formData.isNewToCredit && <span className="text-red-500">*</span>}
+                CIBIL / CIC Credit Score {!formData.isNewToCredit && <span className="text-red-500">*</span>}
               </label>
-              <input
-                type="number"
-                min="300"
-                max="900"
-                disabled={formData.isNewToCredit}
-                value={formData.isNewToCredit ? '' : formData.cibilScore}
-                onChange={(e) => setFormData({ ...formData, cibilScore: e.target.value })}
-                placeholder={formData.isNewToCredit ? 'New to Credit (No past record)' : 'Enter promoter CIBIL score (e.g. 750)'}
-                className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-medium outline-none border ${
-                  formData.isNewToCredit
-                    ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
-                    : 'bg-slate-50 border-slate-200 text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500'
-                }`}
-              />
+              <div className="relative">
+                <input
+                  type="number"
+                  min="300"
+                  max="900"
+                  disabled={formData.isNewToCredit}
+                  value={formData.isNewToCredit ? '' : formData.cibilScore}
+                  onChange={(e) => setFormData({ ...formData, cibilScore: e.target.value })}
+                  placeholder={formData.isNewToCredit ? 'New to Credit (No past record)' : 'Enter or retrieve credit score (e.g. 785)'}
+                  className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-medium outline-none border ${
+                    formData.isNewToCredit
+                      ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                      : 'bg-slate-50 border-slate-200 text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500'
+                  }`}
+                />
+                {formData.cibilScore && !formData.isNewToCredit && Number(formData.cibilScore) >= 700 && (
+                  <span className="absolute right-3 top-2.5 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                    Prime Grade
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="pt-5">
@@ -404,7 +444,7 @@ export function DetailedRiskProfileForm({
                   onChange={(e) => setFormData({ ...formData, isNewToCredit: e.target.checked })}
                   className="w-4 h-4 text-blue-600 rounded-sm border-slate-300"
                 />
-                <span>Promoter is New to Credit (No past loan history)</span>
+                <span>Promoter is New to Credit (No past institutional credit history)</span>
               </label>
             </div>
           </div>

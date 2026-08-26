@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AuthUser } from '../types';
+import { AuthUser, PromoterDetail, CustomCostComponent, CustomFinanceComponent, ProjectDocument } from '../types';
 import { fetchLeadsFromBackend, updateLeadRecord, LeadRecord } from '../utils/leadStore';
 import { generateProjectTeaserPDF, TeaserPDFData } from '../utils/pdfGenerator';
 import { ProjectEditModal, EditSectionType } from './ProjectEditModal';
@@ -7,6 +7,11 @@ import { DocumentUploadModal } from './DocumentUploadModal';
 import { PhotoUploadModal } from './PhotoUploadModal';
 import { DetailedRiskProfileData } from './DetailedRiskProfileForm';
 import { CommercialSupplyFundingData } from './CommercialSupplyFundingForm';
+import { ProbabilityMeter } from './dashboard/ProbabilityMeter';
+import { PromotersManagement } from './dashboard/PromotersManagement';
+import { ProjectFinancialsBreakup } from './dashboard/ProjectFinancialsBreakup';
+import { UnderwritingChecklist } from './dashboard/UnderwritingChecklist';
+import { DocumentsCompliance } from './dashboard/DocumentsCompliance';
 import {
   Building,
   Building2,
@@ -113,6 +118,12 @@ export interface UserProjectDetail {
   lastEditedAt?: string;
   riskProfileData?: DetailedRiskProfileData;
   commercialData?: CommercialSupplyFundingData;
+  promotersList?: PromoterDetail[];
+  customCostComponents?: CustomCostComponent[];
+  customFinanceComponents?: CustomFinanceComponent[];
+  uploadedDocuments?: ProjectDocument[];
+  isFunded?: boolean;
+  successProbability?: number;
 }
 
 export const UserDashboard: React.FC<UserDashboardProps> = ({
@@ -215,7 +226,13 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           lastEditedAt: lead.lastEditedAt,
           riskProfileData: lead.riskProfileData,
           commercialData: lead.commercialData,
-          financials: lead.financials
+          financials: lead.financials,
+          promotersList: lead.promotersList,
+          customCostComponents: lead.customCostComponents,
+          customFinanceComponents: lead.customFinanceComponents,
+          uploadedDocuments: lead.uploadedDocuments,
+          isFunded: lead.isFunded,
+          successProbability: lead.successProbability
         });
         }
       });
@@ -308,8 +325,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
 
   useEffect(() => {
     loadUserProjects();
-    const handleUpdate = (e: any) => {
-      if (e.detail?.localUpdate) return;
+    const handleUpdate = () => {
       loadUserProjects();
     };
     window.addEventListener('inisio_lead_added', handleUpdate);
@@ -383,6 +399,76 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
     setDprRequestSuccess(true);
     triggerToast('DPR & CMA preparation request submitted to Inisio Experts Desk!');
     setTimeout(() => setDprRequestSuccess(false), 5000);
+  };
+
+  const handleUpdatePromoters = (updatedPromoters: PromoterDetail[]) => {
+    if (!activeProject) return;
+    const updated = {
+      ...activeProject,
+      promotersList: updatedPromoters
+    };
+    setUserProjects(prev => prev.map(p => p.id === activeProject.id ? updated : p));
+    updateLeadRecord(activeProject.id, {
+      promotersList: updatedPromoters
+    }, user.name || user.email);
+    triggerToast('Promoters & board management profiles updated.');
+  };
+
+  const handleSaveFinancials = (
+    updatedCosts: CustomCostComponent[],
+    updatedFinances: CustomFinanceComponent[],
+    calculatedTotalCostCr: number,
+    calculatedDebtCr: number,
+    calculatedEquityCr: number
+  ) => {
+    if (!activeProject) return;
+    const updated = {
+      ...activeProject,
+      totalCostCr: calculatedTotalCostCr,
+      loanRequiredCr: calculatedDebtCr,
+      promoterContribCr: calculatedEquityCr,
+      debtPercent: calculatedTotalCostCr > 0 ? Math.round((calculatedDebtCr / calculatedTotalCostCr) * 100) : 70,
+      equityPercent: calculatedTotalCostCr > 0 ? Math.round((calculatedEquityCr / calculatedTotalCostCr) * 100) : 30,
+      customCostComponents: updatedCosts,
+      customFinanceComponents: updatedFinances
+    };
+    setUserProjects(prev => prev.map(p => p.id === activeProject.id ? updated : p));
+    updateLeadRecord(activeProject.id, {
+      totalCostCr: calculatedTotalCostCr,
+      loanRequiredCr: calculatedDebtCr,
+      promoterContribCr: calculatedEquityCr,
+      customCostComponents: updatedCosts,
+      customFinanceComponents: updatedFinances
+    }, user.name || user.email);
+    triggerToast('Project cost & means of finance updated.');
+  };
+
+  const handleUpdateDocuments = (updatedDocs: ProjectDocument[]) => {
+    if (!activeProject) return;
+    const updated = {
+      ...activeProject,
+      uploadedDocuments: updatedDocs
+    };
+    setUserProjects(prev => prev.map(p => p.id === activeProject.id ? updated : p));
+    updateLeadRecord(activeProject.id, {
+      uploadedDocuments: updatedDocs
+    }, user.name || user.email);
+    triggerToast('Project document repository updated.');
+  };
+
+  const handleToggleFunded = (isFundedVal: boolean) => {
+    if (!activeProject) return;
+    const updated = {
+      ...activeProject,
+      isFunded: isFundedVal,
+      status: (isFundedVal ? 'Bank Sanction' : activeProject.status) as any
+    };
+    setUserProjects(prev => prev.map(p => p.id === activeProject.id ? updated : p));
+    updateLeadRecord(activeProject.id, {
+      isFunded: isFundedVal,
+      status: isFundedVal ? 'Bank Sanction' : undefined
+    }, user.name || user.email);
+    triggerToast(isFundedVal ? 'Project marked as 100% Funded & Disbursed!' : 'Funding status updated.');
   };
 
   const handleDownloadTeaserPDF = (proj: UserProjectDetail) => {
@@ -1039,6 +1125,16 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               </div>
             </div>
 
+            {/* Probability Success Meter */}
+            <ProbabilityMeter
+              score={activeProject.feasibilityScore}
+              hasDpr={Boolean(activeProject.dprFile || (activeProject.uploadedDocuments && activeProject.uploadedDocuments.some(d => d.type === 'DPR')))}
+              hasCma={Boolean(activeProject.cmaFile || (activeProject.uploadedDocuments && activeProject.uploadedDocuments.some(d => d.type === 'Financial Model')))}
+              hasKyc={Boolean(activeProject.promotersList && activeProject.promotersList.some(p => p.kycStatus === 'Verified'))}
+              isFunded={activeProject.isFunded}
+              onToggleFunded={handleToggleFunded}
+            />
+
           </div>
         )}
 
@@ -1050,10 +1146,12 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             {[
               { id: 'all', label: 'All Sections' },
               { id: 'stages', label: '1. Journey with Inisio' },
-              { id: 'financials', label: '2. Financial & Debt Structure' },
-              { id: 'documents', label: '3. DPR & CMA Compliance' },
-              { id: 'risk', label: '4. Risk & Collateral' },
-              { id: 'advisory', label: '5. Advisory Team & Support' }
+              { id: 'financials', label: '2. Project Cost & Means of Finance' },
+              { id: 'promoters', label: '3. Promoters & Management' },
+              { id: 'checklist', label: '4. Indicative Checklist' },
+              { id: 'documents', label: '5. Document Repository (DPDP)' },
+              { id: 'risk', label: '6. Risk & Collateral' },
+              { id: 'advisory', label: '7. Advisory Team & Support' }
             ].map((tab) => {
               const isSel = activeSectionView === tab.id;
               return (
@@ -1199,290 +1297,43 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               </div>
             )}
 
-                        {/* SECTION 2: PROJECT COST & MEANS OF FINANCE */}
-            {(activeSectionView === 'all' || activeSectionView === 'financials') && (() => {
-              const fin = activeProject.financials || {};
-              const projTotalCost = parseFloat(String(activeProject.totalCostCr || '0')) || 0;
-              const projLoanReq = parseFloat(String(activeProject.loanRequiredCr || '0')) || 0;
-              const projPromoterContrib = parseFloat(String(activeProject.promoterContribCr || '0')) || 0;
-
-              // Read user's actual entered values if present in financials object
-              const hasExplicitFin = (fin.consultancyCostCr !== undefined && fin.consultancyCostCr !== '') ||
-                                     (fin.machineryCostCr !== undefined && fin.machineryCostCr !== '') ||
-                                     (fin.civilCostCr !== undefined && fin.civilCostCr !== '') ||
-                                     (fin.otherCostsCr !== undefined && fin.otherCostsCr !== '');
-
-              const cCost = hasExplicitFin && fin.consultancyCostCr !== undefined && fin.consultancyCostCr !== '' 
-                ? (parseFloat(String(fin.consultancyCostCr)) || 0) 
-                : (projTotalCost > 0 ? (Math.round(projTotalCost * 0.05 * 100) / 100) : 0);
-
-              const mCost = hasExplicitFin && fin.machineryCostCr !== undefined && fin.machineryCostCr !== '' 
-                ? (parseFloat(String(fin.machineryCostCr)) || 0) 
-                : (projTotalCost > 0 ? (Math.round(projTotalCost * 0.60 * 100) / 100) : 0);
-
-              const lCost = hasExplicitFin && fin.civilCostCr !== undefined && fin.civilCostCr !== '' 
-                ? (parseFloat(String(fin.civilCostCr)) || 0) 
-                : (projTotalCost > 0 ? (Math.round(projTotalCost * 0.30 * 100) / 100) : 0);
-
-              const oCost = hasExplicitFin && fin.otherCostsCr !== undefined && fin.otherCostsCr !== '' 
-                ? (parseFloat(String(fin.otherCostsCr)) || 0) 
-                : (projTotalCost > 0 ? (Math.round(projTotalCost * 0.05 * 100) / 100) : 0);
-
-              const totalCost = fin.totalProjectCost !== undefined && fin.totalProjectCost !== '' && parseFloat(String(fin.totalProjectCost)) > 0
-                ? parseFloat(String(fin.totalProjectCost))
-                : ((cCost + mCost + lCost + oCost) > 0 ? (cCost + mCost + lCost + oCost) : projTotalCost);
-
-              const tLoan = fin.termLoanCr !== undefined && fin.termLoanCr !== '' && parseFloat(String(fin.termLoanCr)) > 0
-                ? parseFloat(String(fin.termLoanCr))
-                : (projLoanReq > 0 ? projLoanReq : (projTotalCost > 0 ? (Math.round(projTotalCost * 0.70 * 100) / 100) : 0));
-
-              const pContrib = fin.promoterContributionCr !== undefined && fin.promoterContributionCr !== '' && parseFloat(String(fin.promoterContributionCr)) > 0
-                ? parseFloat(String(fin.promoterContributionCr))
-                : (projPromoterContrib > 0 ? projPromoterContrib : (projTotalCost > 0 ? (Math.round(projTotalCost * 0.30 * 100) / 100) : 0));
-
-              const oFin = fin.otherFinanceCr !== undefined && fin.otherFinanceCr !== '' ? (parseFloat(String(fin.otherFinanceCr)) || 0) : 0;
-
-              const totalFin = fin.totalMeansOfFinance !== undefined && fin.totalMeansOfFinance !== '' && parseFloat(String(fin.totalMeansOfFinance)) > 0
-                ? parseFloat(String(fin.totalMeansOfFinance))
-                : ((tLoan + pContrib + oFin) > 0 ? (tLoan + pContrib + oFin) : totalCost);
-              
-              const debtPctNum = totalFin > 0 ? (tLoan / totalFin) * 100 : 0;
-              const eqPctNum = totalFin > 0 ? (pContrib / totalFin) * 100 : 0;
-              const oFinPctNum = totalFin > 0 ? (oFin / totalFin) * 100 : 0;
-
-              return (
-              <div className="border border-zinc-200 rounded-2xl p-6 bg-white space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-100 pb-4 gap-4">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
-                      <Calculator className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg sm:text-xl font-bold text-zinc-900">Project Cost &amp; Means of Finance</h2>
-                      <p className="text-sm text-zinc-500 mt-0.5">Detailed breakdown of capital expenditure and funding structure.</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  
-                  {/* Cost Breakup Section */}
-                  <div className="bg-zinc-50 rounded-xl p-5 border border-zinc-100 space-y-4">
-                    <h3 className="text-sm font-bold text-zinc-900 flex items-center gap-2">
-                      <div className="w-1.5 h-4 bg-blue-500 rounded-full"></div>
-                      Project Cost Breakup
-                    </h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-zinc-600">Consultancy</span>
-                        <span className="font-semibold text-zinc-900">₹ {cCost.toLocaleString('en-IN', {maximumFractionDigits: 2})} Cr</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-zinc-600">Plant & Machinery</span>
-                        <span className="font-semibold text-zinc-900">₹ {mCost.toLocaleString('en-IN', {maximumFractionDigits: 2})} Cr</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-zinc-600">Land & Civil Works</span>
-                        <span className="font-semibold text-zinc-900">₹ {lCost.toLocaleString('en-IN', {maximumFractionDigits: 2})} Cr</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-zinc-600">Other Costs</span>
-                        <span className="font-semibold text-zinc-900">₹ {oCost.toLocaleString('en-IN', {maximumFractionDigits: 2})} Cr</span>
-                      </div>
-                      
-                      <div className="pt-3 border-t border-zinc-200 flex justify-between items-center">
-                        <span className="text-sm font-bold text-blue-900">Total Cost</span>
-                        <span className="text-lg font-black text-blue-700">₹ {totalCost.toLocaleString('en-IN', {maximumFractionDigits: 2})} Cr</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Means of Finance Section */}
-                  <div className="bg-emerald-50/30 rounded-xl p-5 border border-emerald-100/50 space-y-4">
-                    <h3 className="text-sm font-bold text-zinc-900 flex items-center gap-2">
-                      <div className="w-1.5 h-4 bg-emerald-500 rounded-full"></div>
-                      Means of Finance
-                    </h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between text-sm items-center">
-                        <span className="text-zinc-600">Project Term Debt</span>
-                        <div className="text-right">
-                          <span className="font-semibold text-zinc-900">₹ {tLoan.toLocaleString('en-IN', {maximumFractionDigits: 2})} Cr</span>
-                          <span className="text-xs text-emerald-600 ml-2">({debtPctNum.toFixed(1)}%)</span>
-                        </div>
-                      </div>
-                      <div className="flex justify-between text-sm items-center">
-                        <span className="text-zinc-600">Promoter Contribution</span>
-                        <div className="text-right">
-                          <span className="font-semibold text-zinc-900">₹ {pContrib.toLocaleString('en-IN', {maximumFractionDigits: 2})} Cr</span>
-                          <span className="text-xs text-emerald-600 ml-2">({eqPctNum.toFixed(1)}%)</span>
-                        </div>
-                      </div>
-                      <div className="flex justify-between text-sm items-center">
-                        <span className="text-zinc-600">Other Sources</span>
-                        <div className="text-right">
-                          <span className="font-semibold text-zinc-900">₹ {oFin.toLocaleString('en-IN', {maximumFractionDigits: 2})} Cr</span>
-                          <span className="text-xs text-emerald-600 ml-2">({oFinPctNum.toFixed(1)}%)</span>
-                        </div>
-                      </div>
-
-                      <div className="pt-3 border-t border-emerald-200/50 flex justify-between items-center">
-                        <span className="text-sm font-bold text-emerald-900">Total Finance</span>
-                        <span className="text-lg font-black text-emerald-700">₹ {totalFin.toLocaleString('en-IN', {maximumFractionDigits: 2})} Cr</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Progress Bar Chart for Means of Finance */}
-                <div className="pt-4 border-t border-zinc-100 space-y-2">
-                  <div className="flex justify-between text-xs font-semibold text-zinc-500 mb-1">
-                    <span>Funding Distribution</span>
-                    <span>100%</span>
-                  </div>
-                  <div className="h-3 w-full rounded-full flex overflow-hidden bg-zinc-100">
-                    <div 
-                      className="bg-blue-500 h-full transition-all" 
-                      style={{ width: `${debtPctNum}%` }}
-                      title={`Debt: ${debtPctNum.toFixed(1)}%`}
-                    ></div>
-                    <div 
-                      className="bg-emerald-500 h-full transition-all" 
-                      style={{ width: `${eqPctNum}%` }}
-                      title={`Equity: ${eqPctNum.toFixed(1)}%`}
-                    ></div>
-                    <div 
-                      className="bg-amber-400 h-full transition-all" 
-                      style={{ width: `${oFinPctNum}%` }}
-                      title={`Other: ${oFinPctNum.toFixed(1)}%`}
-                    ></div>
-                  </div>
-                  <div className="flex items-center gap-4 text-xs pt-1">
-                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div><span className="text-zinc-600">Debt ({debtPctNum.toFixed(0)}%)</span></div>
-                    <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div><span className="text-zinc-600">Equity ({eqPctNum.toFixed(0)}%)</span></div>
-                    {oFinPctNum > 0 && (
-                      <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-400"></div><span className="text-zinc-600">Other ({oFinPctNum.toFixed(0)}%)</span></div>
-                    )}
-                  </div>
-                </div>
-
-              </div>
-              );
-            })()}
-            
-            {/* SECTION 3: DPR & CMA COMPLIANCE CENTER */}
-            {(activeSectionView === 'all' || activeSectionView === 'documents') && (
-              <div className="border border-zinc-200 rounded-2xl p-6 bg-white space-y-5">
-                <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                      <FileCheck className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg sm:text-xl font-bold text-zinc-900">Detailed Project Report (DPR) &amp; CMA Documentation</h2>
-                      <p className="text-sm text-zinc-500 mt-0.5">Required technical reports and balance sheet schedules for bank sanction.</p>
-                    </div>
-                  </div>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${hasAnyDoc ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
-                    {hasAnyDoc ? 'Documents Active' : 'Action Required'}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  
-                  {/* DPR Card */}
-                  <div className="p-4 rounded-xl border border-zinc-200 bg-white space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-900">
-                          {activeProject.dprFile ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <FileText className="w-4 h-4 text-blue-600" />}
-                          <span>Detailed Project Report (DPR)</span>
-                        </div>
-                        <p className="text-xs text-zinc-600">
-                          {activeProject.dprFile ? activeProject.dprFile.name : 'Not yet uploaded / drafted'}
-                        </p>
-                        <span className="text-[11px] text-zinc-400 block">
-                          Comprehensive technical appraisal and machinery cost validation
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 pt-2 border-t border-zinc-100 text-xs">
-                      <button
-                        onClick={() => handleDownloadTeaserPDF(activeProject)}
-                        className="font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>Download Teaser</span>
-                      </button>
-                      <span className="text-zinc-300">•</span>
-                      <button
-                        onClick={() => setIsDocUploadModalOpen(true)}
-                        className="font-medium text-zinc-600 hover:text-zinc-900 cursor-pointer"
-                      >
-                        {activeProject.dprFile ? 'Replace Document' : 'Upload DPR File'}
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {/* CMA Card */}
-                  <div className="p-4 rounded-xl border border-zinc-200 bg-white space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-zinc-900">
-                          {activeProject.cmaFile ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <FileSpreadsheet className="w-4 h-4 text-blue-600" />}
-                          <span>CMA Financial Model</span>
-                        </div>
-                        <p className="text-xs text-zinc-600">
-                          {activeProject.cmaFile ? activeProject.cmaFile.name : 'Standard Inisio Model Ready'}
-                        </p>
-                        <span className="text-[11px] text-zinc-400 block">
-                          10-Year P&amp;L, balance sheet, fund flow, and DSCR ratios
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 pt-2 border-t border-zinc-100 text-xs">
-                      <button
-                        onClick={() => setIsDocUploadModalOpen(true)}
-                        className="font-medium text-zinc-600 hover:text-zinc-900 cursor-pointer flex items-center gap-1"
-                      >
-                        <Upload className="w-3.5 h-3.5" />
-                        <span>{activeProject.cmaFile ? 'Replace CMA Model' : 'Upload CMA Model'}</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* DPR Request CTA if needed */}
-                {!hasAnyDoc && (
-                  <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-200 space-y-3 text-xs">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="font-bold text-zinc-900">Need Inisio Chartered Accountants to prepare your bank-ready DPR?</div>
-                        <p className="text-zinc-500 mt-0.5">We draft vetted DPR and CMA reports with guaranteed bank committee compliance within 48 to 72 hours.</p>
-                      </div>
-                      <button
-                        onClick={handleRequestDPRPreparation}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shrink-0 cursor-pointer shadow-xs transition-colors flex items-center gap-1.5"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Request DPR Drafting</span>
-                      </button>
-                    </div>
-
-                    {dprRequestSuccess && (
-                      <div className="p-2.5 bg-blue-100 border border-blue-200 rounded-lg text-blue-900 font-medium flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-blue-700 shrink-0" />
-                        <span>Your DPR preparation request has been routed to Inisio Lead CA Rajesh Sharma. We will call you within 2 hours.</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+            {/* SECTION 2: PROJECT COST & MEANS OF FINANCE (CUSTOM COMPONENTS + UNITS) */}
+            {(activeSectionView === 'all' || activeSectionView === 'financials') && (
+              <ProjectFinancialsBreakup
+                totalCostCr={activeProject.totalCostCr}
+                loanRequiredCr={activeProject.loanRequiredCr}
+                promoterContribCr={activeProject.promoterContribCr}
+                customCosts={activeProject.customCostComponents}
+                customFinances={activeProject.customFinanceComponents}
+                onSaveFinancials={handleSaveFinancials}
+                onOpenEditModal={() => handleOpenEditSection('financials')}
+              />
             )}
 
-            {/* SECTION 4: RISK & COLLATERAL PROFILE */}
+            {/* SECTION 3: PROMOTERS & MANAGEMENT MANAGEMENT */}
+            {(activeSectionView === 'all' || activeSectionView === 'promoters') && (
+              <PromotersManagement
+                promoters={activeProject.promotersList || []}
+                onUpdatePromoters={handleUpdatePromoters}
+                primaryPromoterName={activeProject.fullName || user.name}
+              />
+            )}
+
+            {/* SECTION 4: INDICATIVE UNDERWRITING CHECKLIST */}
+            {(activeSectionView === 'all' || activeSectionView === 'checklist') && (
+              <UnderwritingChecklist />
+            )}
+
+            {/* SECTION 5: DPR & ENCRYPTED DOCUMENT REPOSITORY */}
+            {(activeSectionView === 'all' || activeSectionView === 'documents') && (
+              <DocumentsCompliance
+                documents={activeProject.uploadedDocuments || []}
+                onUpdateDocuments={handleUpdateDocuments}
+                projectName={activeProject.projectName}
+              />
+            )}
+
+            {/* SECTION 6: RISK & COLLATERAL PROFILE */}
             {(activeSectionView === 'all' || activeSectionView === 'risk') && (
               <div className="border border-zinc-200 rounded-2xl p-6 bg-white space-y-5">
                 <div className="flex items-center justify-between border-b border-zinc-100 pb-4">

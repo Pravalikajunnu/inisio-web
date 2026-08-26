@@ -78,8 +78,7 @@ const leadSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['New', 'Contacted', 'In Appraisal', 'DPR Ready', 'Sanctioned', 'Archived'],
-      default: 'New',
+      default: 'In Appraisal',
     },
     photoOrLogo: {
       type: String,
@@ -92,6 +91,102 @@ const leadSchema = new mongoose.Schema(
     cmaFile: {
       type: mongoose.Schema.Types.Mixed,
       default: null,
+    },
+    assignedTeam: {
+      type: String,
+      default: '',
+    },
+    assignedRole: {
+      type: String,
+      default: '',
+    },
+    assignedAt: {
+      type: String,
+      default: '',
+    },
+    timelineDate: {
+      type: String,
+      default: '',
+    },
+    timelineTime: {
+      type: String,
+      default: '',
+    },
+    lastEditedBy: {
+      type: String,
+      default: '',
+    },
+    lastEditedAt: {
+      type: String,
+      default: '',
+    },
+    editHistory: {
+      type: Array,
+      default: [],
+    },
+    riskProfileData: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    commercialData: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    promotersList: {
+      type: Array,
+      default: [],
+    },
+    customCostComponents: {
+      type: Array,
+      default: [],
+    },
+    customFinanceComponents: {
+      type: Array,
+      default: [],
+    },
+    uploadedDocuments: {
+      type: Array,
+      default: [],
+    },
+    successProbability: {
+      type: Number,
+      default: 85,
+    },
+    isFunded: {
+      type: Boolean,
+      default: false,
+    },
+    dprAssignedTo: {
+      type: String,
+      default: '',
+    },
+    consultationAssignedTo: {
+      type: String,
+      default: '',
+    },
+    consultationStatus: {
+      type: String,
+      default: 'Pending',
+    },
+    consultationNotes: {
+      type: String,
+      default: '',
+    },
+    membershipTier: {
+      type: String,
+      default: 'Standard',
+    },
+    bankAppliedAt: {
+      type: String,
+      default: '',
+    },
+    loanApprovedAt: {
+      type: String,
+      default: '',
+    },
+    fundingDisbursedAt: {
+      type: String,
+      default: '',
     },
     financials: {
       type: mongoose.Schema.Types.Mixed,

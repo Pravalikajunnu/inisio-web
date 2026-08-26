@@ -100,6 +100,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const getDashboardTabForRole = (role: string) => {
     if (role === 'admin' || role === 'admin1' || role === 'admin2' || role === 'admin3') return 'admin-dashboard';
     if (role === 'ca') return 'ca-dashboard';
+    if (role === 'prosync') return 'prosync-dashboard';
     return 'user-dashboard';
   };
 
@@ -116,6 +117,13 @@ export const Navbar: React.FC<NavbarProps> = ({
         label: 'CA Portal',
         bg: 'bg-purple-100 text-purple-800 border-purple-300',
         icon: <Briefcase className="w-3.5 h-3.5 text-purple-700" />
+      };
+    }
+    if (role === 'prosync') {
+      return {
+        label: 'Prosync Desk',
+        bg: 'bg-amber-100 text-amber-800 border-amber-300',
+        icon: <Briefcase className="w-3.5 h-3.5 text-amber-700" />
       };
     }
     return {
@@ -136,11 +144,11 @@ export const Navbar: React.FC<NavbarProps> = ({
         }`}
       >
         <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2 xl:gap-4">
             {/* Logo */}
             <button
               onClick={() => handleNavClick('home')}
-              className="flex items-center gap-2 sm:gap-2.5 group text-left cursor-pointer min-h-[44px]"
+              className="flex items-center gap-2 sm:gap-2.5 group text-left cursor-pointer min-h-[44px] shrink-0"
             >
               <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform shrink-0">
                 <TrendingUp className="w-4.5 h-4.5 sm:w-5 sm:h-5 stroke-[2.5]" />
@@ -156,15 +164,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             {/* Desktop Navigation Links */}
-            <nav className="hidden lg:flex items-center gap-1 font-inter font-medium text-xs sm:text-sm">
+            <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 font-inter font-medium text-xs xl:text-sm">
               {navLinks.map((link) => {
                 const isActive = activeTab === link.id;
+                const isSecondary = link.id === 'faq' || link.id === 'blogs';
 
                 return (
                   <button
                     key={link.id}
                     onClick={() => handleNavClick(link.id)}
-                    className={`px-3.5 py-2 rounded-xl transition-all font-medium cursor-pointer whitespace-nowrap min-h-[40px] ${
+                    className={`px-2.5 xl:px-3 py-1.5 rounded-xl transition-all font-medium cursor-pointer whitespace-nowrap min-h-[36px] ${
+                      isSecondary ? 'hidden xl:inline-flex' : 'inline-flex'
+                    } items-center ${
                       isActive
                         ? 'bg-blue-600 text-white font-semibold shadow-xs'
                         : 'text-[#4B5563] hover:text-[#111827] hover:bg-gray-100'
@@ -174,124 +185,121 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </button>
                 );
               })}
-
-              {/* Active Dashboard Link if Logged In */}
-              {currentUser && (
-                <button
-                  onClick={() => handleNavClick(getDashboardTabForRole(currentUser.role))}
-                  className={`px-3.5 py-2 rounded-xl transition-all font-bold cursor-pointer whitespace-nowrap min-h-[40px] flex items-center gap-1.5 ${
-                    activeTab.includes('dashboard')
-                      ? 'bg-slate-900 text-white shadow-xs'
-                      : 'text-slate-800 hover:bg-slate-100'
-                  }`}
-                >
-                  {getRoleBadge(currentUser.role).icon}
-                  <span>Dashboard</span>
-                </button>
-              )}
             </nav>
 
-              {/* Desktop Actions (Login Icon + Start Assessment) */}
-              <div className="hidden lg:flex items-center gap-2.5">
-                
-                {/* User Account Dropdown */}
-                {currentUser ? (
-                  <div className="relative">
-                    <button
-                      onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                      className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all flex items-center gap-2 cursor-pointer min-h-[40px]"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
-                        {currentUser.email.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="text-left">
-                        <span className="text-xs font-bold text-slate-900 block leading-tight">
-                          {currentUser.name}
-                        </span>
-                        <span className="text-[10px] text-slate-500 font-mono block truncate">
-                          {currentUser.email}
-                        </span>
-                      </div>
-                      <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                    </button>
-
-                    {/* Dropdown Menu */}
-                    {userDropdownOpen && (
-                      <div className="absolute right-0 mt-2 w-52 bg-white border border-slate-200 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in slide-in-from-top-2">
-                        <div className="p-2.5 border-b border-slate-100 mb-1">
-                          <p className="text-xs font-bold text-slate-900 truncate">{currentUser.name}</p>
-                          <p className="text-[10px] font-mono text-slate-500 truncate">{currentUser.email}</p>
-                        </div>
-
-                        <button
-                          onClick={() => handleNavClick(getDashboardTabForRole(currentUser.role))}
-                          className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-blue-50 rounded-xl flex items-center gap-2 cursor-pointer"
-                        >
-                          <User className="w-3.5 h-3.5 text-blue-600" />
-                          <span>My Dashboard</span>
-                        </button>
-
-                        <div className="border-t border-slate-100 mt-1 pt-1">
-                          <button
-                            onClick={() => {
-                              setUserDropdownOpen(false);
-                              onLogout();
-                            }}
-                            className="w-full text-left px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl flex items-center gap-2 cursor-pointer"
-                          >
-                            <LogOut className="w-3.5 h-3.5" />
-                            <span>Sign Out</span>
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
+            {/* Desktop Actions (Login / User Dropdown + Start Assessment) */}
+            <div className="hidden lg:flex items-center gap-2 xl:gap-2.5 shrink-0">
+              {/* User Account Dropdown */}
+              {currentUser ? (
+                <div className="relative shrink-0">
                   <button
-                    id="navbar-login-btn"
-                    onClick={() => onOpenAuth('login')}
-                    className="px-4 py-2 text-xs font-bold text-slate-800 hover:text-blue-700 bg-slate-100 hover:bg-blue-50 active:bg-blue-100 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer border border-slate-200 min-h-[40px]"
-                    title="Login"
+                    onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                    className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all flex items-center gap-1.5 xl:gap-2 cursor-pointer min-h-[36px] shrink-0"
+                    title={`${currentUser.name} (${currentUser.email})`}
                   >
-                    <LogIn className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Login</span>
+                    <div className="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                      {currentUser.email.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-xs font-bold text-slate-900 block truncate max-w-[70px] xl:max-w-[110px]">
+                      {currentUser.name}
+                    </span>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                   </button>
-                )}
+
+                  {/* Dropdown Menu */}
+                  {userDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in slide-in-from-top-2">
+                      <div className="p-2.5 border-b border-slate-100 mb-1">
+                        <p className="text-xs font-bold text-slate-900 truncate">{currentUser.name}</p>
+                        <p className="text-[10px] font-mono text-slate-500 truncate">{currentUser.email}</p>
+                        <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700">
+                          {getRoleBadge(currentUser.role).label}
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => handleNavClick(getDashboardTabForRole(currentUser.role))}
+                        className="w-full text-left px-3 py-2 text-xs font-bold text-slate-800 hover:bg-blue-50 rounded-xl flex items-center gap-2 cursor-pointer"
+                      >
+                        <User className="w-3.5 h-3.5 text-blue-600" />
+                        <span>My Dashboard</span>
+                      </button>
+
+                      <div className="border-t border-slate-100 mt-1 pt-1">
+                        <button
+                          onClick={() => {
+                            setUserDropdownOpen(false);
+                            onLogout();
+                          }}
+                          className="w-full text-left px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl flex items-center gap-2 cursor-pointer"
+                        >
+                          <LogOut className="w-3.5 h-3.5" />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  id="navbar-login-btn"
+                  onClick={() => onOpenAuth('login')}
+                  className="px-3 xl:px-4 py-1.5 text-xs xl:text-sm font-bold text-slate-800 hover:text-blue-700 bg-slate-100 hover:bg-blue-50 active:bg-blue-100 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer border border-slate-200 min-h-[36px] shrink-0"
+                  title="Login"
+                >
+                  <LogIn className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Login</span>
+                </button>
+              )}
 
               <button
                 onClick={() => handleNavClick('assessment')}
-                className="px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-all flex items-center gap-2 group cursor-pointer min-h-[40px]"
+                className="px-3 xl:px-4 py-1.5 xl:py-2 text-xs xl:text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-all flex items-center gap-1.5 xl:gap-2 group cursor-pointer min-h-[36px] shrink-0 whitespace-nowrap"
               >
-                <Calculator className="w-4 h-4 text-blue-100" />
-                <span>Start Free Assessment</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                <Calculator className="w-3.5 h-3.5 xl:w-4 xl:h-4 text-blue-100 shrink-0" />
+                <span className="hidden xl:inline">Start Free Assessment</span>
+                <span className="xl:hidden">Free Assessment</span>
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform shrink-0" />
               </button>
             </div>
 
             {/* Mobile Hamburger Toggle & Assess / Login Button */}
-            <div className="flex items-center gap-2 lg:hidden">
-              <button
-                onClick={() => onOpenAuth('login')}
-                className="p-2 text-slate-700 bg-slate-100 rounded-xl flex items-center justify-center min-w-[40px] min-h-[40px]"
-                title="Login"
-              >
-                <LogIn className="w-4 h-4 text-blue-600" />
-              </button>
+            <div className="flex items-center gap-1.5 sm:gap-2 lg:hidden shrink-0">
+              {currentUser ? (
+                <button
+                  onClick={() => handleNavClick(getDashboardTabForRole(currentUser.role))}
+                  className="px-2.5 py-1.5 bg-slate-900 text-white rounded-xl flex items-center gap-1.5 text-xs font-bold shrink-0 min-h-[38px]"
+                  title="My Dashboard"
+                >
+                  <div className="w-5 h-5 rounded-md bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold">
+                    {currentUser.email.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="hidden sm:inline">{currentUser.name.split(' ')[0]}</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => onOpenAuth('login')}
+                  className="p-2 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl flex items-center justify-center min-w-[38px] min-h-[38px] shrink-0"
+                  title="Login"
+                >
+                  <LogIn className="w-4 h-4 text-blue-600" />
+                </button>
+              )}
 
               <button
                 onClick={() => handleNavClick('assessment')}
-                className="px-3 py-2 text-xs font-bold text-white bg-blue-600 active:bg-blue-700 rounded-xl shadow-2xs cursor-pointer flex items-center gap-1.5 min-h-[40px] touch-manipulation"
+                className="px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-bold text-white bg-blue-600 active:bg-blue-700 rounded-xl shadow-2xs cursor-pointer flex items-center gap-1.5 shrink-0 min-h-[38px] touch-manipulation whitespace-nowrap"
               >
-                <Calculator className="w-3.5 h-3.5 text-blue-100" />
-                <span>Free Assessment</span>
+                <Calculator className="w-3.5 h-3.5 text-blue-100 shrink-0" />
+                <span>Assessment</span>
               </button>
 
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 text-gray-700 hover:text-gray-900 rounded-xl hover:bg-gray-100 cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
+                className="p-2 text-gray-700 hover:text-gray-900 rounded-xl hover:bg-gray-100 cursor-pointer min-w-[40px] min-h-[40px] flex items-center justify-center shrink-0 touch-manipulation"
                 aria-label="Toggle navigation menu"
               >
-                {mobileMenuOpen ? <X className="w-6 h-6 text-gray-900" /> : <Menu className="w-6 h-6 text-gray-800" />}
+                {mobileMenuOpen ? <X className="w-5 h-5 sm:w-6 sm:h-6 text-gray-900" /> : <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800" />}
               </button>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getStoredLeads, deleteLeadRecord, clearAllLeads, exportLeadsToCSV, LeadRecord } from '../utils/leadStore';
+import { getStoredLeads, fetchLeadsFromBackend, deleteLeadRecord, clearAllLeads, exportLeadsToCSV, LeadRecord } from '../utils/leadStore';
 import { getAdminNotifications, AdminNotification, getUnreadNotificationCount } from '../utils/notificationStore';
 import { UserProfileDetailModal } from './UserProfileDetailModal';
 import { LeadEditModal } from './LeadEditModal';
@@ -51,7 +51,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
   };
 
   useEffect(() => {
-    loadData();
+    fetchLeadsFromBackend().then(() => loadData()).catch(() => loadData());
     const handleUpdate = () => loadData();
     const handleNotifUpdate = () => setUnreadNotifs(getUnreadNotificationCount());
     window.addEventListener('inisio_lead_added', handleUpdate);

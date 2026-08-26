@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthUser } from '../types';
-import { getStoredLeads, updateLeadRecord, LeadRecord } from '../utils/leadStore';
+import { getStoredLeads, updateLeadRecord, fetchLeadsFromBackend, LeadRecord } from '../utils/leadStore';
 import {
   Briefcase,
   FileCheck,
@@ -93,7 +93,7 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
   };
 
   useEffect(() => {
-    loadAudits();
+    fetchLeadsFromBackend().then(() => loadAudits()).catch(() => loadAudits());
     const handleUpdate = () => loadAudits();
     window.addEventListener('inisio_lead_added', handleUpdate);
     return () => window.removeEventListener('inisio_lead_added', handleUpdate);

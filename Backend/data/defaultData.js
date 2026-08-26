@@ -239,41 +239,4 @@ export const DEFAULT_SERVICES = [
   }
 ];
 
-export const DEFAULT_USERS = [
-  {
-    _id: 'user_admin_01',
-    name: 'Inisio Admin',
-    email: 'admin@gmail.com',
-    role: 'admin',
-    company: 'Inisio Greenfield Advisory HQ',
-    phone: '+91 98480 12345',
-    password: 'admin123'
-  },
-  {
-    _id: 'user_ca_01',
-    name: 'CA Rajesh Sharma (FCA)',
-    email: 'ca@gmail.com',
-    role: 'ca',
-    company: 'Sharma & Associates Chartered Accountants',
-    phone: '+91 98250 99887',
-    password: 'ca123'
-  },
-  {
-    _id: 'user_user_01',
-    name: 'Suraj Kanu',
-    email: 'kanusuraj15@gmail.com',
-    role: 'user',
-    company: 'Solar & Agro Industrial Ventures',
-    phone: '+91 98480 12345',
-    password: 'user123'
-  },
-  {
-    _id: 'user_user_02',
-    name: 'Pravalika Junnu',
-    email: 'pravalikajunnu14@gmail.com',
-    role: 'user',
-    company: 'Greenfield Hospitality & Resorts',
-    phone: '+91 63020 26462',
-    password: 'user123'
-  }
-];
+export const DEFAULT_USERS = [];

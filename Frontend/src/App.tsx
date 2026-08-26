@@ -20,6 +20,7 @@ import { AuthModal } from './components/AuthModal';
 import { UserDashboard } from './components/UserDashboard';
 import { CADashboard } from './components/CADashboard';
 import { AdminDashboardView } from './components/AdminDashboardView';
+import { ProsyncDashboard } from './components/ProsyncDashboard';
 import { LatestBlogs } from './components/LatestBlogs';
 
 export default function App() {
@@ -83,6 +84,8 @@ export default function App() {
       setActiveTab('admin-dashboard');
     } else if (user.role === 'ca' || user.email === 'ca@gmail.com') {
       setActiveTab('ca-dashboard');
+    } else if (user.role === 'prosync' || user.email === 'prosync@gmail.com') {
+      setActiveTab('prosync-dashboard');
     } else {
       setActiveTab('user-dashboard');
     }
@@ -179,6 +182,12 @@ export default function App() {
           {activeTab === 'admin-dashboard' && currentUser && (
             <div className="animate-in fade-in duration-300">
               <AdminDashboardView user={currentUser} />
+            </div>
+          )}
+
+          {activeTab === 'prosync-dashboard' && currentUser && (
+            <div className="animate-in fade-in duration-300">
+              <ProsyncDashboard user={currentUser} onLogout={handleLogout} />
             </div>
           )}
 

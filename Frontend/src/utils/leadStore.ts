@@ -1,6 +1,7 @@
 import { createAdminNotification } from './notificationStore';
 import { DetailedRiskProfileData } from '../components/DetailedRiskProfileForm';
 import { CommercialSupplyFundingData } from '../components/CommercialSupplyFundingForm';
+import { PromoterDetail, CustomCostComponent, CustomFinanceComponent, ProjectDocument } from '../types';
 
 export interface EditAuditRecord {
   id: string;
@@ -43,6 +44,17 @@ export interface LeadRecord {
   editHistory?: EditAuditRecord[];
   riskProfileData?: DetailedRiskProfileData;
   commercialData?: CommercialSupplyFundingData;
+  promotersList?: PromoterDetail[];
+  customCostComponents?: CustomCostComponent[];
+  customFinanceComponents?: CustomFinanceComponent[];
+  uploadedDocuments?: ProjectDocument[];
+  successProbability?: number;
+  isFunded?: boolean;
+  dprAssignedTo?: string;
+  consultationAssignedTo?: string;
+  consultationStatus?: 'In Progress' | 'Customer Declined' | 'Completed' | 'Pending';
+  consultationNotes?: string;
+  membershipTier?: string;
   financials?: {
     machineryCostCr?: string | number;
     civilCostCr?: string | number;
@@ -51,6 +63,8 @@ export interface LeadRecord {
     termLoanCr?: string | number;
     promoterContributionCr?: string | number;
     otherFinanceCr?: string | number;
+    totalProjectCost?: string | number;
+    totalMeansOfFinance?: string | number;
   };
   bankAppliedAt?: string;
   loanApprovedAt?: string;
@@ -58,185 +72,6 @@ export interface LeadRecord {
 }
 
 const STORAGE_KEY = 'inisio_admin_leads_v1';
-
-// Initial leads pre-loaded with projects including user's downloaded teasers
-const INITIAL_LEADS: LeadRecord[] = [
-  {
-    id: 'lead-kanu-1',
-    timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-    fullName: 'Suraj Kanu',
-    mobile: '9848012345',
-    email: 'kanusuraj15@gmail.com',
-    projectName: 'Solar Panel Cell Manufacturing Unit',
-    industry: 'Renewable Energy & Solar',
-    location: 'Gujarat (Dholera SIR)',
-    totalCostCr: '120',
-    loanRequiredCr: '90',
-    promoterContribCr: '30',
-    feasibilityScore: 92,
-    bankabilityRating: 'A+',
-    source: 'Project Assessment',
-    downloadedPDF: false,
-    landStatus: 'TSIIC / Industrial Park Allotted',
-    collateralStatus: 'Plant & Machinery Hypothecation',
-    promoterExp: '12+ Years Manufacturing',
-    notes: 'Assessment submitted. Land acquired in Dholera SIR. Target SBI & Canara Bank consortium.',
-    status: 'In Appraisal',
-    riskProfileData: {
-      industryExperience: 'More than 10 Years',
-      educationalBackground: 'Engineering / Technical Degree',
-      businessConstitution: 'Private Limited Company',
-      businessVintage: 'More than 8 Years',
-      contributionType: 'Combination of Cash & Land',
-      collateralCoveragePct: '125',
-      debtEquityRatio: '75:25',
-      managementTeamSize: '8',
-      technicalWorkforceCount: '35',
-      cibilScore: '795',
-      isNewToCredit: false
-    },
-    commercialData: {
-      rawMaterialSource: 'Industrial Vendors & Distributors',
-      keySuppliersList: 'Silicon Ingot suppliers, Wafer Tech Corp, Tier-1 Solar Cell Vendors',
-      procurementRadiusKm: 'Across India / State-wide',
-      primaryBuyersType: 'Industrial Companies & Factories',
-      keyBuyersList: 'NTPC, Tata Power Solar, Adani Green Energy, SECI EPC Contractors',
-      offTakeAgreementStatus: 'Signed Long-Term Agreement / Contract',
-      targetBankCategory: 'Public Sector Banks (SBI / PNB / Canara / BOB)',
-      requestedFacilityTypes: ['Term Loan (Machinery & Construction)', 'Working Capital Loan (CC / OD)', 'Letter of Credit (LC)'],
-      moratoriumPeriodMonths: '18 Months',
-      repaymentTenureYears: '8 to 10 Years',
-      machineryCostCr: '81.60',
-      civilCostCr: '36.00',
-      consultancyCostCr: '2.40',
-      gstNumber: '24AAECS1234F1Z5'
-    }
-  },
-  {
-    id: 'lead-kanu-2',
-    timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-    fullName: 'Suraj Kanu',
-    mobile: '9848012345',
-    email: 'kanusuraj15@gmail.com',
-    projectName: 'Bio-Pharma Formulation Plant',
-    industry: 'Pharmaceuticals & Life Sciences',
-    location: 'Telangana (Genome Valley)',
-    totalCostCr: '18.5',
-    loanRequiredCr: '13.8',
-    promoterContribCr: '4.7',
-    feasibilityScore: 88,
-    bankabilityRating: 'A+',
-    source: 'PDF Teaser Downloaded',
-    downloadedPDF: true,
-    landStatus: 'Industrial Lease Signed',
-    collateralStatus: 'Factory Premises & Fixed Assets',
-    promoterExp: '10+ Years Pharma R&D',
-    notes: 'Downloaded Teaser PDF. USFDA compliant formulation facility in Genome Valley.',
-    status: 'In Appraisal',
-    riskProfileData: {
-      industryExperience: 'More than 10 Years',
-      educationalBackground: 'Post Graduate (Master\'s / MBA)',
-      businessConstitution: 'Private Limited Company',
-      businessVintage: '4 to 7 Years',
-      contributionType: 'Cash / Bank Balance',
-      collateralCoveragePct: '110',
-      debtEquityRatio: '75:25',
-      managementTeamSize: '5',
-      technicalWorkforceCount: '20',
-      cibilScore: '780',
-      isNewToCredit: false
-    },
-    commercialData: {
-      rawMaterialSource: 'Industrial Vendors & Distributors',
-      keySuppliersList: 'API Importers, Pharma Solvent Distributors, Cleanroom Suppliers',
-      procurementRadiusKm: '100 to 250 KM',
-      primaryBuyersType: 'Industrial Companies & Factories',
-      keyBuyersList: 'Dr Reddys Laboratories, Hetero Drugs, Aurobindo Pharma Contract Division',
-      offTakeAgreementStatus: 'MoU / Expression of Interest (EOI) Done',
-      targetBankCategory: 'Public Sector Banks (SBI / PNB / Canara / BOB)',
-      requestedFacilityTypes: ['Term Loan (Machinery & Construction)', 'Working Capital Loan (CC / OD)'],
-      moratoriumPeriodMonths: '12 Months',
-      repaymentTenureYears: '7 Years',
-      machineryCostCr: '12.58',
-      civilCostCr: '5.55',
-      consultancyCostCr: '0.37',
-      gstNumber: '36AAECB9876P1Z1'
-    }
-  },
-  {
-    id: 'lead-100',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-    fullName: 'Pravalika junnu',
-    mobile: '6302026462',
-    email: 'pravalikajunnu14@gmail.com',
-    projectName: 'Hotel Greenfield Resort & Convention',
-    industry: 'Hospitality & Commercial',
-    location: 'Hyderabad, Telangana',
-    totalCostCr: '20',
-    loanRequiredCr: '10',
-    promoterContribCr: '10',
-    feasibilityScore: 90,
-    bankabilityRating: 'A+',
-    source: 'PDF Teaser Downloaded',
-    downloadedPDF: true,
-    landStatus: 'Land Owned & Registered',
-    collateralStatus: 'Prime Land & Building Mortgage',
-    promoterExp: '8+ Years Hospitality & Infrastructure',
-    notes: 'Downloaded Teaser PDF. Interested in Debt Syndication for 50% debt component.',
-    status: 'In Appraisal',
-    riskProfileData: {
-      industryExperience: '6 to 10 Years',
-      educationalBackground: 'Post Graduate (Master\'s / MBA)',
-      businessConstitution: 'Private Limited Company',
-      businessVintage: '4 to 7 Years',
-      contributionType: 'Combination of Cash & Land',
-      collateralCoveragePct: '150',
-      debtEquityRatio: '50:50',
-      managementTeamSize: '6',
-      technicalWorkforceCount: '25',
-      cibilScore: '810',
-      isNewToCredit: false
-    },
-    commercialData: {
-      rawMaterialSource: 'Local Wholesale Suppliers & Mandis',
-      keySuppliersList: 'Hospitality Procurement Vendors, HVAC contractors, Kitchen equipment suppliers',
-      procurementRadiusKm: 'Within 25 KM (Local)',
-      primaryBuyersType: 'Retailers & Direct Consumers',
-      keyBuyersList: 'Corporate MICE event organizers, Wedding planners, IT corridor business travelers',
-      offTakeAgreementStatus: 'Letter of Intent (LOI) Received',
-      targetBankCategory: 'Public Sector Banks (SBI / PNB / Canara / BOB)',
-      requestedFacilityTypes: ['Term Loan (Machinery & Construction)', 'Working Capital Loan (CC / OD)', 'Bank Guarantee (BG)'],
-      moratoriumPeriodMonths: '18 Months',
-      repaymentTenureYears: '8 to 10 Years',
-      machineryCostCr: '13.60',
-      civilCostCr: '6.00',
-      consultancyCostCr: '0.40',
-      gstNumber: '36AAJCP4412K1Z9'
-    }
-  },
-  {
-    id: 'lead-101',
-    timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
-    fullName: 'Rajesh Patel',
-    mobile: '9825011223',
-    email: 'rajesh.patel@dahejchem.com',
-    projectName: 'High-Purity Chemical Refinery',
-    industry: 'Specialty Chemicals',
-    location: 'Gujarat (Dahej PCPIR)',
-    totalCostCr: '34',
-    loanRequiredCr: '25.5',
-    promoterContribCr: '8.5',
-    feasibilityScore: 92,
-    bankabilityRating: 'A+',
-    source: 'PDF Teaser Downloaded',
-    downloadedPDF: true,
-    landStatus: 'GIDC Land Allotted',
-    collateralStatus: 'Factory & Heavy Distillation Columns',
-    promoterExp: '15+ Years Chemical Engineering',
-    notes: 'Downloaded Teaser PDF. TEFR approved by CA desk.',
-    status: 'DPR Ready'
-  }
-];
 
 export function getStoredLeads(userEmail?: string): LeadRecord[] {
   try {
@@ -265,7 +100,7 @@ export async function fetchLeadsFromBackend(email?: string): Promise<LeadRecord[
     const response = await fetch(url);
     if (response.ok) {
       const data = await response.json();
-      if (data && data.data && Array.isArray(data.data) && data.data.length > 0) {
+      if (data && data.data && Array.isArray(data.data)) {
         const formatted: LeadRecord[] = data.data.map((item: any) => ({
           id: item._id || item.id,
           timestamp: item.timestamp || item.createdAt || new Date().toISOString(),
@@ -291,7 +126,10 @@ export async function fetchLeadsFromBackend(email?: string): Promise<LeadRecord[
           dprFile: item.dprFile,
           cmaFile: item.cmaFile,
           riskProfileData: item.riskProfileData,
-          commercialData: item.commercialData
+          commercialData: item.commercialData,
+          consultationStatus: item.consultationStatus,
+          consultationAssignedTo: item.consultationAssignedTo,
+          consultationNotes: item.consultationNotes
         }));
         
         if (!email) {
@@ -307,16 +145,39 @@ export async function fetchLeadsFromBackend(email?: string): Promise<LeadRecord[
   return getStoredLeads(email);
 }
 
-export function saveLeadRecord(lead: Omit<LeadRecord, 'id' | 'timestamp'>): LeadRecord {
+export async function saveLeadRecord(lead: Omit<LeadRecord, 'id' | 'timestamp'>): Promise<LeadRecord> {
   const leads = getStoredLeads();
   
+  // Try sending to backend first
+  let backendLead: any = null;
+  try {
+    const response = await fetch('/api/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(lead),
+    });
+    if (response.ok) {
+      const resData = await response.json();
+      if (resData && resData.data) {
+        backendLead = resData.data;
+      }
+    }
+  } catch (err) {
+    console.warn('Backend synchronous create failed, falling back to client cache:', err);
+  }
+
   const newLead: LeadRecord = {
     ...lead,
-    id: `lead-${Date.now()}`,
-    timestamp: new Date().toISOString()
+    id: backendLead?._id || backendLead?.id || `lead-${Date.now()}`,
+    timestamp: backendLead?.createdAt || backendLead?.timestamp || new Date().toISOString()
   };
 
-  const updatedLeads = [newLead, ...leads];
+  // Prevent duplicate insertion if an identical ID already exists
+  const existingIdx = leads.findIndex(l => l.id === newLead.id);
+  const updatedLeads = existingIdx >= 0 
+    ? leads.map((l, idx) => idx === existingIdx ? newLead : l)
+    : [newLead, ...leads.filter(l => !(l.email?.toLowerCase() === newLead.email?.toLowerCase() && l.projectName === newLead.projectName && l.totalCostCr === newLead.totalCostCr))];
+
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLeads));
     window.dispatchEvent(new CustomEvent('inisio_lead_added', { detail: newLead }));
@@ -344,13 +205,6 @@ export function saveLeadRecord(lead: Omit<LeadRecord, 'id' | 'timestamp'>): Lead
   } catch (err) {
     console.error('Failed to trigger admin notification:', err);
   }
-
-  // Asynchronously sync to MongoDB Atlas REST endpoint
-  fetch('/api/leads', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(lead),
-  }).catch((e) => console.log('Async lead persist:', e.message));
 
   return newLead;
 }
@@ -411,20 +265,22 @@ export function updateLeadRecord(id: string, updates: Partial<LeadRecord>, edite
         });
       } catch (e) {}
     }
-
   }
 
-  // Async sync to backend if valid backend ID (even if not found locally)
-  if (id && !id.startsWith('lead-')) {
+  // Synchronously send updates to backend endpoint
+  if (id) {
     fetch(`/api/leads/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates)
-    }).then(res => {
-      if (res.ok && !updatedRecord) {
-        window.dispatchEvent(new CustomEvent('inisio_lead_added'));
+    }).then(async res => {
+      if (res.ok) {
+        const resJson = await res.json().catch(() => ({}));
+        if (resJson && resJson.data) {
+          window.dispatchEvent(new CustomEvent('inisio_lead_added', { detail: resJson.data }));
+        }
       }
-    }).catch(() => {});
+    }).catch((err) => console.warn('Backend update sync error:', err));
   }
 
   return updatedRecord;
@@ -434,10 +290,12 @@ export function deleteLeadRecord(id: string): void {
   const leads = getStoredLeads();
   const filtered = leads.filter(l => l.id !== id);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-  window.dispatchEvent(new CustomEvent('inisio_lead_added'));
+  window.dispatchEvent(new CustomEvent('inisio_lead_added', { detail: { deletedId: id } }));
 
-  if (id && !id.startsWith('lead-')) {
-    fetch(`/api/leads/${id}`, { method: 'DELETE' }).catch(() => {});
+  if (id) {
+    fetch(`/api/leads/${id}`, { method: 'DELETE' }).then(() => {
+      window.dispatchEvent(new CustomEvent('inisio_lead_added'));
+    }).catch(() => {});
   }
 }
 
@@ -445,7 +303,9 @@ export function clearAllLeads(): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
   window.dispatchEvent(new CustomEvent('inisio_lead_added'));
 
-  fetch('/api/leads/clear-all', { method: 'DELETE' }).catch(() => {});
+  fetch('/api/leads/clear-all', { method: 'DELETE' }).then(() => {
+    window.dispatchEvent(new CustomEvent('inisio_lead_added'));
+  }).catch(() => {});
 }
 
 export function exportLeadsToCSV(): void {

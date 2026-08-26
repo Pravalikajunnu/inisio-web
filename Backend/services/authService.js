@@ -3,13 +3,20 @@ import { generateToken } from '../utils/generateToken.js';
 import { DEFAULT_USERS } from '../data/defaultData.js';
 import { isDBConnected } from '../config/db.js';
 
-let memoryUsers = [...DEFAULT_USERS];
+let memoryUsers = [];
 
 export const registerUser = async ({ name, email, password, role = 'user', company = '', phone = '' }) => {
-  if (password && password.length < 6) {
+  if (!email || !email.includes('@')) {
+    throw new Error('Please provide a valid email address');
+  }
+  if (!password || password.length < 6) {
     throw new Error('Password must be at least 6 characters');
   }
   const cleanEmail = email.toLowerCase().trim();
+
+  // Validate allowed roles
+  const validRoles = ['user', 'ca', 'prosync', 'admin', 'admin1', 'admin2', 'admin3'];
+  const assignedRole = validRoles.includes(role) ? role : 'user';
 
   if (isDBConnected()) {
     try {
@@ -18,24 +25,13 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
         throw new Error('An account with this email address already exists.');
       }
 
-      let assignedRole = role;
-      if (cleanEmail === 'admin1@gmail.com' || cleanEmail.includes('admin1')) {
-        assignedRole = 'admin1';
-      } else if (cleanEmail === 'admin2@gmail.com' || cleanEmail.includes('admin2')) {
-        assignedRole = 'admin2';
-      } else if (cleanEmail === 'admin3@gmail.com' || cleanEmail === 'admin@gmail.com' || cleanEmail.includes('admin3')) {
-        assignedRole = 'admin3';
-      } else if (cleanEmail === 'ca@gmail.com' || cleanEmail.includes('ca@inisio')) {
-        assignedRole = 'ca';
-      }
-
       const user = await User.create({
-        name,
+        name: name || cleanEmail.split('@')[0],
         email: cleanEmail,
         password,
         role: assignedRole,
-        company: company || (assignedRole === 'ca' ? 'Sharma & Associates CAs' : assignedRole.startsWith('admin') ? 'Inisio HQ' : 'Enterprise Ltd'),
-        phone: phone || '+91 98765 43210',
+        company: company || (assignedRole === 'ca' ? 'Chartered Accountancy Firm' : assignedRole.startsWith('admin') ? 'Inisio HQ' : assignedRole === 'prosync' ? 'Prosync Advisory' : 'Enterprise Ltd'),
+        phone: phone || '',
       });
 
       const token = generateToken({
@@ -55,31 +51,25 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
         token,
       };
     } catch (err) {
-      if (err.message.includes('already exists')) throw err;
-      console.warn('MongoDB error in registerUser, fallback to memory:', err.message);
+      if (err.message.includes('already exists') || err.message.includes('valid')) throw err;
+      console.warn('MongoDB error in registerUser, saving in memory store:', err.message);
     }
   }
 
-  // Memory fallback
+  // Memory fallback for development/sandbox without DB
   const userExists = memoryUsers.find((u) => u.email.toLowerCase() === cleanEmail);
   if (userExists) {
     throw new Error('An account with this email address already exists.');
   }
 
-  let assignedRole = role;
-  if (cleanEmail === 'admin1@gmail.com' || cleanEmail.includes('admin1')) assignedRole = 'admin1';
-  else if (cleanEmail === 'admin2@gmail.com' || cleanEmail.includes('admin2')) assignedRole = 'admin2';
-  else if (cleanEmail === 'admin3@gmail.com' || cleanEmail === 'admin@gmail.com' || cleanEmail.includes('admin3')) assignedRole = 'admin3';
-  else if (cleanEmail === 'ca@gmail.com' || cleanEmail.includes('ca')) assignedRole = 'ca';
-
   const newUser = {
     _id: `user_${Date.now()}`,
-    name,
+    name: name || cleanEmail.split('@')[0],
     email: cleanEmail,
-    password: password || 'inisio12345',
+    password,
     role: assignedRole,
-    company: company || (assignedRole === 'ca' ? 'Sharma & Associates CAs' : assignedRole.startsWith('admin') ? 'Inisio HQ' : 'Enterprise Ltd'),
-    phone: phone || '+91 98765 43210',
+    company: company || (assignedRole === 'ca' ? 'Chartered Accountancy Firm' : assignedRole.startsWith('admin') ? 'Inisio HQ' : assignedRole === 'prosync' ? 'Prosync Advisory' : 'Enterprise Ltd'),
+    phone: phone || '',
     createdAt: new Date(),
   };
   memoryUsers.push(newUser);
@@ -103,56 +93,24 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
 };
 
 export const loginUser = async ({ email, password }) => {
-  if (password && password.length < 6) {
-    throw new Error('Password must be at least 6 characters');
+  if (!email) {
+    throw new Error('Please provide an email address');
+  }
+  if (!password) {
+    throw new Error('Please provide your password');
   }
   const cleanEmail = email.toLowerCase().trim();
 
   if (isDBConnected()) {
     try {
-      let user = await User.findOne({ email: cleanEmail }).select('+password');
-
+      const user = await User.findOne({ email: cleanEmail }).select('+password');
       if (!user) {
-        let autoRole = 'user';
-        let autoName = cleanEmail.split('@')[0];
-        let autoCompany = 'Industrial Enterprises Ltd';
+        throw new Error('Invalid email or password. Please check your credentials or register a new account.');
+      }
 
-        if (cleanEmail === 'admin1@gmail.com' || cleanEmail.includes('admin1')) {
-          autoRole = 'admin1';
-          autoName = 'Admin 1 (Read-Only)';
-          autoCompany = 'Inisio HQ';
-        } else if (cleanEmail === 'admin2@gmail.com' || cleanEmail.includes('admin2')) {
-          autoRole = 'admin2';
-          autoName = 'Admin 2 (Editor)';
-          autoCompany = 'Inisio HQ';
-        } else if (cleanEmail === 'admin3@gmail.com' || cleanEmail === 'admin@gmail.com' || cleanEmail.includes('admin3')) {
-          autoRole = 'admin3';
-          autoName = 'Admin 3 (Super Admin)';
-          autoCompany = 'Inisio HQ Administration';
-        } else if (cleanEmail === 'ca@gmail.com' || cleanEmail.includes('ca')) {
-          autoRole = 'ca';
-          autoName = 'CA Rajesh Sharma (FCA)';
-          autoCompany = 'Sharma & Associates Chartered Accountants';
-        } else if (cleanEmail === 'user@gmail.com' || cleanEmail.includes('user')) {
-          autoRole = 'user';
-          autoName = 'Vikram Malhotra';
-          autoCompany = 'Bio-Pharma Enterprises Ltd';
-        }
-
-        user = await User.create({
-          name: autoName,
-          email: cleanEmail,
-          password: password || 'inisio12345',
-          role: autoRole,
-          company: autoCompany,
-          phone: '+91 98765 43210',
-        });
-      } else {
-        if (password && !(await user.matchPassword(password))) {
-          if (password !== 'inisio12345' && password !== 'admin123' && password !== 'ca123') {
-            throw new Error('Invalid email or password');
-          }
-        }
+      const isMatch = await user.matchPassword(password);
+      if (!isMatch) {
+        throw new Error('Invalid email or password. Please check your credentials or register a new account.');
       }
 
       const token = generateToken({
@@ -172,46 +130,19 @@ export const loginUser = async ({ email, password }) => {
         token,
       };
     } catch (err) {
-      if (err.message.includes('Invalid email')) throw err;
-      console.warn('MongoDB error in loginUser, using memory fallback:', err.message);
+      if (err.message.includes('Invalid email') || err.message.includes('credentials')) throw err;
+      console.warn('MongoDB error in loginUser, checking memory store:', err.message);
     }
   }
 
-  // Memory fallback
-  let user = memoryUsers.find((u) => u.email.toLowerCase() === cleanEmail);
+  // Memory store lookup
+  const user = memoryUsers.find((u) => u.email.toLowerCase() === cleanEmail);
   if (!user) {
-    let autoRole = 'user';
-    let autoName = cleanEmail.split('@')[0];
-    let autoCompany = 'Industrial Enterprises Ltd';
+    throw new Error('Invalid email or password. Please check your credentials or register a new account.');
+  }
 
-    if (cleanEmail === 'admin1@gmail.com' || cleanEmail.includes('admin1')) {
-      autoRole = 'admin1';
-      autoName = 'Admin 1 (Read-Only)';
-      autoCompany = 'Inisio HQ';
-    } else if (cleanEmail === 'admin2@gmail.com' || cleanEmail.includes('admin2')) {
-      autoRole = 'admin2';
-      autoName = 'Admin 2 (Editor)';
-      autoCompany = 'Inisio HQ';
-    } else if (cleanEmail === 'admin3@gmail.com' || cleanEmail === 'admin@gmail.com' || cleanEmail.includes('admin3')) {
-      autoRole = 'admin3';
-      autoName = 'Admin 3 (Super Admin)';
-      autoCompany = 'Inisio HQ Administration';
-    } else if (cleanEmail === 'ca@gmail.com' || cleanEmail.includes('ca')) {
-      autoRole = 'ca';
-      autoName = 'CA Rajesh Sharma (FCA)';
-      autoCompany = 'Sharma & Associates Chartered Accountants';
-    }
-
-    user = {
-      _id: `user_${Date.now()}`,
-      name: autoName,
-      email: cleanEmail,
-      password: password || 'inisio12345',
-      role: autoRole,
-      company: autoCompany,
-      phone: '+91 98765 43210',
-    };
-    memoryUsers.push(user);
+  if (user.password !== password) {
+    throw new Error('Invalid email or password. Please check your credentials or register a new account.');
   }
 
   const token = generateToken({

@@ -190,31 +190,27 @@ export const WhyChooseInisio: React.FC<WhyChooseInisioProps> = ({
             </div>
 
             <h1 className="font-manrope text-2xl sm:text-3xl lg:text-4xl font-bold text-[#111827] leading-tight tracking-tight">
-              Your Project Needs Institutional Funding. We Help You Prepare.
+              Assess Project Feasibility, Bankability &amp; Funding Readiness
             </h1>
 
             <div className="space-y-4 font-inter text-sm sm:text-base text-[#4B5563] leading-relaxed">
-              <p>
-                Starting or growing a project often requires funding. But finding the right structure, understanding eligibility, preparing documents, and approaching institutions can be difficult.
-              </p>
-
-              <p className="font-semibold text-blue-700 text-base sm:text-lg">
-                That’s where Inisio helps.
+              <p className="font-semibold text-blue-800 text-base sm:text-lg">
+                Inisio helps project promoters understand whether their new project is viable, bankable and ready for institutional funding.
               </p>
 
               <p>
-                Inisio makes the project assessment process simpler. We understand your project and funding requirements, help you assess your institutional readiness, prepare the necessary documents, and guide you toward suitable banks and financial institutions for your project funding.
+                Starting or scaling a greenfield project requires deep financial structuring, precise capital outlay modeling, and bank-grade underwriting readiness. Rather than applying blindly for loans, Inisio gives promoters a clear institutional perspective: <em>“I have a project. Let me understand how fundable it is.”</em>
               </p>
 
               <p>
-                Whether you are starting a new business, expanding an existing business, purchasing equipment, or developing a new project, we help you take the right steps toward securing the funding you need.
+                We evaluate your project parameters, calculate debt service coverage capacity (DSCR), check promoter credit alignment through authorized channels, and generate executive AI Project Teasers and bank-grade DPRs with our accredited partners.
               </p>
             </div>
 
             {/* Highlighted Statement */}
             <div className="bg-blue-50/80 border-l-4 border-blue-600 p-4 sm:p-5 rounded-r-xl shadow-xs">
               <p className="font-manrope text-base sm:text-lg font-bold text-blue-950">
-                “We help you go from business plan to funding ready.”
+                “Understand your bankability before approaching lenders.”
               </p>
             </div>
           </div>

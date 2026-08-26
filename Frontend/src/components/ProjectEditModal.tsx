@@ -23,7 +23,7 @@ import {
   Check
 } from 'lucide-react';
 
-export type EditSectionType = 'overview' | 'land' | 'bankability' | 'documents' | 'advisory' | 'all';
+export type EditSectionType = 'overview' | 'land' | 'bankability' | 'financials' | 'documents' | 'advisory' | 'all';
 
 interface ProjectEditModalProps {
   project: UserProjectDetail;

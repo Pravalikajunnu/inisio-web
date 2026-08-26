@@ -15,7 +15,7 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({ lead, user, isOpen
   const [formData, setFormData] = useState<Partial<LeadRecord>>({});
 
   useEffect(() => {
-    if (lead) {
+    if (lead && isOpen) {
       setFormData({
         projectName: lead.projectName || '',
         industry: lead.industry || '',
@@ -25,7 +25,7 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({ lead, user, isOpen
         assignedTeam: lead.assignedTeam || ''
       });
     }
-  }, [lead]);
+  }, [lead?.id, isOpen]);
 
   if (!isOpen || !lead) return null;
 

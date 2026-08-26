@@ -12,46 +12,7 @@ export const getLeads = async (req, res, next) => {
 
 export const createLead = async (req, res, next) => {
   try {
-    const {
-      fullName,
-      mobile,
-      email,
-      projectName,
-      industry,
-      location,
-      totalCostCr,
-      loanRequiredCr,
-      feasibilityScore,
-      bankabilityRating,
-      source,
-      downloadedPDF,
-      notes,
-      promoterContribCr,
-      landStatus,
-      collateralStatus,
-      promoterExp,
-    } = req.body;
-
-    const lead = await leadService.createLead({
-      fullName,
-      mobile,
-      email,
-      projectName,
-      industry,
-      location,
-      totalCostCr,
-      loanRequiredCr,
-      feasibilityScore,
-      bankabilityRating,
-      source: source || 'Web Portal Lead',
-      downloadedPDF: downloadedPDF || false,
-      notes,
-      promoterContribCr,
-      landStatus,
-      collateralStatus,
-      promoterExp,
-    });
-
+    const lead = await leadService.createLead(req.body);
     return sendSuccess(res, lead, 'Lead captured successfully', 201);
   } catch (error) {
     next(error);

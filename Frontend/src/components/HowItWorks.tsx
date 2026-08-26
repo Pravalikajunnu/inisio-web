@@ -115,17 +115,17 @@ export const HOW_IT_WORKS_STEPS: StepItem[] = [
     number: 5,
     id: 'download-teaser',
     title: 'Download AI Project Teaser',
-    shortTitle: 'AI Teaser PDF',
+    shortTitle: 'AI Teaser DOCX',
     timeframe: 'Step 05',
-    description: 'Generate and download a comprehensive, professional Executive Project Teaser formatted specifically for institutional lenders and investors.',
+    description: 'Generate and download a comprehensive, professional Executive Project Teaser formatted specifically for institutional lenders and investors in editable DOCX format (with optional PDF).',
     icon: FileText,
     points: [
       'Institutional-grade Executive Summary',
       'Means of Finance & Capital Outlay summary',
       'Key financial ratios & DSCR metrics',
-      'Downloadable high-resolution PDF document'
+      'Downloadable editable DOCX & PDF documents'
     ],
-    deliverables: ['Executive Project Teaser PDF', 'Summary Risk Profile']
+    deliverables: ['Executive Project Teaser DOCX', 'Summary Risk Profile']
   },
   {
     number: 6,
@@ -407,38 +407,43 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
         </section>
 
         {/* ========================================================================= */}
-        {/* 4. Statistics Section (Animated Counters) */}
+        {/* 4. Compact Advisory Track Record & Greenfield Scale                       */}
         {/* ========================================================================= */}
-        <section className="bg-gradient-to-r from-blue-900 via-blue-950 to-slate-950 rounded-3xl p-8 sm:p-12 text-white border border-blue-800/40 shadow-lg">
-          <div className="text-center max-w-2xl mx-auto mb-8 space-y-2">
-            <span className="text-xs font-bold text-blue-400 uppercase tracking-wider">
-              Proven Advisory Track Record
-            </span>
-            <h2 className="font-manrope text-2xl sm:text-3xl font-extrabold text-white">
-              Greenfield Project Assessment Expertise
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-            <div className="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-1">
-              <span className="font-manrope text-2xl sm:text-3xl font-extrabold text-blue-400 block">
-                ₹5 Cr – ₹2000 Cr+
+        <section className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 rounded-2xl py-5 px-6 sm:px-8 text-white border border-blue-800/30 shadow-md">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+            <div className="space-y-1 text-center lg:text-left">
+              <span className="text-[11px] font-bold text-blue-400 uppercase tracking-wider bg-blue-900/40 px-2.5 py-0.5 rounded-md border border-blue-700/40 inline-block">
+                Advisory Track Record
               </span>
-              <span className="text-xs sm:text-sm text-slate-300 font-medium">Projects Supported</span>
+              <h2 className="font-manrope text-lg sm:text-xl font-bold text-white">
+                Pan-India Greenfield Project Appraisal Scale
+              </h2>
+              <p className="text-xs text-slate-400 font-inter">
+                Structuring bankable debt syndications for high-growth industrial promoters.
+              </p>
             </div>
 
-            <div className="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-1">
-              <span className="font-manrope text-2xl sm:text-3xl font-extrabold text-emerald-400 block">
-                100%
-              </span>
-              <span className="text-xs sm:text-sm text-slate-300 font-medium">Client Satisfaction</span>
-            </div>
+            <div className="grid grid-cols-3 gap-3 sm:gap-4 w-full lg:w-auto">
+              <div className="px-4 py-2.5 bg-white/5 rounded-xl border border-white/10 text-center">
+                <span className="font-manrope text-base sm:text-lg font-bold text-blue-400 block">
+                  ₹5 Cr – ₹2000 Cr+
+                </span>
+                <span className="text-[10px] sm:text-xs text-slate-300 font-medium">Capex Scope</span>
+              </div>
 
-            <div className="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-1">
-              <span className="font-manrope text-2xl sm:text-3xl font-extrabold text-blue-400 block">
-                50+
-              </span>
-              <span className="text-xs sm:text-sm text-slate-300 font-medium">Industries</span>
+              <div className="px-4 py-2.5 bg-white/5 rounded-xl border border-white/10 text-center">
+                <span className="font-manrope text-base sm:text-lg font-bold text-emerald-400 block">
+                  100%
+                </span>
+                <span className="text-[10px] sm:text-xs text-slate-300 font-medium">Clearance Focus</span>
+              </div>
+
+              <div className="px-4 py-2.5 bg-white/5 rounded-xl border border-white/10 text-center">
+                <span className="font-manrope text-base sm:text-lg font-bold text-blue-400 block">
+                  50+
+                </span>
+                <span className="text-[10px] sm:text-xs text-slate-300 font-medium">Sectors</span>
+              </div>
             </div>
           </div>
         </section>

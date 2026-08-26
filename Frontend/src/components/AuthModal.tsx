@@ -13,7 +13,13 @@ import {
   ShieldCheck,
   Building,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Info,
+  ChevronDown,
+  ChevronUp,
+  UserCheck,
+  FileCheck2,
+  Headphones
 } from 'lucide-react';
 
 interface AuthModalProps {
@@ -39,7 +45,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [company, setCompany] = useState('');
   const [role, setRole] = useState<UserRole>('user');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
+  const [showRolesGuide, setShowRolesGuide] = useState(false);
 
   // Status states
   const [loading, setLoading] = useState(false);
@@ -56,29 +62,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   if (!isOpen) return null;
 
-  // 1-Click quick role login for testing & ease of access
-  const handleQuickLogin = (selectedRole: UserRole) => {
-    setError('');
-    setSuccessMessage('');
-    if (selectedRole === 'admin' || selectedRole === 'admin3') {
-      setEmail('admin3@gmail.com');
-      setPassword('admin123');
-    } else if (selectedRole === 'admin2') {
-      setEmail('admin2@gmail.com');
-      setPassword('admin123');
-    } else if (selectedRole === 'admin1') {
-      setEmail('admin1@gmail.com');
-      setPassword('admin123');
-    } else if (selectedRole === 'ca') {
-      setEmail('ca@gmail.com');
-      setPassword('ca123');
-    } else {
-      setEmail('user@gmail.com');
-      setPassword('user123');
-    }
-    setMode('login');
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -93,26 +76,39 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
-    if ((mode === 'signup' || mode === 'login') && password && password.length < 6) {
+    if ((mode === 'signup' || mode === 'login') && (!password || password.length < 6)) {
       setError('Password must be at least 6 characters');
       setLoading(false);
       return;
     }
 
     if (mode === 'forgot-password') {
-      setTimeout(() => {
+      try {
+        const response = await fetch('/api/auth/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: cleanEmail }),
+        });
+        const resData = await response.json().catch(() => ({}));
         setLoading(false);
-        setSuccessMessage(`Password reset link sent to ${cleanEmail}. Please check your inbox.`);
-      }, 700);
+        if (response.ok && resData.success) {
+          setSuccessMessage(resData.message || `Password reset instructions sent to ${cleanEmail}.`);
+        } else {
+          setError(resData.message || 'Unable to process password reset request.');
+        }
+      } catch (err: any) {
+        setLoading(false);
+        setError('Network error. Please try again.');
+      }
       return;
     }
 
-    // Try backend authentication
+    // Backend authentication call
     try {
       const endpoint = mode === 'signup' ? '/api/auth/register' : '/api/auth/login';
       const body = mode === 'signup' 
-        ? { email: cleanEmail, password: password || 'inisio123', name: name || 'Promoter', phone, company, role }
-        : { email: cleanEmail, password: password || 'inisio123' };
+        ? { email: cleanEmail, password, name: name || cleanEmail.split('@')[0], phone, company, role }
+        : { email: cleanEmail, password };
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -122,8 +118,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
       const resData = await response.json().catch(() => ({}));
 
+      setLoading(false);
+
       if (response.ok && resData.success && resData.data) {
         const userData = resData.data;
+        if (userData.token) {
+          localStorage.setItem('inisio_auth_token', userData.token);
+        }
         const user: AuthUser = {
           email: userData.email,
           role: userData.role as UserRole,
@@ -135,37 +136,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         onLoginSuccess(user);
         onClose();
         return;
+      } else {
+        setError(resData.message || 'Authentication failed. Please verify your credentials.');
       }
-    } catch (err) {
-      console.warn('Backend login fallback:', err);
-    }
-
-    // Fallback client session resolution
-    let detectedRole: UserRole = mode === 'signup' ? role : 'user';
-    let detectedName = name || cleanEmail.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-
-    if (cleanEmail === 'admin@gmail.com' || cleanEmail.includes('admin')) {
-      detectedRole = 'admin';
-      detectedName = name || 'Platform Admin';
-    } else if (cleanEmail === 'ca@gmail.com' || cleanEmail.includes('ca')) {
-      detectedRole = 'ca';
-      detectedName = name || 'CA Financial Auditor';
-    }
-
-    const fallbackUser: AuthUser = {
-      email: cleanEmail,
-      role: detectedRole,
-      name: detectedName,
-      company: company || '',
-      phone: phone || '',
-      token: `token_${Date.now()}`
-    };
-
-    setTimeout(() => {
+    } catch (err: any) {
       setLoading(false);
-      onLoginSuccess(fallbackUser);
-      onClose();
-    }, 400);
+      setError('Unable to connect to the authentication server. Please try again.');
+    }
   };
 
   return (
@@ -175,10 +152,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       <div className="absolute inset-0" onClick={onClose} />
 
       {/* Main Clean Modal Card */}
-      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden z-10 font-inter">
+      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200/90 overflow-hidden z-10 font-inter max-h-[92vh] flex flex-col">
         
         {/* Header */}
-        <div className="p-6 pb-4 border-b border-slate-100 flex items-center justify-between">
+        <div className="p-6 pb-4 border-b border-slate-100 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-black text-sm shadow-xs">
               IN
@@ -208,7 +185,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         {/* Tab Switcher for Sign in / Create Account */}
         {mode !== 'forgot-password' && (
-          <div className="px-6 pt-4">
+          <div className="px-6 pt-4 shrink-0">
             <div className="flex bg-slate-100 p-1 rounded-xl">
               <button
                 type="button"
@@ -237,213 +214,234 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         )}
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          
-          {/* Feedback Messages */}
-          {error && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-semibold flex items-center gap-2 animate-in fade-in">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {successMessage && (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-semibold flex items-center gap-2 animate-in fade-in">
-              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
-              <span>{successMessage}</span>
-            </div>
-          )}
-
-          {/* Signup Specific Fields */}
-          {mode === 'signup' && (
-            <>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Full Name
-                </label>
-                <div className="relative">
-                  <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                  <input
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Enter your full name"
-                    className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-                  />
-                </div>
+        <div className="overflow-y-auto flex-1 p-6 space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            
+            {/* Feedback Messages */}
+            {error && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-semibold flex items-center gap-2 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                <span>{error}</span>
               </div>
+            )}
 
-              <div className="grid grid-cols-2 gap-3">
+            {successMessage && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-semibold flex items-center gap-2 animate-in fade-in">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                <span>{successMessage}</span>
+              </div>
+            )}
+
+            {/* Signup Specific Fields */}
+            {mode === 'signup' && (
+              <>
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Phone Number
+                    Full Name *
                   </label>
                   <div className="relative">
-                    <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <UserIcon className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                     <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="9848012345"
+                      type="text"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="e.g. Vikram Malhotra"
                       className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
                     />
                   </div>
                 </div>
 
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Phone Number
+                    </label>
+                    <div className="relative">
+                      <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="9848012345"
+                        className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Company Name
+                    </label>
+                    <div className="relative">
+                      <Building className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                      <input
+                        type="text"
+                        value={company}
+                        onChange={(e) => setCompany(e.target.value)}
+                        placeholder="Company Ltd"
+                        className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Account Type
+                    Select Account Role *
                   </label>
                   <select
                     value={role}
                     onChange={(e) => setRole(e.target.value as UserRole)}
-                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all cursor-pointer"
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all cursor-pointer font-medium"
                   >
-                    <option value="user">Promoter / Borrower</option>
-                    <option value="ca">CA / Financial Auditor</option>
-                    <option value="admin1">Admin 1 (Read-Only)</option>
-                    <option value="admin2">Admin 2 (Editor)</option>
-                    <option value="admin3">Admin 3 (Super Admin)</option>
+                    <option value="user">Promoter / Borrower (Project Assessments & DPR)</option>
+                    <option value="ca">CA / Financial Auditor (Financial Vetting & TEFR)</option>
+                    <option value="prosync">Prosync Advisory Desk (Consultation & Syndication)</option>
+                    <option value="admin">Platform Administrator (Full Management)</option>
                   </select>
                 </div>
-              </div>
-            </>
-          )}
-
-          {/* Email Field */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Email Address
-            </label>
-            <div className="relative">
-              <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@company.com"
-                className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-              />
-            </div>
-          </div>
-
-          {/* Password Field (only for login & signup) */}
-          {mode !== 'forgot-password' && (
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold text-slate-700">
-                  Password
-                </label>
-                {mode === 'login' && (
-                  <button
-                    type="button"
-                    onClick={() => { setMode('forgot-password'); setError(''); setSuccessMessage(''); }}
-                    className="text-xs text-blue-600 hover:text-blue-800 font-semibold cursor-pointer"
-                  >
-                    Forgot password?
-                  </button>
-                )}
-              </div>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-9 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 cursor-pointer"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
-          >
-            {loading ? (
-              <span className="flex items-center gap-2">
-                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                <span>Authenticating...</span>
-              </span>
-            ) : (
-              <>
-                <span>
-                  {mode === 'login' && 'Sign In to Dashboard'}
-                  {mode === 'signup' && 'Create Free Account'}
-                  {mode === 'forgot-password' && 'Send Reset Instructions'}
-                </span>
-                <ArrowRight className="w-3.5 h-3.5" />
               </>
             )}
-          </button>
 
-          {mode === 'forgot-password' && (
-            <div className="text-center pt-2">
-              <button
-                type="button"
-                onClick={() => setMode('login')}
-                className="text-xs text-slate-600 hover:text-slate-900 font-semibold cursor-pointer"
-              >
-                ← Back to Sign In
-              </button>
+            {/* Email Field */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Email Address *
+              </label>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@company.com"
+                  className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                />
+              </div>
             </div>
-          )}
-        </form>
 
-        {/* Quick Demo Switcher Footer */}
-        <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col items-center justify-center gap-2 text-center">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-            Quick 1-Click Role Login
-          </span>
-          <div className="flex flex-wrap items-center justify-center gap-1.5">
+            {/* Password Field (only for login & signup) */}
+            {mode !== 'forgot-password' && (
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-slate-700">
+                    Password *
+                  </label>
+                  {mode === 'login' && (
+                    <button
+                      type="button"
+                      onClick={() => { setMode('forgot-password'); setError(''); setSuccessMessage(''); }}
+                      className="text-xs text-blue-600 hover:text-blue-800 font-semibold cursor-pointer"
+                    >
+                      Forgot password?
+                    </button>
+                  )}
+                </div>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full pl-9 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 mt-2"
+            >
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Processing...</span>
+                </span>
+              ) : (
+                <>
+                  <span>
+                    {mode === 'login' && 'Sign In to Dashboard'}
+                    {mode === 'signup' && 'Register Account'}
+                    {mode === 'forgot-password' && 'Send Reset Instructions'}
+                  </span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </>
+              )}
+            </button>
+
+            {mode === 'forgot-password' && (
+              <div className="text-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => setMode('login')}
+                  className="text-xs text-slate-600 hover:text-slate-900 font-semibold cursor-pointer"
+                >
+                  ← Back to Sign In
+                </button>
+              </div>
+            )}
+          </form>
+
+          {/* Roles & Permissions Breakdown Collapsible Guide */}
+          <div className="pt-2 border-t border-slate-100">
             <button
               type="button"
-              onClick={() => handleQuickLogin('user')}
-              className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 text-[11px] font-semibold rounded-lg border border-slate-200 transition-colors cursor-pointer"
+              onClick={() => setShowRolesGuide(!showRolesGuide)}
+              className="w-full flex items-center justify-between text-left py-2 px-3 bg-slate-50 hover:bg-slate-100 rounded-xl text-xs font-semibold text-slate-700 transition-colors cursor-pointer"
             >
-              Promoter User
+              <span className="flex items-center gap-2 text-slate-600">
+                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                <span>Roles & Permissions Guide</span>
+              </span>
+              {showRolesGuide ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
             </button>
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('ca')}
-              className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 text-[11px] font-semibold rounded-lg border border-slate-200 transition-colors cursor-pointer"
-            >
-              CA Auditor
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('admin1')}
-              className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 text-[11px] font-semibold rounded-lg border border-slate-200 transition-colors cursor-pointer"
-            >
-              Admin 1
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('admin2')}
-              className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 text-[11px] font-semibold rounded-lg border border-slate-200 transition-colors cursor-pointer"
-            >
-              Admin 2
-            </button>
-            <button
-              type="button"
-              onClick={() => handleQuickLogin('admin3')}
-              className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 text-[11px] font-semibold rounded-lg border border-slate-200 transition-colors cursor-pointer"
-            >
-              Admin 3
-            </button>
+
+            {showRolesGuide && (
+              <div className="mt-2.5 p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] space-y-2.5 animate-in fade-in">
+                <div className="flex gap-2 items-start">
+                  <UserCheck className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-slate-900">Promoter / Borrower:</strong>
+                    <p className="text-slate-500">Run Greenfield project assessments, calculate bankability & DSCR, track DPR & CMA preparation, view sanction milestones.</p>
+                  </div>
+                </div>
+                <div className="flex gap-2 items-start">
+                  <FileCheck2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-slate-900">CA Auditor Desk:</strong>
+                    <p className="text-slate-500">Financial auditing, DSCR & Capex vetting, review means of finance, issue TEFR and CA Clearance Certificates.</p>
+                  </div>
+                </div>
+                <div className="flex gap-2 items-start">
+                  <Headphones className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-slate-900">Prosync Advisory Desk:</strong>
+                    <p className="text-slate-500">Manage 1-on-1 discovery calls, track borrower notes, update consultation statuses, and liaison with lending institutions.</p>
+                  </div>
+                </div>
+                <div className="flex gap-2 items-start">
+                  <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-slate-900">Platform Administrator:</strong>
+                    <p className="text-slate-500">Complete oversight across all project leads, consultant allocation, audit logs, and master export capabilities.</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

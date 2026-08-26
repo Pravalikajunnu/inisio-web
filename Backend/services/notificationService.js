@@ -1,46 +1,7 @@
 import Notification from '../models/Notification.js';
 import { isDBConnected } from '../config/db.js';
 
-const INITIAL_NOTIFS = [
-  {
-    _id: 'notif_01',
-    type: 'TEASER_DOWNLOAD',
-    title: 'Project Teaser Downloaded',
-    message: 'Suraj Kanu (kanusuraj15@gmail.com) downloaded Executive Teaser PDF for Solar Panel Cell Manufacturing Unit (₹120 Cr).',
-    userEmail: 'kanusuraj15@gmail.com',
-    userName: 'Suraj Kanu',
-    projectName: 'Solar Panel Cell Manufacturing Unit',
-    read: false,
-    metadata: { capexCr: 120, loanCr: 90, grade: 'A+' },
-    createdAt: new Date(Date.now() - 2 * 3600000),
-  },
-  {
-    _id: 'notif_02',
-    type: 'TEASER_DOWNLOAD',
-    title: 'Project Teaser Downloaded',
-    message: 'Suraj Kanu (kanusuraj15@gmail.com) downloaded Executive Teaser PDF for Bio-Pharma Formulation Plant (₹18.5 Cr).',
-    userEmail: 'kanusuraj15@gmail.com',
-    userName: 'Suraj Kanu',
-    projectName: 'Bio-Pharma Formulation Plant',
-    read: false,
-    metadata: { capexCr: 18.5, loanCr: 13.8, grade: 'A+' },
-    createdAt: new Date(Date.now() - 4 * 3600000),
-  },
-  {
-    _id: 'notif_03',
-    type: 'ASSESSMENT_SUBMITTED',
-    title: 'New Greenfield Feasibility Assessment',
-    message: 'Pravalika Junnu submitted assessment for Hotel Greenfield Resort & Convention (₹20 Cr).',
-    userEmail: 'pravalikajunnu14@gmail.com',
-    userName: 'Pravalika Junnu',
-    projectName: 'Hotel Greenfield Resort & Convention',
-    read: false,
-    metadata: { capexCr: 20, loanCr: 10, grade: 'A+' },
-    createdAt: new Date(Date.now() - 6 * 3600000),
-  }
-];
-
-let memoryNotifs = [...INITIAL_NOTIFS];
+let memoryNotifs = [];
 
 export const getNotifications = async (query = {}) => {
   if (isDBConnected()) {
@@ -49,13 +10,7 @@ export const getNotifications = async (query = {}) => {
       if (query.unread === 'true') {
         filter.read = false;
       }
-      let notifs = await Notification.find(filter).sort({ createdAt: -1 });
-
-      if (notifs.length === 0 && !query.unread) {
-        await Notification.insertMany(INITIAL_NOTIFS).catch(() => {});
-        notifs = await Notification.find({}).sort({ createdAt: -1 });
-      }
-
+      const notifs = await Notification.find(filter).sort({ createdAt: -1 });
       return notifs;
     } catch (err) {
       console.warn('MongoDB query failed in getNotifications, using memory fallback:', err.message);
