@@ -111,12 +111,12 @@ export const UnderwritingChecklist: React.FC = () => {
       </div>
 
       {/* Mandatory Disclaimer Box */}
-      <div className="p-3.5 bg-amber-50/70 border border-amber-200 rounded-xl flex items-start gap-2.5 text-xs text-amber-900">
+      <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-xl flex items-start gap-2.5 text-xs text-amber-950">
         <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
         <div>
-          <span className="font-bold">Indicative Underwriting Notice:</span>
-          <p className="text-[11px] text-amber-800 leading-relaxed mt-0.5">
-            This checklist is <strong>indicative and not exhaustive</strong>. Appraisal norms, margin requirements, and statutory clearances may differ from bank to bank, state to state, and across specific institutional loan schemes.
+          <span className="font-bold text-amber-900">Important Disclaimer:</span>
+          <p className="text-xs text-amber-900 leading-relaxed mt-0.5 font-medium">
+            Disclaimer: This checklist is indicative, not exhaustive, and requirements may differ from bank to bank.
           </p>
         </div>
       </div>

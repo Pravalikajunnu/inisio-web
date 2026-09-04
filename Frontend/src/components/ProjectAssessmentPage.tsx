@@ -1,12 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { generateProjectTeaserPDF, sendLeadToWhatsApp, TeaserPDFData } from '../utils/pdfGenerator';
 import { generateProjectTeaserDOCX } from '../utils/docxGenerator';
-import { getFeasibilityTerm } from '../types';
+import { getFeasibilityTerm, AuthUser, UserRole, PromoterDetail } from '../types';
 import { LocationDropdowns } from './LocationDropdowns';
 import { validateIndianMobileNumber } from '../utils/validation';
 import { DetailedRiskProfileForm, DetailedRiskProfileData } from './DetailedRiskProfileForm';
 import { calculateComprehensiveRiskScore } from '../utils/underwritingScorer';
 import { updateLeadRecord, saveLeadRecord } from '../utils/leadStore';
+import { reconcileProjectFinancials } from '../utils/financialUtils';
+import { MembershipPlansModal } from './MembershipPlansModal';
+import { DPRRequestModal } from './DPRRequestModal';
+import { FundingRequestModal } from './FundingRequestModal';
+import { recordAssessmentCompletion } from '../utils/membershipStore';
 import {
   Calculator,
   CheckCircle2,
@@ -39,7 +44,18 @@ import {
   FileCheck,
   ExternalLink,
   Clock,
-  MapPin
+  MapPin,
+  Lock,
+  LogIn,
+  UserPlus,
+  Eye,
+  EyeOff,
+  Shield,
+  Crown,
+  Star,
+  Plus,
+  Trash2,
+  X
 } from 'lucide-react';
 
 interface ProjectAssessmentPageProps {
@@ -48,6 +64,9 @@ interface ProjectAssessmentPageProps {
   editingProject?: any;
   onFinishEditing?: () => void;
   onNavigateToDashboard?: () => void;
+  currentUser?: AuthUser | null;
+  onOpenAuth?: (mode?: 'login' | 'signup' | 'forgot-password', prefill?: { email?: string; name?: string; phone?: string }) => void;
+  onLoginSuccess?: (user: AuthUser) => void;
 }
 
 type AssessmentStage =
@@ -65,7 +84,10 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
   defaultIndustry = '',
   editingProject,
   onFinishEditing,
-  onNavigateToDashboard
+  onNavigateToDashboard,
+  currentUser,
+  onOpenAuth,
+  onLoginSuccess
 }) => {
   const [stage, setStage] = useState<AssessmentStage>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,6 +98,38 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
   const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
   const [isDownloadingDocx, setIsDownloadingDocx] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [isMembershipModalOpen, setIsMembershipModalOpen] = useState(false);
+  const [isDPRModalOpen, setIsDPRModalOpen] = useState(false);
+  const [isFundingModalOpen, setIsFundingModalOpen] = useState(false);
+  const [actionToast, setActionToast] = useState<string | null>(null);
+
+  // Authentication State
+  const [activeUser, setActiveUser] = useState<AuthUser | null>(() => {
+    if (currentUser) return currentUser;
+    try {
+      const stored = localStorage.getItem('inisio_active_user');
+      if (stored) return JSON.parse(stored);
+    } catch (e) {}
+    return null;
+  });
+  const [authNotice, setAuthNotice] = useState('');
+
+  // Inline Quick Auth Form State on Final Step
+  const [inlineAuthMode, setInlineAuthMode] = useState<'login' | 'signup'>('login');
+  const [inlineEmail, setInlineEmail] = useState('');
+  const [inlinePassword, setInlinePassword] = useState('');
+  const [inlineName, setInlineName] = useState('');
+  const [inlinePhone, setInlinePhone] = useState('');
+  const [inlineAuthLoading, setInlineAuthLoading] = useState(false);
+  const [inlineAuthError, setInlineAuthError] = useState('');
+  const [inlineAuthSuccess, setInlineAuthSuccess] = useState('');
+  const [showInlinePassword, setShowInlinePassword] = useState(false);
+
+  useEffect(() => {
+    if (currentUser) {
+      setActiveUser(currentUser);
+    }
+  }, [currentUser]);
 
   // Stage 2 Inputs: Risk Profile Data for Bankability Rating
   const [riskProfileData, setRiskProfileData] = useState<DetailedRiskProfileData | null>(null);
@@ -116,10 +170,87 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
     description: '',
     fullName: '',
     mobile: '',
-    email: ''
+    email: '',
+    numPromoters: 1
   });
 
+  const [numPromoters, setNumPromoters] = useState<number>(1);
+  const [additionalPromoters, setAdditionalPromoters] = useState<Array<{
+    id: string;
+    name: string;
+    experienceYears: string;
+    qualification: string;
+  }>>([]);
+
   const mobileValidation = validateIndianMobileNumber(formData.mobile);
+
+  // Helper to build full promoters list for persistence
+  const buildPromotersList = (): PromoterDetail[] => {
+    const primaryPromoter: PromoterDetail = {
+      id: 'p-1',
+      name: formData.fullName || 'Lead Promoter',
+      experienceYears: formData.promoterExp || '5+ Years',
+      qualification: riskProfileData?.educationalBackground || 'Post Graduate / Professional',
+      shareholdingPct: numPromoters > 1 ? Math.round(100 / numPromoters) : 100,
+      role: 'Managing Director / Lead Promoter',
+      kycStatus: 'Verified'
+    };
+
+    const extraPromoters: PromoterDetail[] = additionalPromoters.slice(0, Math.max(0, numPromoters - 1)).map((p, idx) => ({
+      id: p.id || `p-${idx + 2}`,
+      name: p.name || `Co-Promoter ${idx + 2}`,
+      experienceYears: p.experienceYears || '5 Years',
+      qualification: p.qualification || 'Graduate / Professional',
+      shareholdingPct: Math.round(100 / numPromoters),
+      role: 'Director / Co-Promoter',
+      kycStatus: 'Pending'
+    }));
+
+    return [primaryPromoter, ...extraPromoters];
+  };
+
+  // Sync additional promoters array when numPromoters changes
+  const handleNumPromotersChange = (newCount: number) => {
+    setNumPromoters(newCount);
+    setFormData(prev => ({ ...prev, numPromoters: newCount }));
+    const countNeeded = Math.max(0, newCount - 1);
+    setAdditionalPromoters(prev => {
+      const updated = [...prev];
+      while (updated.length < countNeeded) {
+        const nextIdx = updated.length + 2;
+        updated.push({
+          id: `p-${nextIdx}`,
+          name: '',
+          experienceYears: '5 Years',
+          qualification: 'Graduate / Professional'
+        });
+      }
+      return updated.slice(0, countNeeded);
+    });
+  };
+
+  const handleUpdateAdditionalPromoter = (index: number, field: 'name' | 'experienceYears' | 'qualification', value: string) => {
+    setAdditionalPromoters(prev => {
+      const updated = [...prev];
+      if (updated[index]) {
+        updated[index] = { ...updated[index], [field]: value };
+      }
+      return updated;
+    });
+  };
+
+  const handleAddSinglePromoter = () => {
+    const newCount = numPromoters + 1;
+    handleNumPromotersChange(newCount);
+  };
+
+  const handleRemoveSinglePromoter = (indexToRemove: number) => {
+    if (numPromoters <= 1) return;
+    setAdditionalPromoters(prev => prev.filter((_, idx) => idx !== indexToRemove));
+    const newCount = Math.max(1, numPromoters - 1);
+    setNumPromoters(newCount);
+    setFormData(prev => ({ ...prev, numPromoters: newCount }));
+  };
 
   // Pre-fill inputs when editing a project
   React.useEffect(() => {
@@ -175,8 +306,23 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
         description: editingProject.notes || editingProject.description || '',
         fullName: contactFullName,
         mobile: contactMobile,
-        email: contactEmail
+        email: contactEmail,
+        numPromoters: editingProject.promotersList?.length ? editingProject.promotersList.length : 1
       });
+
+      if (editingProject.promotersList && editingProject.promotersList.length > 1) {
+        setNumPromoters(editingProject.promotersList.length);
+        const extras = editingProject.promotersList.slice(1).map((p: any, idx: number) => ({
+          id: p.id || `p-${idx + 2}`,
+          name: p.name || '',
+          experienceYears: String(p.experienceYears || '5 Years'),
+          qualification: p.qualification || 'Graduate / Professional'
+        }));
+        setAdditionalPromoters(extras);
+      } else {
+        setNumPromoters(1);
+        setAdditionalPromoters([]);
+      }
 
       // Pre-fill Underwriting / Bankability Risk Profile
       const projEqPct = projCost > 0 ? Math.round((projContrib / projCost) * 100) : 25;
@@ -305,22 +451,35 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
         return;
       }
 
-      // Automatically sync Means of Finance from previous Step 2 inputs, keeping Project Cost Breakup for custom user entry
+      // Automatically sync Means of Finance and benchmark Capex from Step 2 inputs
       const currentCost = parseFloat(formData.totalCostCr) || 0;
       const currentContrib = parseFloat(formData.promoterContribCr) || 0;
       const currentLoan = Math.max(0, currentCost - currentContrib);
 
+      const benchmarkFin = reconcileProjectFinancials({
+        totalCostCr: currentCost,
+        loanRequiredCr: currentLoan,
+        promoterContribCr: currentContrib,
+        consultancyCostCr: financials.consultancyCostCr,
+        machineryCostCr: financials.machineryCostCr,
+        civilCostCr: financials.civilCostCr,
+        otherCostsCr: financials.otherCostsCr,
+        termLoanCr: financials.termLoanCr,
+        promoterContributionCr: financials.promoterContributionCr,
+        otherFinanceCr: financials.otherFinanceCr
+      });
+
       setFinancials(prev => ({
         ...prev,
-        termLoanCr: currentLoan > 0 ? currentLoan.toFixed(2) : (prev.termLoanCr || ''),
-        promoterContributionCr: currentContrib > 0 ? currentContrib.toFixed(2) : (prev.promoterContributionCr || ''),
-        otherFinanceCr: prev.otherFinanceCr || '',
-        consultancyCostCr: prev.consultancyCostCr || '',
-        machineryCostCr: prev.machineryCostCr || '',
-        civilCostCr: prev.civilCostCr || '',
-        otherCostsCr: prev.otherCostsCr || '',
-        totalProjectCost: currentCost > 0 ? currentCost.toFixed(2) : '',
-        totalMeansOfFinance: currentCost > 0 ? currentCost.toFixed(2) : ''
+        termLoanCr: currentLoan > 0 ? currentLoan.toFixed(2) : (prev.termLoanCr || benchmarkFin.termLoanFormatted),
+        promoterContributionCr: currentContrib > 0 ? currentContrib.toFixed(2) : (prev.promoterContributionCr || benchmarkFin.promoterContributionFormatted),
+        otherFinanceCr: prev.otherFinanceCr || '0.00',
+        consultancyCostCr: prev.consultancyCostCr || benchmarkFin.consultancyFormatted,
+        machineryCostCr: prev.machineryCostCr || benchmarkFin.machineryFormatted,
+        civilCostCr: prev.civilCostCr || benchmarkFin.civilFormatted,
+        otherCostsCr: prev.otherCostsCr || benchmarkFin.otherCostsFormatted,
+        totalProjectCost: currentCost > 0 ? currentCost.toFixed(2) : benchmarkFin.totalCostFormatted,
+        totalMeansOfFinance: currentCost > 0 ? currentCost.toFixed(2) : benchmarkFin.totalFinanceFormatted
       }));
 
       setStage(3);
@@ -414,10 +573,25 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
   const results = computeResults();
   const comprehensiveRisk = calculateComprehensiveRiskScore(riskProfileData, results.feasibilityScore);
 
-  // Map all inputs into the PDF payload (using ONLY user-provided information)
+  // Map all inputs into the PDF payload (using fully reconciled and verified financial figures)
   const getPDFData = (): TeaserPDFData => {
     // Dynamic indicative DSCR calculation
     const calculatedDscr = results.debtPct > 75 ? 1.48 : results.debtPct > 65 ? 1.72 : 1.95;
+
+    const reconciled = reconcileProjectFinancials({
+      totalCostCr: formData.totalCostCr,
+      loanRequiredCr: formData.loanRequiredCr,
+      promoterContribCr: formData.promoterContribCr,
+      debtPct: results.debtPct,
+      eqPct: results.eqPct,
+      consultancyCostCr: financials.consultancyCostCr,
+      machineryCostCr: financials.machineryCostCr,
+      civilCostCr: financials.civilCostCr,
+      otherCostsCr: financials.otherCostsCr,
+      termLoanCr: financials.termLoanCr,
+      promoterContributionCr: financials.promoterContributionCr,
+      otherFinanceCr: financials.otherFinanceCr
+    });
 
     return {
       // Step 1 Feasibility Inputs
@@ -427,9 +601,9 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       projectName: formData.projectName || 'Greenfield Project',
       industry: formData.industry,
       location: formData.location,
-      totalCostCr: formData.totalCostCr,
-      promoterContribCr: formData.promoterContribCr,
-      loanRequiredCr: formData.loanRequiredCr,
+      totalCostCr: reconciled.totalCostFormatted,
+      promoterContribCr: reconciled.promoterContributionFormatted,
+      loanRequiredCr: reconciled.termLoanFormatted,
       landStatus: formData.landStatus,
       collateralStatus: formData.collateralStatus,
       promoterExp: formData.promoterExp,
@@ -437,25 +611,144 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       feasibilityScore: results.feasibilityScore,
       bankabilityRating: riskProfileData ? String(comprehensiveRisk.scoreOutOf10) : results.bankabilityRating,
       estimatedLoan: results.estimatedLoan,
-      eqPct: results.eqPct,
-      debtPct: results.debtPct,
+      eqPct: reconciled.eqPct,
+      debtPct: reconciled.debtPct,
       dscrEstimate: calculatedDscr,
       estInterestRate: '8.85% - 9.40%',
 
       // Step 2 Bankability Underwriting Inputs
       riskProfileData: riskProfileData || undefined,
       riskScoreOutOf10: comprehensiveRisk.scoreOutOf10,
-      machineryCostCr: financials.machineryCostCr || undefined,
-      civilCostCr: financials.civilCostCr || undefined,
-      consultancyCostCr: financials.consultancyCostCr || undefined,
-      otherCostsCr: financials.otherCostsCr || undefined,
-      termLoanCr: financials.termLoanCr || undefined,
-      promoterContributionCr: financials.promoterContributionCr || undefined,
-      otherFinanceCr: financials.otherFinanceCr || undefined
+      machineryCostCr: reconciled.machineryFormatted,
+      civilCostCr: reconciled.civilFormatted,
+      consultancyCostCr: reconciled.consultancyFormatted,
+      otherCostsCr: reconciled.otherCostsFormatted,
+      termLoanCr: reconciled.termLoanFormatted,
+      promoterContributionCr: reconciled.promoterContributionFormatted,
+      otherFinanceCr: reconciled.otherFinanceFormatted
     };
   };
 
+  const handleRequireAuth = (mode: 'login' | 'signup' = 'login', reason?: string) => {
+    if (reason) {
+      setAuthNotice(reason);
+    }
+    if (onOpenAuth) {
+      onOpenAuth(mode, {
+        email: formData.email,
+        name: formData.fullName,
+        phone: formData.mobile
+      });
+    } else {
+      setAuthNotice('Please sign in or create an account to proceed with further steps.');
+    }
+  };
+
+  const handleInlineAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setInlineAuthError('');
+    setInlineAuthSuccess('');
+    setInlineAuthLoading(true);
+
+    const emailToUse = (inlineEmail || formData.email).trim().toLowerCase();
+    const nameToUse = (inlineName || formData.fullName || emailToUse.split('@')[0]).trim();
+    const phoneToUse = (inlinePhone || formData.mobile).trim();
+
+    if (!emailToUse) {
+      setInlineAuthError('Please enter your email address');
+      setInlineAuthLoading(false);
+      return;
+    }
+    if (!inlinePassword || inlinePassword.length < 6) {
+      setInlineAuthError('Password must be at least 6 characters');
+      setInlineAuthLoading(false);
+      return;
+    }
+
+    try {
+      const endpoint = inlineAuthMode === 'signup' ? '/api/auth/register' : '/api/auth/login';
+      const body = inlineAuthMode === 'signup'
+        ? { email: emailToUse, password: inlinePassword, name: nameToUse, phone: phoneToUse, role: 'user' }
+        : { email: emailToUse, password: inlinePassword };
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json().catch(() => ({}));
+      setInlineAuthLoading(false);
+
+      if (res.ok && data.success && data.data) {
+        const userData = data.data;
+        if (userData.token) {
+          localStorage.setItem('inisio_auth_token', userData.token);
+        }
+        const loggedUser: AuthUser = {
+          email: userData.email,
+          role: (userData.role as UserRole) || 'user',
+          name: userData.name || nameToUse || 'Promoter',
+          phone: userData.phone || phoneToUse,
+          company: userData.company,
+          token: userData.token
+        };
+        localStorage.setItem('inisio_active_user', JSON.stringify(loggedUser));
+        setActiveUser(loggedUser);
+        setAuthNotice('');
+
+        // Link current project to user in leadStore
+        const computed = computeResults();
+        const activeBankability = riskProfileData ? String(comprehensiveRisk.scoreOutOf10) : String(computed.bankabilityRating);
+        const activeId = editingProject?.id || createdProjectId;
+        const payloadToSave = {
+          projectName: formData.projectName || 'Greenfield Project',
+          industry: formData.industry,
+          location: formData.location,
+          totalCostCr: formData.totalCostCr,
+          promoterContribCr: formData.promoterContribCr,
+          loanRequiredCr: formData.loanRequiredCr,
+          landStatus: formData.landStatus,
+          collateralStatus: formData.collateralStatus,
+          promoterExp: formData.promoterExp,
+          notes: formData.description,
+          fullName: loggedUser.name,
+          mobile: loggedUser.phone || formData.mobile,
+          email: loggedUser.email,
+          feasibilityScore: computed.feasibilityScore,
+          bankabilityRating: activeBankability,
+          riskProfileData: riskProfileData || undefined,
+          financials: financials,
+          promotersList: buildPromotersList()
+        };
+
+        if (activeId) {
+          updateLeadRecord(activeId, payloadToSave, loggedUser.name);
+        } else {
+          saveLeadRecord({
+            ...payloadToSave,
+            source: 'Project Assessment Flow',
+            downloadedPDF: false
+          }).then(saved => setCreatedProjectId(saved.id));
+        }
+
+        setInlineAuthSuccess(`Signed in successfully as ${loggedUser.name}! Your project has been saved to your dashboard.`);
+        if (onLoginSuccess) {
+          onLoginSuccess(loggedUser);
+        }
+      } else {
+        setInlineAuthError(data.message || 'Authentication failed. Please check your credentials.');
+      }
+    } catch (err) {
+      setInlineAuthLoading(false);
+      setInlineAuthError('Network error. Please try again.');
+    }
+  };
+
   const handleDownloadTeaser = (action: 'download' | 'preview' = 'download') => {
+    if (!activeUser) {
+      handleRequireAuth('login', 'Please sign in or create an account to preview or download the AI Project Teaser.');
+      return;
+    }
     setIsDownloadingPdf(true);
     const pdfData = getPDFData();
     generateProjectTeaserPDF(pdfData, action);
@@ -463,6 +756,10 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
   };
 
   const handleDownloadDocxTeaser = async () => {
+    if (!activeUser) {
+      handleRequireAuth('login', 'Please sign in or create an account to download the official AI Project Teaser in DOCX format.');
+      return;
+    }
     try {
       setIsDownloadingDocx(true);
       const pdfData = getPDFData();
@@ -480,6 +777,16 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
     if (!formData.projectName.trim()) {
       alert('Please enter your Project Name before saving.');
       return;
+    }
+
+    if (formData.email && !inlineEmail) {
+      setInlineEmail(formData.email);
+    }
+    if (formData.fullName && !inlineName) {
+      setInlineName(formData.fullName);
+    }
+    if (formData.mobile && !inlinePhone) {
+      setInlinePhone(formData.mobile);
     }
 
     const cCost = parseFloat(financials.consultancyCostCr) || 0;
@@ -525,7 +832,8 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       feasibilityScore: computed.feasibilityScore,
       bankabilityRating: activeBankability,
       riskProfileData: riskProfileData || undefined,
-      financials: updatedFinancials
+      financials: updatedFinancials,
+      promotersList: buildPromotersList()
     };
 
     // Guarantee idempotent save: Only save once in the dashboard
@@ -544,6 +852,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
 
     setIsDataSaved(true);
     setSaveSuccessMessage('Project assessment saved successfully to your dashboard!');
+    recordAssessmentCompletion(formData.email || activeUser?.email);
     setStage('final_assessment_results');
     window.scrollTo({ top: 120, behavior: 'smooth' });
   };
@@ -572,7 +881,8 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       feasibilityScore: computed.feasibilityScore,
       bankabilityRating: activeBankability,
       riskProfileData: riskProfileData || undefined,
-      financials: financials
+      financials: financials,
+      promotersList: buildPromotersList()
     };
 
     const activeId = editingProject?.id || createdProjectId;
@@ -619,7 +929,8 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       email: formData.email,
       feasibilityScore: computed.feasibilityScore,
       bankabilityRating: activeBankability,
-      riskProfileData: riskProfileData || undefined
+      riskProfileData: riskProfileData || undefined,
+      promotersList: buildPromotersList()
     };
 
     const activeId = editingProject?.id || createdProjectId;
@@ -771,11 +1082,11 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
             <button
               type="button"
               onClick={() => {
-                setStage('underwriting_review');
+                setStage('collect_bankability');
                 window.scrollTo({ top: 120, behavior: 'smooth' });
               }}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                stage === 'underwriting_review' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                stage === 'collect_bankability' || stage === 'bankability_result' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
               <span className="w-4 h-4 rounded-full bg-black/10 flex items-center justify-center text-[10px]">4</span>
@@ -785,15 +1096,15 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
             <button
               type="button"
               onClick={() => {
-                setStage('commercial_supply');
+                setStage('collect_financials');
                 window.scrollTo({ top: 120, behavior: 'smooth' });
               }}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                stage === 'commercial_supply' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+                stage === 'collect_financials' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
               <span className="w-4 h-4 rounded-full bg-black/10 flex items-center justify-center text-[10px]">5</span>
-              <span>Commercial Sourcing</span>
+              <span>Cost &amp; Finance Breakup</span>
             </button>
 
             <button
@@ -1381,61 +1692,182 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                     </div>
                   </div>
 
-                  {/* Contact Info */}
-                  <div className="p-4 bg-slate-50 rounded-xl border border-gray-200 space-y-3">
-                    <h3 className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5 text-blue-600" />
-                      <span>Contact Details</span>
-                    </h3>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-bold text-gray-600 mb-1">Full Name *</label>
-                        <input
-                          type="text"
-                          name="fullName"
-                          value={formData.fullName}
-                          onChange={handleInputChange}
-                          required
-                          placeholder="Enter your full name"
-                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-gray-600 mb-1">Mobile Number *</label>
-                        <input
-                          type="tel"
-                          name="mobile"
-                          value={formData.mobile}
-                          onChange={(e) => {
-                            handleInputChange(e);
-                            setMobileTouched(true);
-                          }}
-                          onBlur={() => setMobileTouched(true)}
-                          required
-                          placeholder="Enter your 10-digit mobile number"
-                          maxLength={10}
-                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        {mobileTouched && !mobileValidation.isValid && (
-                          <p className="text-[11px] text-red-600 mt-1">{mobileValidation.error}</p>
-                        )}
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-gray-600 mb-1">Email Address *</label>
-                        <input
-                          type="email"
-                          name="email"
-                          value={formData.email}
-                          onChange={handleInputChange}
-                          required
-                          placeholder="Enter your email address"
-                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                  {/* Promoter & Contact Info */}
+                  <div className="p-4 bg-slate-50 rounded-xl border border-gray-200 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-200/80 pb-2.5">
+                      <h3 className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                        <User className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Promoter &amp; Contact Details</span>
+                      </h3>
+                      
+                      <div className="flex items-center gap-2">
+                        <label className="text-[11px] font-bold text-gray-600">
+                          Number of Promoters:
+                        </label>
+                        <select
+                          value={numPromoters}
+                          onChange={(e) => handleNumPromotersChange(Number(e.target.value))}
+                          className="px-2.5 py-1 bg-white border border-gray-300 rounded-lg text-xs font-bold text-blue-700 outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                        >
+                          <option value={1}>1 (Single Promoter)</option>
+                          <option value={2}>2 Promoters</option>
+                          <option value={3}>3 Promoters</option>
+                          <option value={4}>4 Promoters</option>
+                          <option value={5}>5+ Promoters</option>
+                        </select>
                       </div>
                     </div>
+
+                    {/* Primary Promoter Card */}
+                    <div className="bg-white p-3.5 rounded-xl border border-gray-200 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">
+                          Primary Promoter (Lead Applicant)
+                        </span>
+                        <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+                          Lead Contact
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-bold text-gray-600 mb-1">Full Name *</label>
+                          <input
+                            type="text"
+                            name="fullName"
+                            value={formData.fullName}
+                            onChange={handleInputChange}
+                            required
+                            placeholder="e.g. Rajesh Malhotra"
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-gray-600 mb-1">Mobile Number *</label>
+                          <input
+                            type="tel"
+                            name="mobile"
+                            value={formData.mobile}
+                            onChange={(e) => {
+                              handleInputChange(e);
+                              setMobileTouched(true);
+                            }}
+                            onBlur={() => setMobileTouched(true)}
+                            required
+                            placeholder="Enter 10-digit mobile"
+                            maxLength={10}
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                          />
+                          {mobileTouched && !mobileValidation.isValid && (
+                            <p className="text-[11px] text-red-600 mt-1">{mobileValidation.error}</p>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-gray-600 mb-1">Email Address *</label>
+                          <input
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleInputChange}
+                            required
+                            placeholder="promoter@company.com"
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Additional Promoters (Rendered dynamically if numPromoters > 1) */}
+                    {numPromoters > 1 && (
+                      <div className="space-y-3 pt-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">
+                            Additional Co-Promoters ({additionalPromoters.length})
+                          </span>
+                          <button
+                            type="button"
+                            onClick={handleAddSinglePromoter}
+                            className="text-[11px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer"
+                          >
+                            <Plus className="w-3 h-3" />
+                            <span>Add Another Promoter</span>
+                          </button>
+                        </div>
+
+                        {additionalPromoters.map((promoter, index) => (
+                          <div
+                            key={promoter.id || index}
+                            className="bg-white p-3.5 rounded-xl border border-blue-100 shadow-2xs space-y-3 relative"
+                          >
+                            <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                              <span className="text-[11px] font-bold text-zinc-800">
+                                Promoter {index + 2} (Co-Director / Partner)
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveSinglePromoter(index)}
+                                className="text-[10px] text-red-500 hover:text-red-700 font-semibold cursor-pointer"
+                              >
+                                Remove
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                              <div>
+                                <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                                  Promoter Name *
+                                </label>
+                                <input
+                                  type="text"
+                                  value={promoter.name}
+                                  onChange={(e) => handleUpdateAdditionalPromoter(index, 'name', e.target.value)}
+                                  required
+                                  placeholder={`e.g. Co-Promoter ${index + 2}`}
+                                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                                  Experience (Years) *
+                                </label>
+                                <select
+                                  value={promoter.experienceYears}
+                                  onChange={(e) => handleUpdateAdditionalPromoter(index, 'experienceYears', e.target.value)}
+                                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white cursor-pointer"
+                                >
+                                  <option value="1-3 Years">1-3 Years (Early Career)</option>
+                                  <option value="3-5 Years">3-5 Years (Relevant Domain)</option>
+                                  <option value="5-10 Years">5-10 Years (Senior Track Record)</option>
+                                  <option value="10+ Years">10+ Years (Industry Veteran)</option>
+                                  <option value="15+ Years">15+ Years (Executive Experience)</option>
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                                  Qualification *
+                                </label>
+                                <select
+                                  value={promoter.qualification}
+                                  onChange={(e) => handleUpdateAdditionalPromoter(index, 'qualification', e.target.value)}
+                                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white cursor-pointer"
+                                >
+                                  <option value="B.Tech / Engineering">B.Tech / Engineering</option>
+                                  <option value="MBA / Business Management">MBA / Business Management</option>
+                                  <option value="Chartered Accountant (CA)">Chartered Accountant (CA)</option>
+                                  <option value="Post Graduate / Master's">Post Graduate / Master's</option>
+                                  <option value="Doctorate (Ph.D)">Doctorate (Ph.D)</option>
+                                  <option value="Graduate / Other">Graduate / Other</option>
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className="pt-2 flex items-center justify-between">
@@ -2003,20 +2435,34 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
         {/* STAGE 4: FINAL ASSESSMENT RESULTS & DOWNLOADS                              */}
         {/* ========================================================================= */}
         {stage === 'final_assessment_results' && (() => {
-          const cCost = parseFloat(financials.consultancyCostCr) || 0;
-          const mCost = parseFloat(financials.machineryCostCr) || 0;
-          const lCost = parseFloat(financials.civilCostCr) || 0;
-          const oCost = parseFloat(financials.otherCostsCr) || 0;
-          const userEnteredTotalCost = cCost + mCost + lCost + oCost;
-          const totalCost = userEnteredTotalCost > 0 ? userEnteredTotalCost : (parseFloat(financials.totalProjectCost || '') || cost);
+          const finResolved = reconcileProjectFinancials({
+            totalCostCr: formData.totalCostCr,
+            loanRequiredCr: formData.loanRequiredCr,
+            promoterContribCr: formData.promoterContribCr,
+            debtPct: results.debtPct,
+            eqPct: results.eqPct,
+            consultancyCostCr: financials.consultancyCostCr,
+            machineryCostCr: financials.machineryCostCr,
+            civilCostCr: financials.civilCostCr,
+            otherCostsCr: financials.otherCostsCr,
+            termLoanCr: financials.termLoanCr,
+            promoterContributionCr: financials.promoterContributionCr,
+            otherFinanceCr: financials.otherFinanceCr
+          });
+
+          const cCost = finResolved.consultancyCostCr;
+          const mCost = finResolved.machineryCostCr;
+          const lCost = finResolved.civilCostCr;
+          const oCost = finResolved.otherCostsCr;
+          const totalCost = finResolved.totalCostCr;
           
-          const tLoan = parseFloat(financials.termLoanCr) || (cost * (results.debtPct / 100));
-          const pContrib = parseFloat(financials.promoterContributionCr) || (cost * (results.eqPct / 100));
-          const oFin = parseFloat(financials.otherFinanceCr) || 0;
-          const totalFin = parseFloat(financials.totalMeansOfFinance || '') || (tLoan + pContrib + oFin) || totalCost;
+          const tLoan = finResolved.termLoanCr;
+          const pContrib = finResolved.promoterContributionCr;
+          const oFin = finResolved.otherFinanceCr;
+          const totalFin = finResolved.totalFinanceCr;
           
-          const debtPctCalc = totalFin > 0 ? ((tLoan / totalFin) * 100).toFixed(1) : results.debtPct.toString();
-          const eqPctCalc = totalFin > 0 ? ((pContrib / totalFin) * 100).toFixed(1) : results.eqPct.toString();
+          const debtPctCalc = finResolved.debtPct.toString();
+          const eqPctCalc = finResolved.eqPct.toString();
           const dscrValue = (results.debtPct > 75 ? 1.48 : results.debtPct > 65 ? 1.72 : 1.95).toFixed(2);
           const activeBankability = riskProfileData ? comprehensiveRisk.scoreOutOf10.toFixed(1) : results.bankabilityRating;
 
@@ -2026,10 +2472,17 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
               <div className="bg-white rounded-3xl border border-gray-200 shadow-xl p-6 sm:p-8 space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-5">
                   <div>
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold mb-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Project Saved to Dashboard (1 Record)</span>
-                    </div>
+                    {activeUser ? (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold mb-2">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Logged in as {activeUser.name} • Project Linked to Dashboard</span>
+                      </div>
+                    ) : (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100 text-amber-900 border border-amber-200 rounded-full text-xs font-bold mb-2">
+                        <Lock className="w-3.5 h-3.5 text-amber-700" />
+                        <span>Authentication Required for Downstream Steps</span>
+                      </div>
+                    )}
                     <h2 className="text-2xl sm:text-3xl font-black text-slate-900 font-manrope">
                       Executive Project Assessment Outputs
                     </h2>
@@ -2058,6 +2511,10 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                     <button
                       type="button"
                       onClick={() => {
+                        if (!activeUser) {
+                          handleRequireAuth('login', 'Please sign in or register to access your personal dashboard and manage this project.');
+                          return;
+                        }
                         if (onNavigateToDashboard) {
                           onNavigateToDashboard();
                         } else if (onFinishEditing) {
@@ -2068,11 +2525,30 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                       }}
                       className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold rounded-xl flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
                     >
+                      {!activeUser && <Lock className="w-3.5 h-3.5 text-amber-400" />}
                       <LayoutDashboard className="w-3.5 h-3.5" />
                       <span>View in Dashboard</span>
                     </button>
                   </div>
                 </div>
+
+                {/* Authentication Notification Banner if triggered by action */}
+                {authNotice && !activeUser && (
+                  <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl flex items-start gap-3 animate-in fade-in shadow-sm">
+                    <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                    <div className="flex-1 text-xs">
+                      <div className="font-extrabold text-amber-900 text-sm mb-0.5">Sign In Required</div>
+                      <div className="text-amber-800 font-medium">{authNotice}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRequireAuth('login')}
+                      className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs shrink-0 cursor-pointer"
+                    >
+                      Sign In Now
+                    </button>
+                  </div>
+                )}
 
                 {/* Top 6 Key Outputs Cards Grid */}
                 <div>
@@ -2271,65 +2747,320 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                 </div>
               </div>
 
+              {/* ========================================================================= */}
+              {/* AUTHENTICATION GATE CARD (MANDATORY FOR DOWNSTREAM PROCEEDINGS)           */}
+              {/* ========================================================================= */}
+              {!activeUser ? (
+                <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white rounded-3xl p-6 sm:p-8 shadow-2xl border-2 border-indigo-500/40 space-y-6 animate-in fade-in">
+                  <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 pb-6 border-b border-slate-700/80">
+                    <div className="space-y-2 max-w-2xl">
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-xs font-bold">
+                        <Lock className="w-3.5 h-3.5" />
+                        <span>Step 6: Login / Sign In to Continue to Further Steps</span>
+                      </div>
+                      <h3 className="text-xl sm:text-2xl font-black font-manrope text-white">
+                        Sign In or Register to Save Project &amp; Unlock Teaser Downloads
+                      </h3>
+                      <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                        You have completed your Greenfield Project Assessment for <span className="text-white font-semibold">{formData.projectName || 'your project'}</span>. To permanently save this record to your Promoter Dashboard, download your official branded AI Project Teaser (.docx &amp; .pdf), and request CA / Lender syndication, please sign in with your account or create a free promoter profile.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleRequireAuth('login')}
+                        className="w-full sm:w-auto px-5 py-3 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <LogIn className="w-4 h-4" />
+                        <span>Sign In with Existing Account</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRequireAuth('signup')}
+                        className="w-full sm:w-auto px-5 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 hover:text-white font-extrabold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        <span>Create Free Account</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Inline Quick Login / Sign Up Form */}
+                  <div className="bg-slate-950/70 p-5 sm:p-6 rounded-2xl border border-slate-800 space-y-4">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                        <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                        <span>Instant 1-Click Verification &amp; Project Linking</span>
+                      </div>
+
+                      {/* Mode Toggle Tabs */}
+                      <div className="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700 text-xs font-bold">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setInlineAuthMode('login');
+                            setInlineAuthError('');
+                            setInlineAuthSuccess('');
+                          }}
+                          className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                            inlineAuthMode === 'login' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          Sign In
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setInlineAuthMode('signup');
+                            setInlineAuthError('');
+                            setInlineAuthSuccess('');
+                          }}
+                          className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                            inlineAuthMode === 'signup' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          Create Account
+                        </button>
+                      </div>
+                    </div>
+
+                    <form onSubmit={handleInlineAuthSubmit} className="space-y-3 pt-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {inlineAuthMode === 'signup' && (
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                              Full Name <span className="text-rose-400">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={inlineName || formData.fullName}
+                              onChange={(e) => setInlineName(e.target.value)}
+                              placeholder="e.g. Ramesh Sharma"
+                              className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                        )}
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                            Email Address <span className="text-rose-400">*</span>
+                          </label>
+                          <input
+                            type="email"
+                            required
+                            value={inlineEmail || formData.email}
+                            onChange={(e) => setInlineEmail(e.target.value)}
+                            placeholder="e.g. ramesh@example.com"
+                            className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+
+                        {inlineAuthMode === 'signup' && (
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                              Mobile Number
+                            </label>
+                            <input
+                              type="tel"
+                              value={inlinePhone || formData.mobile}
+                              onChange={(e) => setInlinePhone(e.target.value)}
+                              placeholder="10-digit mobile"
+                              className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                        )}
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                            Password <span className="text-rose-400">*</span>
+                          </label>
+                          <div className="relative">
+                            <input
+                              type={showInlinePassword ? 'text' : 'password'}
+                              required
+                              value={inlinePassword}
+                              onChange={(e) => setInlinePassword(e.target.value)}
+                              placeholder="Enter password (min 6 chars)"
+                              className="w-full px-3.5 py-2.5 pr-9 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowInlinePassword(!showInlinePassword)}
+                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer"
+                            >
+                              {showInlinePassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex items-end">
+                          <button
+                            type="submit"
+                            disabled={inlineAuthLoading}
+                            className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-black text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            {inlineAuthLoading ? (
+                              <span>Processing...</span>
+                            ) : (
+                              <>
+                                <CheckCircle2 className="w-4 h-4" />
+                                <span>{inlineAuthMode === 'signup' ? 'Register & Unlock Teaser' : 'Sign In & Unlock Teaser'}</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {inlineAuthError && (
+                        <div className="p-2.5 bg-rose-950/80 border border-rose-800 text-rose-200 rounded-xl text-xs font-semibold flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                          <span>{inlineAuthError}</span>
+                        </div>
+                      )}
+
+                      {inlineAuthSuccess && (
+                        <div className="p-2.5 bg-emerald-950/80 border border-emerald-800 text-emerald-200 rounded-xl text-xs font-semibold flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                          <span>{inlineAuthSuccess}</span>
+                        </div>
+                      )}
+                    </form>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 sm:p-5 bg-emerald-50 border border-emerald-200 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm animate-in fade-in">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0 font-bold">
+                      <ShieldCheck className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-black text-emerald-900 uppercase tracking-wide">
+                        Verified Promoter Account Linked
+                      </div>
+                      <div className="text-xs text-emerald-800 font-medium">
+                        Signed in as <span className="font-bold">{activeUser.name}</span> ({activeUser.email}). This project is permanently saved to your Promoter Dashboard.
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onNavigateToDashboard) {
+                        onNavigateToDashboard();
+                      } else if (onFinishEditing) {
+                        onFinishEditing();
+                      } else {
+                        window.location.href = '/dashboard';
+                      }
+                    }}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                  >
+                    <LayoutDashboard className="w-3.5 h-3.5" />
+                    <span>Go to Dashboard</span>
+                  </button>
+                </div>
+              )}
+
               {/* Immediate Download & Next Actions Box */}
               <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-800 space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-800">
                   <div>
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs font-bold mb-2">
                       <Sparkles className="w-3.5 h-3.5" />
-                      <span>Executive Deliverable Ready</span>
+                      <span>Executive Deliverables Ready</span>
                     </div>
                     <h3 className="text-xl sm:text-2xl font-black font-manrope text-white">
-                      Download AI Project Teaser in DOCX
+                      Download AI Project Teaser &amp; Underwriting Dossier
                     </h3>
-                    <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
-                      Download an editable Microsoft Word (.docx) executive teaser with complete underwriting scorecard, CAPEX breakup, and means of finance.
+                    <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
+                      Download your official bank-ready Project Teaser with complete Proposed Project Cost Statement, Means of Finance, and Comprehensive Underwriting Scorecard in both print-ready <strong>PDF</strong> and editable <strong>DOCX</strong> formats.
+                      {!activeUser && <span className="text-amber-400 block mt-1 font-semibold">🔒 Sign in or register to unlock instant downloads.</span>}
                     </p>
                   </div>
 
-                  {/* Primary DOCX Download Button */}
-                  <div className="shrink-0">
+                  {/* Dual Primary Download Actions (PDF & DOCX) */}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+                    {/* Primary PDF Download */}
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadTeaser('download')}
+                      disabled={isDownloadingPdf}
+                      className={`px-6 py-3.5 font-black text-xs sm:text-sm rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer ${
+                        activeUser
+                          ? 'bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white hover:shadow-rose-500/25'
+                          : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                      }`}
+                    >
+                      {!activeUser ? (
+                        <>
+                          <Lock className="w-4 h-4 text-amber-400" />
+                          <span>Sign In to Download PDF</span>
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="w-4 h-4 stroke-[2.5]" />
+                          <span>{isDownloadingPdf ? 'Generating PDF...' : 'Download Project Teaser (PDF)'}</span>
+                        </>
+                      )}
+                    </button>
+
+                    {/* Primary DOCX Download */}
                     <button
                       type="button"
                       onClick={() => handleDownloadDocxTeaser()}
                       disabled={isDownloadingDocx}
-                      className="w-full sm:w-auto px-7 py-3.5 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-black text-sm rounded-xl transition-all shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-2.5 cursor-pointer"
+                      className={`px-6 py-3.5 font-black text-xs sm:text-sm rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer ${
+                        activeUser
+                          ? 'bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white hover:shadow-blue-500/25'
+                          : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                      }`}
                     >
-                      <Download className="w-4 h-4 stroke-[2.5]" />
-                      <span>{isDownloadingDocx ? 'Generating DOCX...' : 'Download AI Project Teaser in DOCX'}</span>
+                      {!activeUser ? (
+                        <>
+                          <Lock className="w-4 h-4 text-amber-400" />
+                          <span>Sign In to Download DOCX</span>
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-4 h-4 stroke-[2.5]" />
+                          <span>{isDownloadingDocx ? 'Generating DOCX...' : 'Download Project Teaser (DOCX)'}</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
 
                 {/* Secondary Actions Row */}
-                <div className="pt-4 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex flex-wrap items-center gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => handleDownloadTeaser('download')}
-                      disabled={isDownloadingPdf}
-                      className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 border border-slate-700 cursor-pointer"
-                    >
-                      <FileText className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{isDownloadingPdf ? 'Generating PDF...' : 'Download PDF (Optional)'}</span>
-                    </button>
-
                     <button
                       type="button"
                       onClick={() => handleDownloadTeaser('preview')}
                       className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 border border-slate-700 cursor-pointer"
                     >
+                      {!activeUser && <Lock className="w-3.5 h-3.5 text-amber-400" />}
                       <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Preview Teaser</span>
+                      <span>Preview PDF Teaser</span>
                     </button>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2.5">
                     <button
                       type="button"
-                      onClick={onOpenConsultation}
+                      onClick={() => {
+                        if (!activeUser) {
+                          handleRequireAuth('login', 'Please sign in or create an account to book your CA consultation.');
+                          return;
+                        }
+                        onOpenConsultation();
+                      }}
                       className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 border border-slate-700 cursor-pointer"
                     >
+                      {!activeUser && <Lock className="w-3.5 h-3.5 text-amber-400" />}
                       <PhoneCall className="w-3.5 h-3.5" />
                       <span>Consult CA &amp; Project Advisor</span>
                     </button>
@@ -2337,6 +3068,10 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                     <button
                       type="button"
                       onClick={() => {
+                        if (!activeUser) {
+                          handleRequireAuth('login', 'Please sign in or register to access your personal dashboard.');
+                          return;
+                        }
                         if (onNavigateToDashboard) {
                           onNavigateToDashboard();
                         } else if (onFinishEditing) {
@@ -2347,16 +3082,188 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                       }}
                       className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
                     >
+                      {!activeUser && <Lock className="w-3.5 h-3.5 text-amber-300" />}
                       <span>Go to Dashboard</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
               </div>
+
+              {/* Membership Call-to-Action Card */}
+              <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-blue-500/30 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div className="space-y-2 max-w-2xl">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-400/20 text-amber-300 rounded-full text-xs font-bold">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Inisio Executive Membership</span>
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-black font-manrope text-white tracking-tight">
+                      Have another project to assess? Upgrade to Inisio Membership.
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-inter">
+                      Unlock unlimited greenfield project feasibility appraisals, editable Word &amp; PDF dossiers, 10-year bank CMA financial models, and priority Chartered Accountant debt syndication advisory.
+                    </p>
+                  </div>
+                  <div className="shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setIsMembershipModalOpen(true)}
+                      className="w-full sm:w-auto px-7 py-3.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 active:from-blue-600 active:to-indigo-700 text-white font-black text-sm rounded-xl transition-all shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-2.5 cursor-pointer"
+                    >
+                      <Crown className="w-4 h-4 text-amber-300" />
+                      <span>View Membership Plans</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* DPR & Funding Monetization Pathways (2-Column Grid) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                {/* DPR Pathway Card */}
+                <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-6 sm:p-7 shadow-xl border border-indigo-500/30 flex flex-col justify-between relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+                  
+                  <div className="relative z-10 space-y-3">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-xs font-bold border border-indigo-400/30">
+                      <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>DPR &amp; Bank TEV Preparation</span>
+                    </div>
+
+                    <h3 className="text-xl sm:text-2xl font-black font-manrope text-white tracking-tight">
+                      Need a Detailed Project Report (DPR)?
+                    </h3>
+
+                    <p className="text-sm font-semibold text-indigo-200">
+                      Get Connected With our DPR Partner.
+                    </p>
+
+                    <p className="text-xs text-slate-300 leading-relaxed font-inter">
+                      Get your bank-compliant Techno-Economic Viability (TEV) study and Detailed Project Report drafted by empaneled Chartered Engineers and financial analysts for fast loan sanction.
+                    </p>
+                  </div>
+
+                  <div className="relative z-10 mt-6 pt-4 border-t border-indigo-900/60 flex items-center justify-between">
+                    <div className="text-[11px] text-slate-400 font-medium">
+                      ✓ SBI &amp; Consortium Ready Format
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsDPRModalOpen(true)}
+                      className="px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-400 hover:to-blue-500 text-white font-black text-xs sm:text-sm rounded-xl transition-all shadow-md hover:shadow-indigo-500/30 flex items-center gap-2 cursor-pointer"
+                    >
+                      <span>Request DPR Assistance</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Funding Pathway Card */}
+                <div className="bg-gradient-to-br from-slate-900 via-teal-950 to-slate-900 text-white rounded-3xl p-6 sm:p-7 shadow-xl border border-emerald-500/30 flex flex-col justify-between relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+                  
+                  <div className="relative z-10 space-y-3">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-xs font-bold border border-emerald-400/30">
+                      <Landmark className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Debt Syndication &amp; Project Finance</span>
+                    </div>
+
+                    <h3 className="text-xl sm:text-2xl font-black font-manrope text-white tracking-tight">
+                      Looking for Project Funding?
+                    </h3>
+
+                    <p className="text-sm font-semibold text-emerald-200">
+                      Connect with our debt syndication network.
+                    </p>
+
+                    <p className="text-xs text-slate-300 leading-relaxed font-inter">
+                      Direct access to senior credit desks across leading PSU Consortiums, Private Banks, SIDBI MSME capital schemes, and structured debt funds.
+                    </p>
+                  </div>
+
+                  <div className="relative z-10 mt-6 pt-4 border-t border-teal-900/60 flex items-center justify-between">
+                    <div className="text-[11px] text-slate-400 font-medium">
+                      ✓ ₹1 Cr - ₹100+ Cr Sanction Limits
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsFundingModalOpen(true)}
+                      className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs sm:text-sm rounded-xl transition-all shadow-md hover:shadow-emerald-500/30 flex items-center gap-2 cursor-pointer"
+                    >
+                      <Coins className="w-4 h-4 text-emerald-300" />
+                      <span>Request Funding Assistance</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
             </div>
           );
         })()}
       </div>
+
+      {/* Membership Plans Modal */}
+      <MembershipPlansModal
+        isOpen={isMembershipModalOpen}
+        onClose={() => setIsMembershipModalOpen(false)}
+        currentUser={activeUser}
+        onOpenAuth={onOpenAuth}
+        onOpenConsultation={onOpenConsultation}
+      />
+
+      {/* DPR Request Modal */}
+      <DPRRequestModal
+        isOpen={isDPRModalOpen}
+        onClose={() => setIsDPRModalOpen(false)}
+        projectName={formData.projectName || formData.industry || 'Greenfield Project'}
+        industry={formData.industry || 'Manufacturing'}
+        totalCostCr={formData.totalCostCr || '10.00'}
+        loanRequiredCr={formData.loanRequiredCr || '7.50'}
+        user={activeUser}
+        onSubmitSuccess={(msg) => {
+          setActionToast(msg);
+          setTimeout(() => setActionToast(null), 6000);
+        }}
+      />
+
+      {/* Funding Request Modal */}
+      <FundingRequestModal
+        isOpen={isFundingModalOpen}
+        onClose={() => setIsFundingModalOpen(false)}
+        projectName={formData.projectName || formData.industry || 'Greenfield Project'}
+        industry={formData.industry || 'Manufacturing'}
+        totalCostCr={formData.totalCostCr || '10.00'}
+        loanRequiredCr={formData.loanRequiredCr || '7.50'}
+        user={activeUser}
+        onSubmitSuccess={(msg) => {
+          setActionToast(msg);
+          setTimeout(() => setActionToast(null), 6000);
+        }}
+      />
+
+      {/* Action Success Toast Banner */}
+      {actionToast && (
+        <div className="fixed bottom-6 right-6 z-50 max-w-md bg-slate-900 text-white p-4 rounded-2xl shadow-2xl border border-emerald-500/40 flex items-start gap-3 animate-in slide-in-from-bottom-5">
+          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+          <div className="flex-1 text-xs">
+            <p className="font-bold text-slate-100">Request Received</p>
+            <p className="text-slate-300 mt-0.5 leading-relaxed">{actionToast}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setActionToast(null)}
+            className="text-slate-400 hover:text-white p-1 rounded-lg cursor-pointer"
+            aria-label="Close notification"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };

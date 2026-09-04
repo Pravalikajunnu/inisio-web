@@ -98,7 +98,7 @@ export const SAMPLE_BLOGS: BlogPost[] = [
     category: 'Financial Checklist',
     date: '28 Jul 2026',
     readTime: '4 min read',
-    image: 'https://images.unsplash.com/photo-1664575602554-2087b04935a5?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=800&q=80',
     summary: 'Essential documents and eligibility parameters required by Indian public and private banks for fast-track funding sanction.',
     content: {
       intro: 'To avoid back-and-forth bank queries, promoters should compile a complete credit dossier before approaching lenders. Having all documents ready reduces sanction turnaround time from months to weeks.',

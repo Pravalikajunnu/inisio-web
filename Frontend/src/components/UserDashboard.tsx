@@ -12,6 +12,8 @@ import { PromotersManagement } from './dashboard/PromotersManagement';
 import { ProjectFinancialsBreakup } from './dashboard/ProjectFinancialsBreakup';
 import { UnderwritingChecklist } from './dashboard/UnderwritingChecklist';
 import { DocumentsCompliance } from './dashboard/DocumentsCompliance';
+import { getUserMembership, MembershipPlan } from '../utils/membershipStore';
+import { MembershipPlansModal } from './MembershipPlansModal';
 import {
   Building,
   Building2,
@@ -57,13 +59,16 @@ import {
   CheckCircle,
   FileCheck,
   ArrowRight,
-  Search
+  Search,
+  Crown,
+  Star
 } from 'lucide-react';
 
 interface UserDashboardProps {
   user: AuthUser;
   onOpenAssessment: (projectToEdit?: any) => void;
   onOpenConsultation: () => void;
+  onOpenMembership?: () => void;
 }
 
 export interface UserProjectDetail {
@@ -129,7 +134,8 @@ export interface UserProjectDetail {
 export const UserDashboard: React.FC<UserDashboardProps> = ({
   user,
   onOpenAssessment,
-  onOpenConsultation
+  onOpenConsultation,
+  onOpenMembership
 }) => {
   const [userProjects, setUserProjects] = useState<UserProjectDetail[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
@@ -142,6 +148,16 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   const [editSection, setEditSection] = useState<EditSectionType>('all');
   const [showToast, setShowToast] = useState<string | null>(null);
   const [dprRequestSuccess, setDprRequestSuccess] = useState<boolean>(false);
+  const [isMembershipModalOpen, setIsMembershipModalOpen] = useState<boolean>(false);
+  const [membership, setMembership] = useState(() => getUserMembership(user.email));
+
+  useEffect(() => {
+    const handleMembershipUpdate = () => {
+      setMembership(getUserMembership(user.email));
+    };
+    window.addEventListener('inisio_membership_updated', handleMembershipUpdate);
+    return () => window.removeEventListener('inisio_membership_updated', handleMembershipUpdate);
+  }, [user.email]);
 
   const handleOpenEditSection = (section: EditSectionType) => {
     setEditSection(section);
@@ -693,7 +709,26 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                   <div>
                     <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-3 mb-4">
                       <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{user.name || 'User'}</h1>
-                      <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-full">New Customer</span>
+                      {membership.plan === 'pro' ? (
+                        <span className="px-3 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold rounded-full flex items-center gap-1.5 shadow-sm">
+                          <Crown className="w-3.5 h-3.5 text-amber-300" />
+                          <span>Inisio Pro Member (Unlimited)</span>
+                        </span>
+                      ) : membership.plan === 'enterprise' ? (
+                        <span className="px-3 py-1 bg-slate-900 text-amber-300 text-xs font-bold rounded-full flex items-center gap-1.5 shadow-sm border border-amber-400/30">
+                          <Crown className="w-3.5 h-3.5" />
+                          <span>Enterprise Syndication</span>
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setIsMembershipModalOpen(true)}
+                          className="px-3 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-bold rounded-full flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Free Starter ({userProjects.length}/1 Used) • Upgrade</span>
+                        </button>
+                      )}
                     </div>
                     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-8 gap-y-4 text-sm text-slate-500">
                       <div>
@@ -868,6 +903,23 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                 <span className="text-zinc-300 text-lg">/</span>
                 <span className="text-base text-zinc-500 font-semibold">{user.name || user.email}</span>
               </div>
+
+              {/* Membership Status Pill */}
+              {membership.isMember ? (
+                <span className="px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg border border-blue-200 flex items-center gap-1">
+                  <Crown className="w-3.5 h-3.5 text-amber-500" />
+                  <span>{membership.plan === 'pro' ? 'Pro Member' : 'Enterprise'}</span>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsMembershipModalOpen(true)}
+                  className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold rounded-lg border border-amber-200 flex items-center gap-1 cursor-pointer transition-colors"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Upgrade to Pro</span>
+                </button>
+              )}
 
               {/* Back to Projects List (if multiple projects exist) */}
               {userProjects.length > 1 && (
@@ -1492,6 +1544,17 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
         )}
 
       </div>
+
+      {/* Membership Plans Modal */}
+      <MembershipPlansModal
+        isOpen={isMembershipModalOpen}
+        onClose={() => setIsMembershipModalOpen(false)}
+        currentUser={user}
+        onOpenConsultation={onOpenConsultation}
+        onPlanUpgraded={(newPlan) => {
+          setMembership(getUserMembership(user.email));
+        }}
+      />
     </div>
   );
 };

@@ -121,11 +121,12 @@ export interface PromoterDetail {
   name: string;
   pan?: string;
   din?: string;
-  experienceYears: number | string;
+  experienceYears?: number | string;
+  experience?: number | string;
   qualification: string;
-  shareholdingPct: number | string;
-  role: string;
-  kycStatus: 'Verified' | 'Pending' | 'Uploaded';
+  shareholdingPct?: number | string;
+  role?: string;
+  kycStatus?: 'Verified' | 'Pending' | 'Uploaded';
   netWorthCr?: number | string;
   cibilScore?: number | string;
 }
@@ -151,6 +152,7 @@ export interface ProjectDocument {
   size?: number | string;
   uploadedAt: string;
   fileUrl?: string;
+  dataUrl?: string;
   status: 'Uploaded' | 'Under Review' | 'Verified';
   dpdpConsent: boolean;
 }

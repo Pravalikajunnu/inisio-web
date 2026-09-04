@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { getStoredLeads, fetchLeadsFromBackend, deleteLeadRecord, clearAllLeads, exportLeadsToCSV, LeadRecord } from '../utils/leadStore';
 import { getAdminNotifications, AdminNotification, getUnreadNotificationCount } from '../utils/notificationStore';
+import { getAllRegisteredUsers, RegisteredUserRecord, updateUserStatus } from '../utils/userStore';
+import { getVisitorSummary, VisitorSummary, getStoredVisitorLogs, VisitorLog } from '../utils/visitorStore';
 import { UserProfileDetailModal } from './UserProfileDetailModal';
 import { LeadEditModal } from './LeadEditModal';
 import { AdminNotificationModal } from './AdminNotificationModal';
@@ -28,7 +30,14 @@ import {
   Edit3,
   Filter,
   Check,
-  Plus
+  Plus,
+  Globe,
+  Smartphone,
+  Laptop,
+  Radio,
+  ExternalLink,
+  Lock,
+  UserPlus
 } from 'lucide-react';
 
 interface AdminDashboardViewProps {
@@ -37,8 +46,18 @@ interface AdminDashboardViewProps {
 
 export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) => {
   const [leads, setLeads] = useState<LeadRecord[]>([]);
+  const [usersList, setUsersList] = useState<RegisteredUserRecord[]>([]);
+  const [visitorSummary, setVisitorSummary] = useState<VisitorSummary>({
+    totalVisits: 0,
+    uniqueVisitors: 0,
+    activeNow: 1,
+    desktopPercent: 65,
+    mobilePercent: 35,
+    topPages: [],
+    recentLogs: []
+  });
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'all' | 'edits' | 'assignments' | 'teasers'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'users' | 'visitors' | 'edits' | 'assignments' | 'teasers'>('all');
   const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null);
   const [editingLead, setEditingLead] = useState<LeadRecord | null>(null);
   const [showToast, setShowToast] = useState<string | null>(null);
@@ -52,18 +71,32 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
 
   useEffect(() => {
     fetchLeadsFromBackend().then(() => loadData()).catch(() => loadData());
+    
     const handleUpdate = () => loadData();
     const handleNotifUpdate = () => setUnreadNotifs(getUnreadNotificationCount());
+    const handleVisitorUpdate = () => setVisitorSummary(getVisitorSummary());
+    const handleUserUpdate = () => setUsersList(getAllRegisteredUsers());
+
     window.addEventListener('inisio_lead_added', handleUpdate);
     window.addEventListener('inisio_admin_notification_added', handleNotifUpdate);
+    window.addEventListener('inisio_visitor_logged', handleVisitorUpdate);
+    window.addEventListener('inisio_user_registered_or_logged_in', handleUserUpdate);
+
+    // Initial load
+    loadData();
+
     return () => {
       window.removeEventListener('inisio_lead_added', handleUpdate);
       window.removeEventListener('inisio_admin_notification_added', handleNotifUpdate);
+      window.removeEventListener('inisio_visitor_logged', handleVisitorUpdate);
+      window.removeEventListener('inisio_user_registered_or_logged_in', handleUserUpdate);
     };
   }, []);
 
   const loadData = () => {
     setLeads(getStoredLeads());
+    setUsersList(getAllRegisteredUsers());
+    setVisitorSummary(getVisitorSummary());
     setUnreadNotifs(getUnreadNotificationCount());
   };
 
@@ -95,6 +128,16 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
     return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
   });
 
+  const filteredUsers = usersList.filter(u => {
+    return (
+      u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (u.phone && u.phone.includes(searchQuery)) ||
+      (u.company && u.company.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      u.role.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
+
   const totalDownloads = leads.filter(l => l.downloadedPDF).length;
   const totalEdits = leads.filter(l => !!l.lastEditedBy).length;
   const unassignedCount = leads.filter(l => !l.assignedTeam).length;
@@ -120,11 +163,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
         <div className="max-w-7xl mx-auto px-6 py-2.5 flex items-center gap-2 text-xs">
           <ShieldCheck className="w-4 h-4 text-slate-500 shrink-0" />
           {user.role === 'admin3' ? (
-            <span className="text-slate-700"><strong>Admin 3 (Super Admin):</strong> You have full unrestricted rights to edit records, manage users, and configure settings.</span>
+            <span className="text-slate-700"><strong>Admin 3 (Super Admin):</strong> You have unrestricted control across Project Pipelines, Registered Users, and Live Traffic Analytics.</span>
           ) : user.role === 'admin2' ? (
-            <span className="text-slate-700"><strong>Admin 2 (Editor):</strong> You can view project details and edit specific implementation and services fields.</span>
+            <span className="text-slate-700"><strong>Admin 2 (Editor):</strong> You can view and edit project details, manage lead assignments, and inspect user activity.</span>
           ) : (
-            <span className="text-slate-700"><strong>Admin 1 (Read-Only):</strong> You can view project details and status updates without editing privileges.</span>
+            <span className="text-slate-700"><strong>Admin 1 (Read-Only):</strong> You can view all project submissions, user profiles, and visitor analytics without modification rights.</span>
           )}
         </div>
       </div>
@@ -138,18 +181,18 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Admin Control</span>
+                <span className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Executive Admin Desk</span>
                 <span className="text-zinc-300">/</span>
                 <span className="text-xs text-zinc-500 font-medium">{user.name}</span>
                 <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-semibold border border-blue-100">
-                  Super Admin
+                  {user.role.toUpperCase()}
                 </span>
               </div>
               <h1 className="text-xl sm:text-2xl font-bold text-zinc-900 tracking-tight">
-                Greenfield Syndication Control &amp; Lead Manager
+                Project Pipelines, Users &amp; Live Traffic Control
               </h1>
               <p className="text-xs text-zinc-500 mt-0.5">
-                Monitor promoter project submissions, user edits, underwriting ratings, and debt syndication pipelines in real time.
+                Real-time tracking of greenfield project assessments, authenticated user accounts, and website visitor traffic.
               </p>
             </div>
 
@@ -189,6 +232,32 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
             >
               <Building2 className="w-3.5 h-3.5" />
               <span>All Projects</span>
+              <span className={`px-1.5 py-0.5 rounded-md text-[10px] ${activeTab === 'all' ? 'bg-zinc-700 text-white' : 'bg-zinc-200 text-zinc-700'}`}>{leads.length}</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                activeTab === 'users' ? 'bg-zinc-900 text-white shadow-xs' : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>Users &amp; Logins</span>
+              <span className={`px-1.5 py-0.5 rounded-md text-[10px] ${activeTab === 'users' ? 'bg-zinc-700 text-white' : 'bg-blue-100 text-blue-800'}`}>{usersList.length}</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('visitors')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                activeTab === 'visitors' ? 'bg-zinc-900 text-white shadow-xs' : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'
+              }`}
+            >
+              <Activity className="w-3.5 h-3.5" />
+              <span>Website Visitors</span>
+              <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] bg-emerald-100 text-emerald-800 font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                {visitorSummary.activeNow} Live
+              </span>
             </button>
 
             <button
@@ -210,7 +279,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
                 activeTab === 'assignments' ? 'bg-zinc-900 text-white shadow-xs' : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'
               }`}
             >
-              <Users className="w-3.5 h-3.5" />
+              <UserCheck className="w-3.5 h-3.5" />
               <span>Assignments</span>
               {unassignedCount > 0 && (
                 <span className={`px-1.5 py-0.5 rounded-md text-[10px] ${activeTab === 'assignments' ? 'bg-amber-500 text-amber-950' : 'bg-amber-100 text-amber-700'}`}>{unassignedCount}</span>
@@ -233,242 +302,463 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
         </div>
 
         {/* ---------------------------------------------------- */}
-        {/* 2. KEY METRICS STRIP                                 */}
+        {/* 2. KEY METRICS STRIP (4-Pillar Overview)             */}
         {/* ---------------------------------------------------- */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-200/80 space-y-1">
-            <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider block">Total Captured Promoters</span>
+            <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider block">Total Captured Projects</span>
             <div className="text-xl font-bold text-zinc-900">{leads.length}</div>
             <span className="text-[11px] text-blue-700 font-medium">Active Greenfield Pipelines</span>
           </div>
 
           <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-200/80 space-y-1">
-            <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider block">Teasers Downloaded</span>
-            <div className="text-xl font-bold text-blue-600">{totalDownloads}</div>
-            <span className="text-[11px] text-zinc-500 font-medium">14-Page PDF Reports Issued</span>
+            <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider block">Registered Accounts</span>
+            <div className="text-xl font-bold text-indigo-600">{usersList.length}</div>
+            <span className="text-[11px] text-zinc-500 font-medium">Promoters, CAs &amp; Admins</span>
           </div>
 
           <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-200/80 space-y-1">
-            <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider block">Evaluated Capex Portfolio</span>
+            <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider block">Website Visitor Traffic</span>
+            <div className="text-xl font-bold text-emerald-600 flex items-center gap-2">
+              <span>{visitorSummary.totalVisits}</span>
+              <span className="text-xs font-semibold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full">
+                {visitorSummary.activeNow} online
+              </span>
+            </div>
+            <span className="text-[11px] text-zinc-500 font-medium">Real-time telemetry</span>
+          </div>
+
+          <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-200/80 space-y-1">
+            <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider block">Evaluated Capex Outlay</span>
             <div className="text-xl font-bold text-zinc-900">₹ {totalCapex.toFixed(1)} Cr</div>
-            <span className="text-[11px] text-zinc-500 font-medium">Cumulative Outlay</span>
-          </div>
-
-          <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-200/80 space-y-1">
-            <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider block">Direct WhatsApp Desk</span>
-            <div className="text-base font-bold text-zinc-900 font-mono">+91 63020 26462</div>
-            <span className="text-[11px] text-emerald-700 font-medium">Live Inisio Channel</span>
+            <span className="text-[11px] text-zinc-500 font-medium">Cumulative Pipeline Value</span>
           </div>
         </div>
 
         {/* ---------------------------------------------------- */}
-        {/* 3. PROMOTER PROJECTS & LEADS TABLE                   */}
+        {/* 3. TAB SPECIFIC MAIN VIEWS                           */}
         {/* ---------------------------------------------------- */}
-        <div className="border border-zinc-200 rounded-2xl p-5 bg-white space-y-4">
-          
-          {/* Header with Search and Filters */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-100 pb-3">
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold text-zinc-900">Promoter Submissions &amp; Activity Tracking</h2>
-              <button
-                onClick={() => {
-                  loadData();
-                  triggerToast('Refreshed lead records.');
-                }}
-                className="p-1 text-zinc-400 hover:text-zinc-900 rounded transition-colors"
-                title="Refresh"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-              </button>
-            </div>
 
-            <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+        {/* VIEW A: USERS & LOGINS VIEW */}
+        {activeTab === 'users' && (
+          <div className="border border-zinc-200 rounded-2xl p-5 bg-white space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-100 pb-3">
+              <div>
+                <h2 className="text-sm font-bold text-zinc-900 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-blue-600" />
+                  <span>Authenticated Users &amp; Login History</span>
+                </h2>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  All signed-up promoters, chartered accountants, and admin accounts with their login frequency and linked projects.
+                </p>
+              </div>
+
               <div className="relative w-full sm:w-60">
                 <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2.5" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Search name, phone, project..."
+                  placeholder="Search user name, email, phone..."
                   className="w-full pl-8 pr-3 py-1.5 bg-zinc-50 border border-zinc-200 text-xs text-zinc-900 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
             </div>
-          </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[800px] text-left text-xs">
-              <thead>
-                <tr className="border-b border-zinc-200 text-zinc-400 font-semibold uppercase text-[10px]">
-                  <th className="py-2 px-3">Date &amp; Updates</th>
-                  <th className="py-2 px-3">Promoter</th>
-                  <th className="py-2 px-3">Project &amp; Sector</th>
-                  <th className="py-2 px-3">Capex / Debt</th>
-                  <th className="py-2 px-3">Stage &amp; Teaser</th>
-                  <th className="py-2 px-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100 text-zinc-700">
-                {filteredLeads.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="p-8 text-center text-zinc-400 text-xs">
-                      No lead records match your search or filter.
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[800px] text-left text-xs">
+                <thead>
+                  <tr className="border-b border-zinc-200 text-zinc-400 font-semibold uppercase text-[10px]">
+                    <th className="py-2.5 px-3">User &amp; Organization</th>
+                    <th className="py-2.5 px-3">Contact Details</th>
+                    <th className="py-2.5 px-3">Role &amp; Privilege</th>
+                    <th className="py-2.5 px-3">Last Active Login</th>
+                    <th className="py-2.5 px-3">Login Count</th>
+                    <th className="py-2.5 px-3 text-right">Status</th>
                   </tr>
-                ) : (
-                  filteredLeads.map((lead) => {
-                    const formattedDate = new Date(lead.timestamp).toLocaleDateString('en-IN', {
-                      day: '2-digit',
-                      month: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    });
+                </thead>
+                <tbody className="divide-y divide-zinc-100 text-zinc-700">
+                  {filteredUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="p-8 text-center text-zinc-400 text-xs">
+                        No registered users match your search.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredUsers.map(u => {
+                      const lastLoginFormatted = new Date(u.lastLoginAt).toLocaleDateString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      });
 
-                    const waText = encodeURIComponent(
-                      `Hello ${lead.fullName || 'Promoter'},\n\n` +
-                      `Thank you for evaluating your ${lead.industry || 'greenfield'} project on Inisio Greenfield Advisory Platform. ` +
-                      `We noticed your interest in financing ₹${lead.loanRequiredCr || lead.totalCostCr} Cr. How can we assist you with DPR and Debt Syndication?`
-                    );
+                      const userProjects = leads.filter(l => l.email.toLowerCase() === u.email.toLowerCase());
 
-                    return (
-                      <tr
-                        key={lead.id}
-                        onClick={() => setSelectedLead(lead)}
-                        className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
-                      >
-                        <td className="py-2.5 px-3 whitespace-nowrap">
-                          <div className="text-zinc-800 font-medium">{formattedDate}</div>
-                          {lead.lastEditedBy && (
-                            <div className="text-[10px] text-blue-700 flex items-center gap-1 mt-0.5">
-                              <Edit3 className="w-2.5 h-2.5" />
-                              <span>Edited by user</span>
-                            </div>
-                          )}
-                        </td>
+                      return (
+                        <tr key={u.id} className="hover:bg-zinc-50 transition-colors">
+                          <td className="py-3 px-3">
+                            <div className="font-bold text-zinc-900">{u.name}</div>
+                            <div className="text-[11px] text-zinc-500">{u.company || 'Greenfield Enterprise'}</div>
+                          </td>
 
-                        <td className="py-2.5 px-3">
-                          <div className="font-bold text-zinc-900 group-hover:text-blue-700 transition-colors">
-                            {lead.fullName || 'N/A'}
-                          </div>
-                          <div className="text-blue-700 font-mono text-[11px]">{lead.mobile || 'N/A'}</div>
-                          {lead.email && <div className="text-zinc-400 text-[10px]">{lead.email}</div>}
-                        </td>
+                          <td className="py-3 px-3">
+                            <div className="font-medium text-blue-700">{u.email}</div>
+                            <div className="text-[11px] text-zinc-400 font-mono">{u.phone || 'N/A'}</div>
+                          </td>
 
-                        <td className="py-2.5 px-3">
-                          <div className="font-semibold text-zinc-900">{lead.projectName || 'Greenfield Unit'}</div>
-                          <div className="text-zinc-500 text-[11px]">{lead.industry || 'General Industry'}</div>
-                        </td>
-
-                        <td className="py-2.5 px-3 whitespace-nowrap">
-                          <div className="font-semibold text-zinc-900">₹ {lead.totalCostCr} Cr</div>
-                          <div className="text-blue-600 text-[11px]">Loan: ₹ {lead.loanRequiredCr} Cr</div>
-                        </td>
-
-                        <td className="py-2.5 px-3 whitespace-nowrap">
-                          <div className="space-y-1">
-                            {lead.downloadedPDF ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-100">
-                                <FileCheck2 className="w-3 h-3" />
-                                <span>PDF Downloaded</span>
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-zinc-100 text-zinc-600">
-                                Inquiry Form
-                              </span>
-                            )}
-                            
-                            {lead.assignedTeam ? (
-                              <div className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 inline-block mt-1">
-                                Assigned: {lead.assignedTeam}
-                              </div>
-                            ) : (
-                              <div className="text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 inline-block mt-1">
-                                Unassigned
+                          <td className="py-3 px-3">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                              u.role.startsWith('admin')
+                                ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                                : u.role === 'ca'
+                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                : 'bg-blue-50 text-blue-700 border border-blue-200'
+                            }`}>
+                              {u.role}
+                            </span>
+                            {userProjects.length > 0 && (
+                              <div className="text-[10px] text-emerald-700 mt-1 font-semibold">
+                                {userProjects.length} Project{userProjects.length > 1 ? 's' : ''} Created
                               </div>
                             )}
-                          </div>
-                        </td>
+                          </td>
 
-                        <td className="py-2.5 px-3 whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              onClick={() => setSelectedLead(lead)}
-                              className="px-2.5 py-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
-                              title="View Profile & Tracking Line"
-                            >
-                              <Eye className="w-3 h-3" />
-                              <span>Track</span>
-                            </button>
+                          <td className="py-3 px-3 whitespace-nowrap">
+                            <div className="font-medium text-zinc-800">{lastLoginFormatted}</div>
+                            <div className="text-[10px] text-zinc-400">Created: {new Date(u.createdAt).toLocaleDateString('en-IN')}</div>
+                          </td>
 
-                            {(user.role === 'admin2' || user.role === 'admin3') && (
-                              <button
-                                onClick={() => setEditingLead(lead)}
-                                className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer border border-amber-200/50"
-                                title="Edit Specific Fields"
-                              >
-                                <Edit3 className="w-3 h-3" />
-                                <span>Edit</span>
-                              </button>
-                            )}
+                          <td className="py-3 px-3 whitespace-nowrap">
+                            <span className="font-bold text-zinc-900">{u.loginCount || 1}</span>
+                            <span className="text-zinc-400 text-[11px] ml-1">sessions</span>
+                          </td>
 
-                            <a
-                              href={`https://wa.me/91${lead.mobile.replace(/[^0-9]/g, '')}?text=${waText}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer shadow-xs"
-                              title="WhatsApp"
-                            >
-                              <MessageSquare className="w-3 h-3 fill-current" />
-                              <span>WA</span>
-                            </a>
+                          <td className="py-3 px-3 text-right">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                              <span>Active</span>
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
-                            {user.role === 'admin3' && (
-                              <button
-                                onClick={() => {
-                                  if (confirm(`Delete lead entry for ${lead.fullName}?`)) {
-                                    deleteLeadRecord(lead.id);
-                                    loadData();
-                                    triggerToast('Deleted lead record.');
-                                  }
-                                }}
-                                className="p-1 text-zinc-400 hover:text-red-600 rounded transition-colors cursor-pointer"
-                                title="Delete"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
-                        </td>
+        {/* VIEW B: WEBSITE VISITORS & TRAFFIC ANALYTICS VIEW */}
+        {activeTab === 'visitors' && (
+          <div className="space-y-5">
+            {/* Real-Time Traffic Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-5 bg-white rounded-2xl border border-zinc-200 space-y-2 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Live Active Sessions</span>
+                  <span className="flex items-center gap-1.5 text-xs font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                    <span>Real-Time</span>
+                  </span>
+                </div>
+                <div className="text-3xl font-black text-zinc-900">{visitorSummary.activeNow}</div>
+                <p className="text-xs text-zinc-500">Active promoter and advisor browser sessions right now.</p>
+              </div>
+
+              <div className="p-5 bg-white rounded-2xl border border-zinc-200 space-y-2 shadow-2xs">
+                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider block">Device Distribution</span>
+                <div className="flex items-center justify-between text-sm font-bold text-zinc-800 pt-1">
+                  <div className="flex items-center gap-1.5">
+                    <Laptop className="w-4 h-4 text-blue-600" />
+                    <span>Desktop: {visitorSummary.desktopPercent}%</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Smartphone className="w-4 h-4 text-emerald-600" />
+                    <span>Mobile: {visitorSummary.mobilePercent}%</span>
+                  </div>
+                </div>
+                <div className="w-full bg-zinc-100 rounded-full h-2 overflow-hidden flex">
+                  <div className="bg-blue-600 h-full" style={{ width: `${visitorSummary.desktopPercent}%` }} />
+                  <div className="bg-emerald-500 h-full" style={{ width: `${visitorSummary.mobilePercent}%` }} />
+                </div>
+              </div>
+
+              <div className="p-5 bg-white rounded-2xl border border-zinc-200 space-y-2 shadow-2xs">
+                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider block">Total Tracked Visits</span>
+                <div className="text-3xl font-black text-blue-600">{visitorSummary.totalVisits}</div>
+                <p className="text-xs text-zinc-500">{visitorSummary.uniqueVisitors} unique sessions logged across all channels.</p>
+              </div>
+            </div>
+
+            {/* Top Visited Pages & Live Visitor Stream */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+              {/* Top Pages */}
+              <div className="p-5 bg-white rounded-2xl border border-zinc-200 space-y-3">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">Top Visited Modules</h3>
+                <div className="space-y-2.5">
+                  {visitorSummary.topPages.map((tp, idx) => (
+                    <div key={idx} className="flex items-center justify-between text-xs p-2 rounded-lg bg-zinc-50 border border-zinc-100">
+                      <span className="font-semibold text-zinc-800 truncate max-w-[180px]">{tp.page}</span>
+                      <span className="font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-[11px]">{tp.count} views</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Live Activity Stream */}
+              <div className="lg:col-span-2 p-5 bg-white rounded-2xl border border-zinc-200 space-y-3">
+                <div className="flex items-center justify-between border-b border-zinc-100 pb-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 flex items-center gap-1.5">
+                    <Radio className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Real-Time Visitor Log Stream</span>
+                  </h3>
+                  <span className="text-[11px] text-zinc-400">Last 20 events</span>
+                </div>
+
+                <div className="overflow-x-auto max-h-80 overflow-y-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="text-zinc-400 uppercase text-[10px] border-b border-zinc-100">
+                        <th className="py-2 px-2">Time</th>
+                        <th className="py-2 px-2">Page Visited</th>
+                        <th className="py-2 px-2">Device &amp; Browser</th>
+                        <th className="py-2 px-2">Referrer / Channel</th>
                       </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-50 text-zinc-600">
+                      {visitorSummary.recentLogs.map((log) => (
+                        <tr key={log.id} className="hover:bg-zinc-50/80">
+                          <td className="py-2 px-2 whitespace-nowrap font-mono text-[11px] text-zinc-400">
+                            {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                          </td>
+                          <td className="py-2 px-2 font-medium text-zinc-800">{log.page}</td>
+                          <td className="py-2 px-2 whitespace-nowrap">
+                            <span className="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-600 text-[10px] mr-1">
+                              {log.device}
+                            </span>
+                            <span className="text-zinc-400 text-[10px]">{log.browser}</span>
+                          </td>
+                          <td className="py-2 px-2 whitespace-nowrap text-blue-600 text-[11px]">{log.referrer}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           </div>
+        )}
 
-          {/* Table Footer */}
-          <div className="flex items-center justify-between text-xs text-zinc-400 pt-2 border-t border-zinc-100">
-            <span>Showing {filteredLeads.length} of {leads.length} records</span>
-            {user.role === 'admin3' && (
-              <button
-                onClick={() => {
-                  if (confirm('Clear all leads data? This cannot be undone.')) {
-                    clearAllLeads();
+        {/* VIEW C: PROMOTER PROJECTS & LEADS TABLE (When on 'all', 'edits', 'assignments', 'teasers') */}
+        {activeTab !== 'users' && activeTab !== 'visitors' && (
+          <div className="border border-zinc-200 rounded-2xl p-5 bg-white space-y-4">
+            
+            {/* Header with Search and Filters */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-100 pb-3">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold text-zinc-900">Promoter Submissions &amp; Activity Tracking</h2>
+                <button
+                  onClick={() => {
                     loadData();
-                    triggerToast('Cleared all lead records.');
-                  }
-                }}
-                className="text-red-500 hover:text-red-700 flex items-center gap-1 cursor-pointer text-xs"
-              >
-                <Trash2 className="w-3 h-3" />
-                <span>Clear All Leads</span>
-              </button>
-            )}
-          </div>
+                    triggerToast('Refreshed lead records.');
+                  }}
+                  className="p-1 text-zinc-400 hover:text-zinc-900 rounded transition-colors"
+                  title="Refresh"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </button>
+              </div>
 
-        </div>
+              <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                <div className="relative w-full sm:w-60">
+                  <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2.5" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Search name, phone, project..."
+                    className="w-full pl-8 pr-3 py-1.5 bg-zinc-50 border border-zinc-200 text-xs text-zinc-900 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[800px] text-left text-xs">
+                <thead>
+                  <tr className="border-b border-zinc-200 text-zinc-400 font-semibold uppercase text-[10px]">
+                    <th className="py-2 px-3">Date &amp; Updates</th>
+                    <th className="py-2 px-3">Promoter</th>
+                    <th className="py-2 px-3">Project &amp; Sector</th>
+                    <th className="py-2 px-3">Capex / Debt</th>
+                    <th className="py-2 px-3">Stage &amp; Teaser</th>
+                    <th className="py-2 px-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100 text-zinc-700">
+                  {filteredLeads.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="p-8 text-center text-zinc-400 text-xs">
+                        No lead records match your search or filter.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredLeads.map((lead) => {
+                      const formattedDate = new Date(lead.timestamp).toLocaleDateString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      });
+
+                      const waText = encodeURIComponent(
+                        `Hello ${lead.fullName || 'Promoter'},\n\n` +
+                        `Thank you for evaluating your ${lead.industry || 'greenfield'} project on Inisio Greenfield Advisory Platform. ` +
+                        `We noticed your interest in financing ₹${lead.loanRequiredCr || lead.totalCostCr} Cr. How can we assist you with DPR and Debt Syndication?`
+                      );
+
+                      return (
+                        <tr
+                          key={lead.id}
+                          onClick={() => setSelectedLead(lead)}
+                          className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
+                        >
+                          <td className="py-2.5 px-3 whitespace-nowrap">
+                            <div className="text-zinc-800 font-medium">{formattedDate}</div>
+                            {lead.lastEditedBy && (
+                              <div className="text-[10px] text-blue-700 flex items-center gap-1 mt-0.5">
+                                <Edit3 className="w-2.5 h-2.5" />
+                                <span>Edited by user</span>
+                              </div>
+                            )}
+                          </td>
+
+                          <td className="py-2.5 px-3">
+                            <div className="font-bold text-zinc-900 group-hover:text-blue-700 transition-colors">
+                              {lead.fullName || 'N/A'}
+                            </div>
+                            <div className="text-blue-700 font-mono text-[11px]">{lead.mobile || 'N/A'}</div>
+                            {lead.email && <div className="text-zinc-400 text-[10px]">{lead.email}</div>}
+                          </td>
+
+                          <td className="py-2.5 px-3">
+                            <div className="font-semibold text-zinc-900">{lead.projectName || 'Greenfield Unit'}</div>
+                            <div className="text-zinc-500 text-[11px]">{lead.industry || 'General Industry'}</div>
+                          </td>
+
+                          <td className="py-2.5 px-3 whitespace-nowrap">
+                            <div className="font-semibold text-zinc-900">₹ {lead.totalCostCr} Cr</div>
+                            <div className="text-blue-600 text-[11px]">Loan: ₹ {lead.loanRequiredCr} Cr</div>
+                          </td>
+
+                          <td className="py-2.5 px-3 whitespace-nowrap">
+                            <div className="space-y-1">
+                              {lead.downloadedPDF ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-100">
+                                  <FileCheck2 className="w-3 h-3" />
+                                  <span>PDF Downloaded</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-zinc-100 text-zinc-600">
+                                  Inquiry Form
+                                </span>
+                              )}
+                              
+                              {lead.assignedTeam ? (
+                                <div className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 inline-block mt-1">
+                                  Assigned: {lead.assignedTeam}
+                                </div>
+                              ) : (
+                                <div className="text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 inline-block mt-1">
+                                  Unassigned
+                                </div>
+                              )}
+                            </div>
+                          </td>
+
+                          <td className="py-2.5 px-3 whitespace-nowrap text-right" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => setSelectedLead(lead)}
+                                className="px-2.5 py-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                                title="View Profile & Tracking Line"
+                              >
+                                <Eye className="w-3 h-3" />
+                                <span>Track</span>
+                              </button>
+
+                              {(user.role === 'admin2' || user.role === 'admin3') && (
+                                <button
+                                  onClick={() => setEditingLead(lead)}
+                                  className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer border border-amber-200/50"
+                                  title="Edit Specific Fields"
+                                >
+                                  <Edit3 className="w-3 h-3" />
+                                  <span>Edit</span>
+                                </button>
+                              )}
+
+                              <a
+                                href={`https://wa.me/91${lead.mobile.replace(/[^0-9]/g, '')}?text=${waText}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer shadow-xs"
+                                title="WhatsApp"
+                              >
+                                <MessageSquare className="w-3 h-3 fill-current" />
+                                <span>WA</span>
+                              </a>
+
+                              {user.role === 'admin3' && (
+                                <button
+                                  onClick={() => {
+                                    if (confirm(`Delete lead entry for ${lead.fullName}?`)) {
+                                      deleteLeadRecord(lead.id);
+                                      loadData();
+                                      triggerToast('Deleted lead record.');
+                                    }
+                                  }}
+                                  className="p-1 text-zinc-400 hover:text-red-600 rounded transition-colors cursor-pointer"
+                                  title="Delete"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Table Footer */}
+            <div className="flex items-center justify-between text-xs text-zinc-400 pt-2 border-t border-zinc-100">
+              <span>Showing {filteredLeads.length} of {leads.length} records</span>
+              {user.role === 'admin3' && (
+                <button
+                  onClick={() => {
+                    if (confirm('Clear all leads data? This cannot be undone.')) {
+                      clearAllLeads();
+                      loadData();
+                      triggerToast('Cleared all lead records.');
+                    }
+                  }}
+                  className="text-red-500 hover:text-red-700 flex items-center gap-1 cursor-pointer text-xs"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  <span>Clear All Leads</span>
+                </button>
+              )}
+            </div>
+
+          </div>
+        )}
 
       </div>
 
@@ -501,3 +791,4 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
     </div>
   );
 };
+

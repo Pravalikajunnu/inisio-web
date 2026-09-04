@@ -22,12 +22,19 @@ import { CADashboard } from './components/CADashboard';
 import { AdminDashboardView } from './components/AdminDashboardView';
 import { ProsyncDashboard } from './components/ProsyncDashboard';
 import { LatestBlogs } from './components/LatestBlogs';
+import { MembershipPlansModal } from './components/MembershipPlansModal';
+import { canUserStartAssessment, getUserMembership } from './utils/membershipStore';
+import { getStoredLeads } from './utils/leadStore';
+import { recordPageView } from './utils/visitorStore';
+import { recordUserLogin } from './utils/userStore';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>('home');
   const [consultationModalOpen, setConsultationModalOpen] = useState(false);
   const [adminModalOpen, setAdminModalOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [membershipModalOpen, setMembershipModalOpen] = useState(false);
+  const [membershipModalReason, setMembershipModalReason] = useState('');
   const [authInitialMode, setAuthInitialMode] = useState<'login' | 'signup' | 'forgot-password'>('login');
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
     const saved = localStorage.getItem('inisio_active_user');
@@ -44,8 +51,14 @@ export default function App() {
   const [selectedIndustryForAssessment, setSelectedIndustryForAssessment] = useState<string>('');
   const [editingProjectForAssessment, setEditingProjectForAssessment] = useState<any>(null);
 
-  const handleOpenAuth = (mode: 'login' | 'signup' | 'forgot-password' = 'login') => {
+  const [authPrefill, setAuthPrefill] = useState<{ email?: string; name?: string; phone?: string }>({});
+
+  const handleOpenAuth = (
+    mode: 'login' | 'signup' | 'forgot-password' = 'login',
+    prefill?: { email?: string; name?: string; phone?: string }
+  ) => {
     setAuthInitialMode(mode);
+    setAuthPrefill(prefill || {});
     setAuthModalOpen(true);
   };
 
@@ -59,6 +72,9 @@ export default function App() {
     checkAdminHash();
 
     window.addEventListener('hashchange', checkAdminHash);
+
+    // Track initial page view
+    recordPageView('Home / Greenfield Landing', currentUser?.email);
 
     // Keyboard shortcut Ctrl+Shift+A or Cmd+Shift+A to open Admin Desk secretly
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -75,9 +91,28 @@ export default function App() {
     };
   }, []);
 
+  // Track page transitions
+  useEffect(() => {
+    const tabLabels: Record<string, string> = {
+      'home': 'Home / Greenfield Landing',
+      'assessment': 'Greenfield Project Assessment',
+      'user-dashboard': 'Promoter Project Dashboard',
+      'admin-dashboard': 'Executive Admin Control Desk',
+      'ca-dashboard': 'Chartered Accountant Audit Desk',
+      'prosync-dashboard': 'Prosync Operations Hub'
+    };
+    recordPageView(tabLabels[activeTab] || activeTab, currentUser?.email);
+  }, [activeTab, currentUser?.email]);
+
   const handleLoginSuccess = (user: AuthUser) => {
     setCurrentUser(user);
     localStorage.setItem('inisio_active_user', JSON.stringify(user));
+    recordUserLogin(user);
+
+    if (activeTab === 'assessment') {
+      // Stay on assessment page so user's outputs unlock immediately
+      return;
+    }
 
     // Redirect to corresponding dashboard based on exact email/role request
     if (user.role === 'admin' || user.role === 'admin1' || user.role === 'admin2' || user.role === 'admin3' || user.email === 'admin@gmail.com') {
@@ -101,16 +136,37 @@ export default function App() {
   };
 
   const handleOpenAssessment = (industryName?: string, projectToEdit?: any) => {
+    // If editing an existing project, always allow
+    if (projectToEdit) {
+      setSelectedIndustryForAssessment(industryName || '');
+      setEditingProjectForAssessment(projectToEdit);
+      setActiveTab('assessment');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    // Check if user has already completed one free assessment
+    const storedLeads = currentUser?.email ? getStoredLeads(currentUser.email) : getStoredLeads();
+    const eligibility = canUserStartAssessment(currentUser?.email, storedLeads.length);
+
+    if (!eligibility.allowed) {
+      setMembershipModalReason("You've completed your 1 free project assessment! Upgrade to Inisio Membership to evaluate additional greenfield projects.");
+      setMembershipModalOpen(true);
+      return;
+    }
+
     setSelectedIndustryForAssessment(industryName || '');
-    setEditingProjectForAssessment(projectToEdit || null);
+    setEditingProjectForAssessment(null);
     setActiveTab('assessment');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSelectTab = (tab: string) => {
-    if (tab !== 'assessment') {
-      setEditingProjectForAssessment(null);
+    if (tab === 'assessment') {
+      handleOpenAssessment();
+      return;
     }
+    setEditingProjectForAssessment(null);
     setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -169,6 +225,10 @@ export default function App() {
                 user={currentUser}
                 onOpenAssessment={(projectToEdit) => handleOpenAssessment('', projectToEdit)}
                 onOpenConsultation={() => setConsultationModalOpen(true)}
+                onOpenMembership={() => {
+                  setMembershipModalReason('');
+                  setMembershipModalOpen(true);
+                }}
               />
             </div>
           )}
@@ -194,6 +254,9 @@ export default function App() {
           {activeTab === 'assessment' && (
             <div className="animate-in fade-in duration-300">
               <ProjectAssessmentPage
+                currentUser={currentUser}
+                onOpenAuth={handleOpenAuth}
+                onLoginSuccess={handleLoginSuccess}
                 onOpenConsultation={() => setConsultationModalOpen(true)}
                 defaultIndustry={selectedIndustryForAssessment}
                 editingProject={editingProjectForAssessment}
@@ -279,6 +342,9 @@ export default function App() {
         onClose={() => setAuthModalOpen(false)}
         onLoginSuccess={handleLoginSuccess}
         initialMode={authInitialMode}
+        prefilledEmail={authPrefill.email}
+        prefilledName={authPrefill.name}
+        prefilledPhone={authPrefill.phone}
       />
 
       <ConsultationModal
@@ -289,6 +355,15 @@ export default function App() {
       <AdminLeadsModal
         isOpen={adminModalOpen}
         onClose={() => setAdminModalOpen(false)}
+      />
+
+      <MembershipPlansModal
+        isOpen={membershipModalOpen}
+        onClose={() => setMembershipModalOpen(false)}
+        currentUser={currentUser}
+        onOpenAuth={handleOpenAuth}
+        onOpenConsultation={() => setConsultationModalOpen(true)}
+        initialReason={membershipModalReason}
       />
 
       {/* Floating Call & WhatsApp Buttons */}

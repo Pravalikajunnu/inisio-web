@@ -116,16 +116,106 @@ export const ProjectFinancialsBreakup: React.FC<ProjectFinancialsBreakupProps> =
     }
   }, [customFinances, loanRequiredCr, promoterContribCr, totalCostCr]);
 
-  // Modal / Inputs state for adding custom component
+  // Modal / Inputs state for adding / editing custom component
   const [isAddingCost, setIsAddingCost] = useState(false);
   const [newCostTitle, setNewCostTitle] = useState('');
   const [newCostAmount, setNewCostAmount] = useState('');
   const [newCostCategory, setNewCostCategory] = useState<CustomCostComponent['category']>('Other');
 
+  // Inline editing state for existing cost component
+  const [editingCostId, setEditingCostId] = useState<string | null>(null);
+  const [editCostTitle, setEditCostTitle] = useState('');
+  const [editCostAmount, setEditCostAmount] = useState('');
+  const [editCostCategory, setEditCostCategory] = useState<CustomCostComponent['category']>('Other');
+
   const [isAddingFinance, setIsAddingFinance] = useState(false);
   const [newFinanceTitle, setNewFinanceTitle] = useState('');
   const [newFinanceAmount, setNewFinanceAmount] = useState('');
   const [newFinanceType, setNewFinanceType] = useState<CustomFinanceComponent['type']>('Other');
+
+  // Inline editing state for existing finance component
+  const [editingFinanceId, setEditingFinanceId] = useState<string | null>(null);
+  const [editFinanceTitle, setEditFinanceTitle] = useState('');
+  const [editFinanceAmount, setEditFinanceAmount] = useState('');
+  const [editFinanceType, setEditFinanceType] = useState<CustomFinanceComponent['type']>('Other');
+
+  // Start editing a cost item
+  const handleStartEditCost = (item: CustomCostComponent) => {
+    setEditingCostId(item.id);
+    setEditCostTitle(item.title);
+    let displayAmt = item.amountCr;
+    if (unit === 'Lakhs') displayAmt = item.amountCr * 100;
+    if (unit === 'Millions') displayAmt = item.amountCr * 10;
+    setEditCostAmount(String(Math.round(displayAmt * 100) / 100));
+    setEditCostCategory(item.category || 'Other');
+  };
+
+  const handleSaveEditCost = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCostId || !editCostTitle.trim() || !editCostAmount) return;
+
+    let amtInCr = parseFloat(editCostAmount);
+    if (unit === 'Lakhs') amtInCr = amtInCr / 100;
+    if (unit === 'Millions') amtInCr = amtInCr / 10;
+
+    const updated = costs.map(c => {
+      if (c.id === editingCostId) {
+        return {
+          ...c,
+          title: editCostTitle.trim(),
+          amountCr: Math.round(amtInCr * 100) / 100,
+          category: editCostCategory
+        };
+      }
+      return c;
+    });
+
+    setCosts(updated);
+    setEditingCostId(null);
+    const newTotal = updated.reduce((sum, c) => sum + c.amountCr, 0);
+    onSaveFinancials(updated, finances, newTotal, computedDebt, computedEquity);
+  };
+
+  // Start editing a finance item
+  const handleStartEditFinance = (item: CustomFinanceComponent) => {
+    setEditingFinanceId(item.id);
+    setEditFinanceTitle(item.title);
+    let displayAmt = item.amountCr;
+    if (unit === 'Lakhs') displayAmt = item.amountCr * 100;
+    if (unit === 'Millions') displayAmt = item.amountCr * 10;
+    setEditFinanceAmount(String(Math.round(displayAmt * 100) / 100));
+    setEditFinanceType(item.type || 'Other');
+  };
+
+  const handleSaveEditFinance = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingFinanceId || !editFinanceTitle.trim() || !editFinanceAmount) return;
+
+    let amtInCr = parseFloat(editFinanceAmount);
+    if (unit === 'Lakhs') amtInCr = amtInCr / 100;
+    if (unit === 'Millions') amtInCr = amtInCr / 10;
+
+    const updated = finances.map(f => {
+      if (f.id === editingFinanceId) {
+        return {
+          ...f,
+          title: editFinanceTitle.trim(),
+          amountCr: Math.round(amtInCr * 100) / 100,
+          type: editFinanceType
+        };
+      }
+      return f;
+    });
+
+    setFinances(updated);
+    setEditingFinanceId(null);
+    const newTotalFin = updated.reduce((sum, f) => sum + f.amountCr, 0);
+    const dItem = updated.find(f => f.type === 'Term Debt');
+    const newDebt = dItem ? dItem.amountCr : Math.round(newTotalFin * 0.70 * 100) / 100;
+    const newEquity = newTotalFin - newDebt;
+
+    onSaveFinancials(costs, updated, computedTotalCost, newDebt, newEquity);
+  };
 
   // Calculations
   const computedTotalCost = costs.reduce((sum, c) => sum + (Number(c.amountCr) || 0), 0);
@@ -270,29 +360,91 @@ export const ProjectFinancialsBreakup: React.FC<ProjectFinancialsBreakupProps> =
 
           <div className="space-y-2">
             {costs.map((item) => (
-              <div
-                key={item.id}
-                className="p-3 bg-white rounded-xl border border-zinc-200/80 flex items-center justify-between text-xs hover:border-zinc-300 transition-colors"
-              >
-                <div>
-                  <div className="font-semibold text-zinc-800">{item.title}</div>
-                  <span className="text-[10px] text-zinc-400 font-medium uppercase">{item.category}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-bold text-zinc-900 font-mono">
-                    {getUnitSymbol()} {formatAmount(item.amountCr)}
-                  </span>
-                  {costs.length > 1 && (
-                    <button
-                      onClick={() => handleDeleteCost(item.id)}
-                      className="p-1 text-zinc-300 hover:text-rose-600 transition-colors cursor-pointer"
-                      title="Remove"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
+              <React.Fragment key={item.id}>
+                {editingCostId === item.id ? (
+                  <form onSubmit={handleSaveEditCost} className="p-3 bg-blue-50/90 border border-blue-300 rounded-xl space-y-2.5 text-xs">
+                    <div className="font-bold text-blue-900">Edit Cost Component</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        required
+                        placeholder="Component Title"
+                        value={editCostTitle}
+                        onChange={(e) => setEditCostTitle(e.target.value)}
+                        className="px-2.5 py-1.5 bg-white border border-blue-200 rounded-lg outline-none text-xs"
+                      />
+                      <input
+                        type="number"
+                        step="0.01"
+                        required
+                        placeholder={`Amount in ${getUnitSymbol()}`}
+                        value={editCostAmount}
+                        onChange={(e) => setEditCostAmount(e.target.value)}
+                        className="px-2.5 py-1.5 bg-white border border-blue-200 rounded-lg outline-none text-xs"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between pt-1">
+                      <select
+                        value={editCostCategory}
+                        onChange={(e) => setEditCostCategory(e.target.value as any)}
+                        className="px-2 py-1 bg-white border border-blue-200 rounded-lg text-xs"
+                      >
+                        <option value="Machinery">Machinery</option>
+                        <option value="Civil">Civil</option>
+                        <option value="Technology">Technology</option>
+                        <option value="Consultancy">Consultancy</option>
+                        <option value="Working Capital">Working Capital</option>
+                        <option value="Other">Other</option>
+                      </select>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setEditingCostId(null)}
+                          className="px-2.5 py-1 text-zinc-600 hover:text-zinc-800 cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-3 py-1 bg-blue-600 text-white font-bold rounded-lg cursor-pointer shadow-2xs"
+                        >
+                          Update
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                ) : (
+                  <div
+                    className="p-3 bg-white rounded-xl border border-zinc-200/80 flex items-center justify-between text-xs hover:border-zinc-300 transition-colors"
+                  >
+                    <div>
+                      <div className="font-semibold text-zinc-800">{item.title}</div>
+                      <span className="text-[10px] text-zinc-400 font-medium uppercase">{item.category}</span>
+                    </div>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <span className="font-bold text-zinc-900 font-mono">
+                        {getUnitSymbol()} {formatAmount(item.amountCr)}
+                      </span>
+                      <button
+                        onClick={() => handleStartEditCost(item)}
+                        className="p-1 text-zinc-400 hover:text-blue-600 transition-colors cursor-pointer"
+                        title="Edit component"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                      {costs.length > 1 && (
+                        <button
+                          onClick={() => handleDeleteCost(item.id)}
+                          className="p-1 text-zinc-300 hover:text-rose-600 transition-colors cursor-pointer"
+                          title="Remove"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </React.Fragment>
             ))}
           </div>
 
@@ -372,29 +524,91 @@ export const ProjectFinancialsBreakup: React.FC<ProjectFinancialsBreakupProps> =
 
           <div className="space-y-2">
             {finances.map((item) => (
-              <div
-                key={item.id}
-                className="p-3 bg-white rounded-xl border border-zinc-200/80 flex items-center justify-between text-xs hover:border-zinc-300 transition-colors"
-              >
-                <div>
-                  <div className="font-semibold text-zinc-800">{item.title}</div>
-                  <span className="text-[10px] text-zinc-400 font-medium uppercase">{item.type}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-bold text-zinc-900 font-mono">
-                    {getUnitSymbol()} {formatAmount(item.amountCr)}
-                  </span>
-                  {finances.length > 1 && (
-                    <button
-                      onClick={() => handleDeleteFinance(item.id)}
-                      className="p-1 text-zinc-300 hover:text-rose-600 transition-colors cursor-pointer"
-                      title="Remove"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
+              <React.Fragment key={item.id}>
+                {editingFinanceId === item.id ? (
+                  <form onSubmit={handleSaveEditFinance} className="p-3 bg-emerald-50/90 border border-emerald-300 rounded-xl space-y-2.5 text-xs">
+                    <div className="font-bold text-emerald-900">Edit Funding Source</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        required
+                        placeholder="Funding Source Title"
+                        value={editFinanceTitle}
+                        onChange={(e) => setEditFinanceTitle(e.target.value)}
+                        className="px-2.5 py-1.5 bg-white border border-emerald-200 rounded-lg outline-none text-xs"
+                      />
+                      <input
+                        type="number"
+                        step="0.01"
+                        required
+                        placeholder={`Amount in ${getUnitSymbol()}`}
+                        value={editFinanceAmount}
+                        onChange={(e) => setEditFinanceAmount(e.target.value)}
+                        className="px-2.5 py-1.5 bg-white border border-emerald-200 rounded-lg outline-none text-xs"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between pt-1">
+                      <select
+                        value={editFinanceType}
+                        onChange={(e) => setEditFinanceType(e.target.value as any)}
+                        className="px-2 py-1 bg-white border border-emerald-200 rounded-lg text-xs"
+                      >
+                        <option value="Term Debt">Term Debt</option>
+                        <option value="Promoter Equity">Promoter Equity</option>
+                        <option value="Subsidy / Grant">Subsidy / Grant</option>
+                        <option value="Unsecured Loan">Unsecured Loan</option>
+                        <option value="Venture Debt">Venture Debt</option>
+                        <option value="Other">Other</option>
+                      </select>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setEditingFinanceId(null)}
+                          className="px-2.5 py-1 text-zinc-600 hover:text-zinc-800 cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-3 py-1 bg-emerald-600 text-white font-bold rounded-lg cursor-pointer shadow-2xs"
+                        >
+                          Update
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                ) : (
+                  <div
+                    className="p-3 bg-white rounded-xl border border-zinc-200/80 flex items-center justify-between text-xs hover:border-zinc-300 transition-colors"
+                  >
+                    <div>
+                      <div className="font-semibold text-zinc-800">{item.title}</div>
+                      <span className="text-[10px] text-zinc-400 font-medium uppercase">{item.type}</span>
+                    </div>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <span className="font-bold text-zinc-900 font-mono">
+                        {getUnitSymbol()} {formatAmount(item.amountCr)}
+                      </span>
+                      <button
+                        onClick={() => handleStartEditFinance(item)}
+                        className="p-1 text-zinc-400 hover:text-emerald-700 transition-colors cursor-pointer"
+                        title="Edit funding source"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                      {finances.length > 1 && (
+                        <button
+                          onClick={() => handleDeleteFinance(item.id)}
+                          className="p-1 text-zinc-300 hover:text-rose-600 transition-colors cursor-pointer"
+                          title="Remove"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </React.Fragment>
             ))}
           </div>
 

@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import { saveLeadRecord } from './leadStore';
 import { getFeasibilityTerm } from '../types';
 import { DetailedRiskProfileData } from '../components/DetailedRiskProfileForm';
+import { reconcileProjectFinancials } from './financialUtils';
 
 export interface TeaserPDFData {
   // Step 1 Feasibility Inputs
@@ -82,21 +83,33 @@ export function generateProjectTeaserPDF(data: TeaserPDFData, action: 'download'
     }
   };
 
-  const costCr = parseFloat(String(data.totalCostCr)) || 0;
-  const costCrFormatted = costCr.toFixed(2);
-  const loanCr = parseFloat(String(data.loanRequiredCr)) || (costCr * (data.debtPct / 100));
-  const loanCrFormatted = loanCr.toFixed(2);
-  const contribCr = parseFloat(String(data.promoterContribCr)) || (costCr * (data.eqPct / 100));
-  const contribCrFormatted = contribCr.toFixed(2);
+  const fin = reconcileProjectFinancials({
+    totalCostCr: data.totalCostCr,
+    loanRequiredCr: data.loanRequiredCr,
+    promoterContribCr: data.promoterContribCr,
+    debtPct: data.debtPct,
+    eqPct: data.eqPct,
+    consultancyCostCr: data.consultancyCostCr,
+    machineryCostCr: data.machineryCostCr,
+    civilCostCr: data.civilCostCr,
+    otherCostsCr: data.otherCostsCr,
+    termLoanCr: data.termLoanCr,
+    promoterContributionCr: data.promoterContributionCr,
+    otherFinanceCr: data.otherFinanceCr
+  });
 
-  const machineryCr = data.machineryCostCr ? Number(data.machineryCostCr).toFixed(2) : '0.00';
-  const civilCr = data.civilCostCr ? Number(data.civilCostCr).toFixed(2) : '0.00';
-  const consultancyCr = data.consultancyCostCr ? Number(data.consultancyCostCr).toFixed(2) : '0.00';
-  const otherCostsCr = data.otherCostsCr ? Number(data.otherCostsCr).toFixed(2) : '0.00';
+  const costCrFormatted = fin.totalCostFormatted;
+  const loanCrFormatted = fin.termLoanFormatted;
+  const contribCrFormatted = fin.promoterContributionFormatted;
+
+  const machineryCr = fin.machineryFormatted;
+  const civilCr = fin.civilFormatted;
+  const consultancyCr = fin.consultancyFormatted;
+  const otherCostsCr = fin.otherCostsFormatted;
   
-  const userTermLoanCr = data.termLoanCr ? Number(data.termLoanCr).toFixed(2) : loanCrFormatted;
-  const userPromoterCr = data.promoterContributionCr ? Number(data.promoterContributionCr).toFixed(2) : contribCrFormatted;
-  const userOtherFinCr = data.otherFinanceCr ? Number(data.otherFinanceCr).toFixed(2) : '0.00';
+  const userTermLoanCr = fin.termLoanFormatted;
+  const userPromoterCr = fin.promoterContributionFormatted;
+  const userOtherFinCr = fin.otherFinanceFormatted;
 
   const companyLegalName = (data.projectName || 'GREENFIELD PROJECT PRIVATE LIMITED').toUpperCase();
   const rp = data.riskProfileData;
@@ -265,11 +278,12 @@ export function generateProjectTeaserPDF(data: TeaserPDFData, action: 'download'
   y += splitSup2.length * 4.2 + 7;
 
   // Project Funding Facilities
-  drawSectionBanner('Project Funding Facilities', 60);
+  drawSectionBanner('Project Funding Facilities', 65);
 
   // Subheading 1: Cost Statement
+  checkPageBreak(38);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
+  doc.setFontSize(9);
   doc.setTextColor(15, 23, 42);
   doc.text('Proposed Project Cost Statement', margin, y);
   y += 4.5;
@@ -278,109 +292,114 @@ export function generateProjectTeaserPDF(data: TeaserPDFData, action: 'download'
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
   doc.text('Debt Types: Project Term Loan', margin, y);
-  y += 4.5;
+  y += 5;
 
+  // Table 1 Header
   doc.setFillColor(241, 245, 249);
-  doc.rect(margin, y, contentWidth, 6, 'F');
+  doc.rect(margin, y, contentWidth, 6.5, 'F');
   doc.setDrawColor(226, 232, 240);
-  doc.rect(margin, y, contentWidth, 6, 'D');
+  doc.rect(margin, y, contentWidth, 6.5, 'D');
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
   doc.setTextColor(15, 23, 42);
-  doc.text('Particulars', margin + 4, y + 4.2);
-  doc.text('Amount (INR Cr)', margin + 110, y + 4.2);
-  y += 6;
+  doc.text('Particulars', margin + 4, y + 4.5);
+  doc.text('Amount (INR Cr)', margin + 110, y + 4.5);
+  y += 6.5;
 
   const costRows = [
-    { name: 'Consultancy & Fees', amt: `${consultancyCr}` },
-    { name: 'Plant & Machinery', amt: `${machineryCr}` },
-    { name: 'Land Cost & Civil Works', amt: `${civilCr}` },
-    { name: 'Other Project Costs', amt: `${otherCostsCr}` }
+    { name: 'Consultancy & Pre-operative Expenses', amt: `Rs. ${consultancyCr} Cr` },
+    { name: 'Plant & Machinery / Technology', amt: `Rs. ${machineryCr} Cr` },
+    { name: 'Land Cost & Civil Works Construction', amt: `Rs. ${civilCr} Cr` },
+    { name: 'Other Project Costs & Contingency', amt: `Rs. ${otherCostsCr} Cr` }
   ];
 
   costRows.forEach((r, idx) => {
-    checkPageBreak(6);
+    checkPageBreak(6.5);
     const bg = idx % 2 === 0 ? 255 : 250;
     doc.setFillColor(bg, bg, bg);
-    doc.rect(margin, y, contentWidth, 6, 'F');
+    doc.rect(margin, y, contentWidth, 6.5, 'F');
     doc.setDrawColor(226, 232, 240);
-    doc.rect(margin, y, contentWidth, 6, 'D');
+    doc.rect(margin, y, contentWidth, 6.5, 'D');
 
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(51, 65, 85);
-    doc.text(r.name, margin + 4, y + 4.2);
-    doc.text(r.amt, margin + 110, y + 4.2);
-    y += 6;
+    doc.text(r.name, margin + 4, y + 4.5);
+    doc.text(r.amt, margin + 110, y + 4.5);
+    y += 6.5;
   });
 
   // Total Project Cost Row
-  checkPageBreak(6);
-  doc.setFillColor(241, 245, 249);
-  doc.rect(margin, y, contentWidth, 6, 'F');
-  doc.setDrawColor(226, 232, 240);
-  doc.rect(margin, y, contentWidth, 6, 'D');
+  checkPageBreak(6.5);
+  doc.setFillColor(238, 242, 255); // Light Indigo/Blue Tint
+  doc.rect(margin, y, contentWidth, 6.5, 'F');
+  doc.setDrawColor(199, 210, 254);
+  doc.rect(margin, y, contentWidth, 6.5, 'D');
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(15, 23, 42);
-  doc.text('Total Project Cost', margin + 4, y + 4.2);
-  doc.text(`${costCrFormatted} Cr`, margin + 110, y + 4.2);
-  y += 8;
+  doc.text('Total Project Cost (CAPEX)', margin + 4, y + 4.5);
+  doc.setTextColor(30, 64, 175);
+  doc.text(`Rs. ${costCrFormatted} Cr`, margin + 110, y + 4.5);
+  y += 11; // Clear vertical spacing before Means of Finance
 
   // Subheading 2: Means of Finance
+  checkPageBreak(38);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
+  doc.setFontSize(9);
+  doc.setTextColor(15, 23, 42);
   doc.text('Means of Finance', margin, y);
-  y += 4.5;
+  y += 5;
 
+  // Table 2 Header
   doc.setFillColor(241, 245, 249);
-  doc.rect(margin, y, contentWidth, 6, 'F');
+  doc.rect(margin, y, contentWidth, 6.5, 'F');
   doc.setDrawColor(226, 232, 240);
-  doc.rect(margin, y, contentWidth, 6, 'D');
-  doc.text('Funding Source', margin + 4, y + 4.2);
-  doc.text('Amount (INR Cr)', margin + 85, y + 4.2);
-  doc.text('Share (%)', margin + 140, y + 4.2);
-  y += 6;
+  doc.rect(margin, y, contentWidth, 6.5, 'D');
+  doc.text('Funding Source', margin + 4, y + 4.5);
+  doc.text('Amount (INR Cr)', margin + 85, y + 4.5);
+  doc.text('Share (%)', margin + 140, y + 4.5);
+  y += 6.5;
 
-  const totalFinCr = (parseFloat(userTermLoanCr) + parseFloat(userPromoterCr) + parseFloat(userOtherFinCr)).toFixed(2);
-  const totalFinNum = parseFloat(totalFinCr);
-  const calcPct = (amt: string | number) => totalFinNum > 0 ? ((parseFloat(String(amt || 0)) / totalFinNum) * 100).toFixed(1) + '%' : '0.0%';
+  const totalFinCr = fin.totalFinanceFormatted;
   
   const meansRows = [
-    { name: 'Project Term Loan', amt: `${userTermLoanCr} Cr`, pct: calcPct(userTermLoanCr) },
-    { name: 'Promoter Contribution', amt: `${userPromoterCr} Cr`, pct: calcPct(userPromoterCr) },
-    { name: 'Other Sources', amt: `${userOtherFinCr} Cr`, pct: calcPct(userOtherFinCr) }
+    { name: 'Project Term Loan (Bank Debt)', amt: `Rs. ${userTermLoanCr} Cr`, pct: `${fin.debtPct}%` },
+    { name: 'Promoter Contribution (Equity)', amt: `Rs. ${userPromoterCr} Cr`, pct: `${fin.eqPct}%` },
+    { name: 'Other Sources / Quasi-Equity', amt: `Rs. ${userOtherFinCr} Cr`, pct: `${fin.otherPct}%` }
   ];
 
   meansRows.forEach((m, idx) => {
-    checkPageBreak(6);
+    checkPageBreak(6.5);
     const bg = idx % 2 === 0 ? 255 : 250;
     doc.setFillColor(bg, bg, bg);
-    doc.rect(margin, y, contentWidth, 6, 'F');
+    doc.rect(margin, y, contentWidth, 6.5, 'F');
     doc.setDrawColor(226, 232, 240);
-    doc.rect(margin, y, contentWidth, 6, 'D');
+    doc.rect(margin, y, contentWidth, 6.5, 'D');
 
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(15, 23, 42);
-    doc.text(m.name, margin + 4, y + 4.2);
+    doc.text(m.name, margin + 4, y + 4.5);
 
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(51, 65, 85);
-    doc.text(m.amt, margin + 85, y + 4.2);
-    doc.text(m.pct, margin + 140, y + 4.2);
-    y += 6;
+    doc.text(m.amt, margin + 85, y + 4.5);
+    doc.text(m.pct, margin + 140, y + 4.5);
+    y += 6.5;
   });
 
   // Total Means Row
-  checkPageBreak(6);
-  doc.setFillColor(241, 245, 249);
-  doc.rect(margin, y, contentWidth, 6, 'F');
-  doc.setDrawColor(226, 232, 240);
-  doc.rect(margin, y, contentWidth, 6, 'D');
+  checkPageBreak(6.5);
+  doc.setFillColor(236, 253, 245); // Emerald light tint
+  doc.rect(margin, y, contentWidth, 6.5, 'F');
+  doc.setDrawColor(167, 243, 208);
+  doc.rect(margin, y, contentWidth, 6.5, 'D');
   doc.setFont('helvetica', 'bold');
-  doc.text('Total Means of Finance', margin + 4, y + 4.2);
-  doc.text(`${costCrFormatted} Cr`, margin + 85, y + 4.2);
-  doc.text('100%', margin + 140, y + 4.2);
-  y += 8;
+  doc.setTextColor(15, 23, 42);
+  doc.text('Total Means of Finance', margin + 4, y + 4.5);
+  doc.setTextColor(4, 120, 87);
+  doc.text(`Rs. ${totalFinCr} Cr`, margin + 85, y + 4.5);
+  doc.text('100%', margin + 140, y + 4.5);
+  y += 11;
 
   // Present Requirement
   drawSectionBanner('Present Requirement', 25);

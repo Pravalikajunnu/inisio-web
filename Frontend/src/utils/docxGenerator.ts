@@ -2,26 +2,39 @@ import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, Width
 import { saveAs } from 'file-saver';
 import { TeaserPDFData } from './pdfGenerator';
 import { getFeasibilityTerm } from '../types';
+import { reconcileProjectFinancials } from './financialUtils';
 
 export async function generateProjectTeaserDOCX(data: TeaserPDFData): Promise<void> {
-  const costCr = parseFloat(String(data.totalCostCr)) || 0;
-  const costCrFormatted = costCr.toFixed(2);
-  const loanCr = parseFloat(String(data.loanRequiredCr)) || (costCr * (data.debtPct / 100));
-  const loanCrFormatted = loanCr.toFixed(2);
-  const contribCr = parseFloat(String(data.promoterContribCr)) || (costCr * (data.eqPct / 100));
-  const contribCrFormatted = contribCr.toFixed(2);
+  const fin = reconcileProjectFinancials({
+    totalCostCr: data.totalCostCr,
+    loanRequiredCr: data.loanRequiredCr,
+    promoterContribCr: data.promoterContribCr,
+    debtPct: data.debtPct,
+    eqPct: data.eqPct,
+    consultancyCostCr: data.consultancyCostCr,
+    machineryCostCr: data.machineryCostCr,
+    civilCostCr: data.civilCostCr,
+    otherCostsCr: data.otherCostsCr,
+    termLoanCr: data.termLoanCr,
+    promoterContributionCr: data.promoterContributionCr,
+    otherFinanceCr: data.otherFinanceCr
+  });
 
-  const machineryCr = data.machineryCostCr ? Number(data.machineryCostCr).toFixed(2) : (costCr * 0.65).toFixed(2);
-  const civilCr = data.civilCostCr ? Number(data.civilCostCr).toFixed(2) : (costCr * 0.25).toFixed(2);
-  const consultancyCr = data.consultancyCostCr ? Number(data.consultancyCostCr).toFixed(2) : (costCr * 0.05).toFixed(2);
-  const otherCostsCr = data.otherCostsCr ? Number(data.otherCostsCr).toFixed(2) : (costCr * 0.05).toFixed(2);
+  const costCrFormatted = fin.totalCostFormatted;
+  const loanCrFormatted = fin.termLoanFormatted;
+  const contribCrFormatted = fin.promoterContributionFormatted;
 
-  const userTermLoanCr = data.termLoanCr ? Number(data.termLoanCr).toFixed(2) : loanCrFormatted;
-  const userPromoterCr = data.promoterContributionCr ? Number(data.promoterContributionCr).toFixed(2) : contribCrFormatted;
-  const userOtherFinCr = data.otherFinanceCr ? Number(data.otherFinanceCr).toFixed(2) : '0.00';
+  const machineryCr = fin.machineryFormatted;
+  const civilCr = fin.civilFormatted;
+  const consultancyCr = fin.consultancyFormatted;
+  const otherCostsCr = fin.otherCostsFormatted;
 
-  const totalCostCalc = (parseFloat(machineryCr) + parseFloat(civilCr) + parseFloat(consultancyCr) + parseFloat(otherCostsCr)).toFixed(2);
-  const totalFinCalc = (parseFloat(userTermLoanCr) + parseFloat(userPromoterCr) + parseFloat(userOtherFinCr)).toFixed(2);
+  const userTermLoanCr = fin.termLoanFormatted;
+  const userPromoterCr = fin.promoterContributionFormatted;
+  const userOtherFinCr = fin.otherFinanceFormatted;
+
+  const totalCostCalc = fin.totalCostFormatted;
+  const totalFinCalc = fin.totalFinanceFormatted;
 
   const dscr = data.dscrEstimate || (data.debtPct > 75 ? 1.45 : data.debtPct > 65 ? 1.72 : 1.95);
   const feasibilityTerm = getFeasibilityTerm(data.feasibilityScore);

@@ -241,21 +241,57 @@ export const UserProfileDetailModal: React.FC<UserProfileDetailModalProps> = ({
               </div>
             </div>
 
+            {/* Multi-Promoter Details */}
+            {lead.promotersList && lead.promotersList.length > 0 && (
+              <div className="pt-3 border-t border-zinc-100 space-y-2">
+                <div className="text-[10px] font-bold uppercase text-zinc-500 tracking-wider">
+                  Promoters &amp; Key Management ({lead.promotersList.length})
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {lead.promotersList.map((p, idx) => (
+                    <div key={idx} className="p-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-xs space-y-0.5">
+                      <div className="flex items-center justify-between">
+                        <strong className="text-zinc-900">{p.name || `Promoter ${idx + 1}`}</strong>
+                        <span className="text-[10px] px-1.5 py-0.5 bg-blue-100 text-blue-800 font-semibold rounded">
+                          {idx === 0 ? 'Lead Promoter' : `Co-Promoter ${idx}`}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-zinc-600 flex items-center gap-2">
+                        <span>Exp: {p.experience || 'N/A'} yrs</span>
+                        <span>•</span>
+                        <span>Qual: {p.qualification || 'N/A'}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Uploaded Documents */}
-            {(lead.dprFile || lead.cmaFile) && (
-              <div className="pt-2 border-t border-zinc-100 flex flex-wrap gap-2">
-                {lead.dprFile && (
-                  <div className="p-2 bg-zinc-50 border border-zinc-200 rounded-lg text-[11px] font-medium text-zinc-800 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-blue-600" />
-                    <span>DPR: {lead.dprFile.name}</span>
-                  </div>
-                )}
-                {lead.cmaFile && (
-                  <div className="p-2 bg-zinc-50 border border-zinc-200 rounded-lg text-[11px] font-medium text-zinc-800 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-blue-600" />
-                    <span>CMA: {lead.cmaFile.name}</span>
-                  </div>
-                )}
+            {((lead.uploadedDocuments && lead.uploadedDocuments.length > 0) || lead.dprFile || lead.cmaFile) && (
+              <div className="pt-2 border-t border-zinc-100 space-y-1.5">
+                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block">Uploaded Project Documents</span>
+                <div className="flex flex-wrap gap-2">
+                  {lead.dprFile && (
+                    <div className="p-2 bg-zinc-50 border border-zinc-200 rounded-lg text-[11px] font-medium text-zinc-800 flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-blue-600" />
+                      <span>DPR: {lead.dprFile.name}</span>
+                    </div>
+                  )}
+                  {lead.cmaFile && (
+                    <div className="p-2 bg-zinc-50 border border-zinc-200 rounded-lg text-[11px] font-medium text-zinc-800 flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-blue-600" />
+                      <span>CMA: {lead.cmaFile.name}</span>
+                    </div>
+                  )}
+                  {lead.uploadedDocuments?.map((doc) => (
+                    <div key={doc.id} className="p-2 bg-zinc-50 border border-zinc-200 rounded-lg text-[11px] font-medium text-zinc-800 flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-blue-600" />
+                      <span className="truncate max-w-[200px]">{doc.name}</span>
+                      <span className="text-[10px] text-zinc-400">({doc.type})</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

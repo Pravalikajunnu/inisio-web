@@ -40,20 +40,20 @@ export const PromotersManagement: React.FC<PromotersManagementProps> = ({
   const [netWorthCr, setNetWorthCr] = useState<string | number>('5.0');
   const [cibilScore, setCibilScore] = useState<string | number>('780');
 
-  // Initialize with at least primary promoter if empty
+  // Initialize with at least primary promoter if empty, with no dummy PAN or DIN
   const activePromoters: PromoterDetail[] = promoters && promoters.length > 0 ? promoters : [
     {
       id: 'promoter-1',
       name: primaryPromoterName || 'Lead Promoter',
-      pan: 'ABCDE1234F',
-      din: '08765432',
+      pan: '',
+      din: '',
       experienceYears: 12,
       qualification: 'B.Tech / MBA (Operations)',
       shareholdingPct: 70,
       role: 'Managing Director & Promoter',
-      kycStatus: 'Verified' as const,
+      kycStatus: 'Pending' as const,
       netWorthCr: 6.5,
-      cibilScore: 785
+      cibilScore: undefined
     }
   ];
 
@@ -68,7 +68,7 @@ export const PromotersManagement: React.FC<PromotersManagementProps> = ({
     setRole('Executive Director / Co-Promoter');
     setKycStatus('Pending');
     setNetWorthCr('3.0');
-    setCibilScore('750');
+    setCibilScore('');
     setIsModalOpen(true);
   };
 
@@ -81,7 +81,7 @@ export const PromotersManagement: React.FC<PromotersManagementProps> = ({
     setQualification(p.qualification);
     setShareholdingPct(p.shareholdingPct);
     setRole(p.role);
-    setKycStatus(p.kycStatus);
+    setKycStatus(p.kycStatus || 'Pending');
     setNetWorthCr(p.netWorthCr || '');
     setCibilScore(p.cibilScore || '');
     setIsModalOpen(true);
@@ -231,18 +231,49 @@ export const PromotersManagement: React.FC<PromotersManagementProps> = ({
               </div>
               <div>
                 <span className="text-[10px] text-zinc-400 uppercase font-semibold block">KYC Status</span>
-                <span className="font-bold text-emerald-700 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                  <span>{p.kycStatus}</span>
+                <span className={`font-bold flex items-center gap-1 ${
+                  p.kycStatus === 'Verified' 
+                    ? 'text-emerald-700' 
+                    : p.kycStatus === 'Uploaded' 
+                    ? 'text-blue-700' 
+                    : 'text-amber-700'
+                }`}>
+                  {p.kycStatus === 'Verified' ? (
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                  ) : (
+                    <ShieldCheck className="w-3 h-3 text-amber-500" />
+                  )}
+                  <span>{p.kycStatus === 'Verified' ? 'Verified' : p.kycStatus === 'Uploaded' ? 'Documents Uploaded' : 'Pending Verification'}</span>
                 </span>
               </div>
             </div>
 
             {/* Identifiers & Details */}
-            <div className="text-[11px] text-zinc-500 bg-white p-2 rounded-lg border border-zinc-100 flex flex-wrap items-center justify-between gap-2">
-              <span><strong>PAN:</strong> {p.pan || 'Provided'}</span>
-              <span><strong>DIN:</strong> {p.din || 'Active'}</span>
-              {p.cibilScore && <span><strong>CIBIL:</strong> {p.cibilScore}</span>}
+            <div className="text-[11px] text-zinc-600 bg-white p-2.5 rounded-lg border border-zinc-100 flex flex-wrap items-center justify-between gap-2">
+              <span>
+                <strong className="text-zinc-800">PAN:</strong>{' '}
+                {p.pan ? (
+                  <span className="font-mono text-zinc-900 font-semibold">{p.pan}</span>
+                ) : (
+                  <span className="text-zinc-400 italic">Not Provided</span>
+                )}
+              </span>
+              <span>
+                <strong className="text-zinc-800">DIN:</strong>{' '}
+                {p.din ? (
+                  <span className="font-mono text-zinc-900 font-semibold">{p.din}</span>
+                ) : (
+                  <span className="text-zinc-400 italic">Not Provided</span>
+                )}
+              </span>
+              <span>
+                <strong className="text-zinc-800">CIBIL:</strong>{' '}
+                {p.cibilScore ? (
+                  <span className="font-mono text-zinc-900 font-semibold">{p.cibilScore}</span>
+                ) : (
+                  <span className="text-zinc-400 italic">Pending Bureau Fetch</span>
+                )}
+              </span>
             </div>
           </div>
         ))}
@@ -337,24 +368,24 @@ export const PromotersManagement: React.FC<PromotersManagementProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-zinc-700 mb-1">PAN Number</label>
+                  <label className="block font-bold text-zinc-700 mb-1">PAN Number <span className="text-zinc-400 font-normal">(Optional)</span></label>
                   <input
                     type="text"
                     maxLength={10}
                     value={pan}
                     onChange={(e) => setPan(e.target.value.toUpperCase())}
-                    placeholder="e.g. ABCDE1234F"
+                    placeholder="Optional (e.g. ABCDE1234F)"
                     className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:bg-white focus:ring-1 focus:ring-blue-500 outline-none uppercase font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-zinc-700 mb-1">DIN (Director Identification Number)</label>
+                  <label className="block font-bold text-zinc-700 mb-1">DIN (Director ID) <span className="text-zinc-400 font-normal">(Optional)</span></label>
                   <input
                     type="text"
                     maxLength={8}
                     value={din}
                     onChange={(e) => setDin(e.target.value)}
-                    placeholder="e.g. 08123456"
+                    placeholder="Optional (e.g. 08123456)"
                     className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:bg-white focus:ring-1 focus:ring-blue-500 outline-none font-mono"
                   />
                 </div>
@@ -372,14 +403,14 @@ export const PromotersManagement: React.FC<PromotersManagementProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-zinc-700 mb-1">CIBIL Score (via CIC Gateway)</label>
+                  <label className="block font-bold text-zinc-700 mb-1">Self-Declared CIBIL Score <span className="text-zinc-400 font-normal">(Optional)</span></label>
                   <input
                     type="number"
                     min="300"
                     max="900"
                     value={cibilScore}
                     onChange={(e) => setCibilScore(e.target.value)}
-                    placeholder="e.g. 780"
+                    placeholder="Optional (e.g. 750)"
                     className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:bg-white focus:ring-1 focus:ring-blue-500 outline-none font-mono"
                   />
                 </div>

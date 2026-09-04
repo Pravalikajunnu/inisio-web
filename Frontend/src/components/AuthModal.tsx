@@ -27,13 +27,19 @@ interface AuthModalProps {
   onClose: () => void;
   onLoginSuccess: (user: AuthUser) => void;
   initialMode?: 'login' | 'signup' | 'forgot-password';
+  prefilledEmail?: string;
+  prefilledName?: string;
+  prefilledPhone?: string;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
   onLoginSuccess,
-  initialMode = 'login'
+  initialMode = 'login',
+  prefilledEmail = '',
+  prefilledName = '',
+  prefilledPhone = ''
 }) => {
   const [mode, setMode] = useState<'login' | 'signup' | 'forgot-password'>(initialMode);
   
@@ -57,8 +63,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setMode(initialMode || 'login');
       setError('');
       setSuccessMessage('');
+      if (prefilledEmail) setEmail(prefilledEmail);
+      if (prefilledName) setName(prefilledName);
+      if (prefilledPhone) setPhone(prefilledPhone);
     }
-  }, [isOpen, initialMode]);
+  }, [isOpen, initialMode, prefilledEmail, prefilledName, prefilledPhone]);
 
   if (!isOpen) return null;
 
