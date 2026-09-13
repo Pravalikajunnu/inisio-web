@@ -1,5 +1,6 @@
 import Lead from '../models/Lead.js';
 import Notification from '../models/Notification.js';
+import mongoose from 'mongoose';
 import { isDBConnected } from '../config/db.js';
 
 let memoryLeads = [];

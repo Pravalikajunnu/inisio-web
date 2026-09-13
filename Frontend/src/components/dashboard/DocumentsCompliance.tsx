@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { ProjectDocument } from '../../types';
 import { DocumentViewerModal, DocumentViewerTarget } from '../DocumentViewerModal';
+import { storeDocumentData } from '../../utils/documentStorage';
 import {
   FileCheck,
   Upload,
@@ -94,12 +95,18 @@ export const DocumentsCompliance: React.FC<DocumentsComplianceProps> = ({
         uploadedAt: `${formattedDate}, ${formattedTime}`,
         status: 'Uploaded',
         dpdpConsent: dpdpAgreed,
-        dataUrl: fileDataUrl
+        dataUrl: fileDataUrl,
+        storageKey: `project-${projectName}-${Date.now()}`
       };
 
-      const updated = [newDoc, ...activeDocs];
-      onUpdateDocuments(updated);
-      setIsUploading(false);
+      const persist = async () => {
+        if (fileDataUrl && newDoc.storageKey) {
+          await storeDocumentData(fileDataUrl, newDoc.storageKey);
+        }
+        onUpdateDocuments([newDoc, ...activeDocs]);
+        setIsUploading(false);
+      };
+      persist().catch(() => setIsUploading(false));
     };
 
     reader.onerror = () => {
@@ -236,7 +243,7 @@ export const DocumentsCompliance: React.FC<DocumentsComplianceProps> = ({
           <div className="space-y-1 min-w-0">
             <div className="text-xs font-bold text-zinc-900 flex items-center gap-2">
               <Upload className="w-4 h-4 text-blue-600" />
-              <span>Upload Project Document (PDF, DOCX, XLSX, Images)</span>
+              <span>Upload Project Document (PDF, DOCX, XLSX, Images, and more)</span>
             </div>
             <p className="text-[11px] text-zinc-500">
               Drag and drop your file here, or select category and browse. Files open directly in the dashboard viewer.
@@ -271,7 +278,7 @@ export const DocumentsCompliance: React.FC<DocumentsComplianceProps> = ({
               disabled={isUploading}
               onChange={handleFileUpload}
               className="hidden"
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.webp"
+              accept="*/*"
             />
           </div>
         </div>

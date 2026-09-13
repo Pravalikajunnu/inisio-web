@@ -145,7 +145,8 @@ export const UserProfileDetailModal: React.FC<UserProfileDetailModalProps> = ({
       uploadedAt: lead.dprFile.uploadedAt || new Date().toISOString(),
       status: 'Verified',
       dataUrl: lead.dprFile.dataUrl,
-      fileUrl: lead.dprFile.fileUrl
+      fileUrl: lead.dprFile.fileUrl,
+      storageKey: lead.dprFile.storageKey
     });
   }
   if (lead.cmaFile) {
@@ -157,7 +158,8 @@ export const UserProfileDetailModal: React.FC<UserProfileDetailModalProps> = ({
       uploadedAt: lead.cmaFile.uploadedAt || new Date().toISOString(),
       status: 'Verified',
       dataUrl: lead.cmaFile.dataUrl,
-      fileUrl: lead.cmaFile.fileUrl
+      fileUrl: lead.cmaFile.fileUrl,
+      storageKey: lead.cmaFile.storageKey
     });
   }
   if (lead.uploadedDocuments && Array.isArray(lead.uploadedDocuments)) {
@@ -769,6 +771,7 @@ export const UserProfileDetailModal: React.FC<UserProfileDetailModalProps> = ({
                                 size: doc.size,
                                 dataUrl: doc.dataUrl,
                                 fileUrl: doc.fileUrl,
+                                storageKey: doc.storageKey,
                                 uploadedAt: doc.uploadedAt
                               });
                             }}
@@ -778,7 +781,7 @@ export const UserProfileDetailModal: React.FC<UserProfileDetailModalProps> = ({
                             <span>Open &amp; Preview</span>
                           </button>
 
-                          {(doc.dataUrl || doc.fileUrl) ? (
+                          {(doc.dataUrl || doc.fileUrl || doc.storageKey) ? (
                             <a
                               href={doc.dataUrl || doc.fileUrl}
                               download={doc.name}

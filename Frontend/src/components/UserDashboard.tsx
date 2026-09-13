@@ -808,16 +808,6 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
         />
       )}
 
-      {/* Document Upload Modal */}
-      {activeProject && (
-        <DocumentUploadModal
-          project={activeProject}
-          isOpen={isDocUploadModalOpen}
-          onClose={() => setIsDocUploadModalOpen(false)}
-          onSave={(docUpdates) => handleSaveModalProject(docUpdates)}
-        />
-      )}
-
       {/* Photo/Logo Upload Modal */}
       <PhotoUploadModal
         isOpen={isPhotoUploadModalOpen}

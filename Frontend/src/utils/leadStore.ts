@@ -218,13 +218,27 @@ export async function fetchLeadsFromBackend(email?: string): Promise<LeadRecord[
           }
 
           const backendLead = merged[matchingIndex];
+          const mergeDocument = <T extends { dataUrl?: string; fileUrl?: string; storageKey?: string }>(backendDocument?: T, localDocument?: T) => {
+            if (!backendDocument && !localDocument) return undefined;
+            return {
+              ...localDocument,
+              ...backendDocument,
+              dataUrl: backendDocument?.dataUrl || localDocument?.dataUrl,
+              fileUrl: backendDocument?.fileUrl || localDocument?.fileUrl,
+              storageKey: backendDocument?.storageKey || localDocument?.storageKey
+            } as T;
+          };
           merged[matchingIndex] = {
             ...backendLead,
-            dprFile: backendLead.dprFile || localLead.dprFile,
-            cmaFile: backendLead.cmaFile || localLead.cmaFile,
-            uploadedDocuments: backendLead.uploadedDocuments?.length
-              ? backendLead.uploadedDocuments
-              : localLead.uploadedDocuments
+            dprFile: mergeDocument(backendLead.dprFile, localLead.dprFile),
+            cmaFile: mergeDocument(backendLead.cmaFile, localLead.cmaFile),
+            uploadedDocuments: [...(backendLead.uploadedDocuments || []), ...(localLead.uploadedDocuments || [])]
+              .reduce((documents: any[], document: any) => {
+                const existing = documents.findIndex(item => item.id === document.id || item.name === document.name);
+                if (existing < 0) documents.push(document);
+                else documents[existing] = mergeDocument(documents[existing], document);
+                return documents;
+              }, [])
           };
         });
 

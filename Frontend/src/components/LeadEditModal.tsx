@@ -105,7 +105,8 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
           uploadedAt: lead.dprFile.uploadedAt || new Date().toISOString(),
           status: 'Verified',
           dataUrl: lead.dprFile.dataUrl,
-          fileUrl: lead.dprFile.fileUrl
+          fileUrl: lead.dprFile.fileUrl,
+          storageKey: lead.dprFile.storageKey
         });
       }
       if (lead.cmaFile) {
@@ -117,7 +118,8 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
           uploadedAt: lead.cmaFile.uploadedAt || new Date().toISOString(),
           status: 'Verified',
           dataUrl: lead.cmaFile.dataUrl,
-          fileUrl: lead.cmaFile.fileUrl
+          fileUrl: lead.cmaFile.fileUrl,
+          storageKey: lead.cmaFile.storageKey
         });
       }
       if (lead.uploadedDocuments && Array.isArray(lead.uploadedDocuments)) {
@@ -813,7 +815,8 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
                             type: doc.type,
                             size: doc.size,
                             dataUrl: doc.dataUrl,
-                            fileUrl: doc.fileUrl
+                            fileUrl: doc.fileUrl,
+                            storageKey: doc.storageKey
                           })}
                           className="text-blue-600 hover:text-blue-800 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
                         >
