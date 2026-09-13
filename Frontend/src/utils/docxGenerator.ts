@@ -1,4 +1,20 @@
-import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, HeadingLevel, BorderStyle, ShadingType } from 'docx';
+import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+  AlignmentType,
+  HeadingLevel,
+  BorderStyle,
+  Header,
+  Footer,
+  PageNumber,
+  NumberFormat
+} from 'docx';
 import { saveAs } from 'file-saver';
 import { TeaserPDFData } from './pdfGenerator';
 import { getFeasibilityTerm } from '../types';
@@ -21,28 +37,37 @@ export async function generateProjectTeaserDOCX(data: TeaserPDFData): Promise<vo
   });
 
   const costCrFormatted = fin.totalCostFormatted;
-  const loanCrFormatted = fin.termLoanFormatted;
-  const contribCrFormatted = fin.promoterContributionFormatted;
-
+  const consultancyCr = fin.consultancyFormatted;
   const machineryCr = fin.machineryFormatted;
   const civilCr = fin.civilFormatted;
-  const consultancyCr = fin.consultancyFormatted;
   const otherCostsCr = fin.otherCostsFormatted;
 
   const userTermLoanCr = fin.termLoanFormatted;
   const userPromoterCr = fin.promoterContributionFormatted;
   const userOtherFinCr = fin.otherFinanceFormatted;
+  const totalFinCr = fin.totalFinanceFormatted;
 
-  const totalCostCalc = fin.totalCostFormatted;
-  const totalFinCalc = fin.totalFinanceFormatted;
-
-  const dscr = data.dscrEstimate || (data.debtPct > 75 ? 1.45 : data.debtPct > 65 ? 1.72 : 1.95);
-  const feasibilityTerm = getFeasibilityTerm(data.feasibilityScore);
+  const companyLegalName = (data.projectName || 'GREENFIELD PROJECT PRIVATE LIMITED').toUpperCase();
   const rp = data.riskProfileData;
-  const docRefId = `IN-TEASER-${Date.now().toString().slice(-6)}`;
-  const dateFormatted = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' });
 
-  const tableBorder = {
+  const rawSource = data.rawMaterialSource || 'Direct Vendors, Authorized Distributors & Aggregators';
+  const radius = data.procurementRadiusKm || 'Target Industrial Cluster';
+  const customSuppliers = data.keySuppliersList ? ` Key suppliers: ${data.keySuppliersList}.` : '';
+
+  const buyerType = data.primaryBuyersType || 'Industrial Off-Takers, Institutional Buyers & Commercial Wholesalers';
+  const agreement = data.offTakeAgreementStatus || 'Commercial Contracts / Direct Wholesale Distribution';
+  const customBuyers = data.keyBuyersList ? ` Target buyers: ${data.keyBuyersList}.` : '';
+
+  const descText = data.description ? `${data.description}. ` : '';
+
+  const directorsList = data.directors && data.directors.length > 0
+    ? data.directors
+    : [
+        { name: data.fullName || 'Promoter', title: 'Managing Director / Key Promoter' }
+      ];
+
+  // Common styling constants
+  const borderGrey = {
     top: { style: BorderStyle.SINGLE, size: 1, color: 'CBD5E1' },
     bottom: { style: BorderStyle.SINGLE, size: 1, color: 'CBD5E1' },
     left: { style: BorderStyle.SINGLE, size: 1, color: 'CBD5E1' },
@@ -51,9 +76,40 @@ export async function generateProjectTeaserDOCX(data: TeaserPDFData): Promise<vo
     insideVertical: { style: BorderStyle.SINGLE, size: 1, color: 'E2E8F0' },
   };
 
-  const headerShading = { fill: '1E3A8A' }; // Deep Royal Blue
-  const subHeaderShading = { fill: 'F1F5F9' }; // Slate light
-  const highlightShading = { fill: 'EFF6FF' }; // Blue tint
+  const createSectionBanner = (title: string) => {
+    return new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({
+              shading: { fill: '0F172A' },
+              margins: { top: 120, bottom: 120, left: 180, right: 180 },
+              borders: {
+                top: { style: BorderStyle.NONE },
+                bottom: { style: BorderStyle.NONE },
+                left: { style: BorderStyle.NONE },
+                right: { style: BorderStyle.NONE },
+              },
+              children: [
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: title,
+                      bold: true,
+                      color: 'FFFFFF',
+                      size: 20,
+                      font: 'Arial',
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          ],
+        }),
+      ],
+    });
+  };
 
   const doc = new Document({
     sections: [
@@ -61,472 +117,912 @@ export async function generateProjectTeaserDOCX(data: TeaserPDFData): Promise<vo
         properties: {
           page: {
             margin: {
-              top: 1200,
-              bottom: 1200,
-              left: 1200,
-              right: 1200,
+              top: 1000,
+              bottom: 1000,
+              left: 1100,
+              right: 1100,
             },
           },
         },
+        headers: {
+          default: new Header({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                children: [
+                  new TextRun({
+                    text: 'INISIO PROJECT INTELLIGENCE',
+                    bold: true,
+                    color: '1E40AF',
+                    size: 16,
+                    font: 'Arial',
+                  }),
+                  new TextRun({
+                    text: ' | Executive Teaser Dossier',
+                    color: '64748B',
+                    size: 16,
+                    font: 'Arial',
+                  }),
+                ],
+                spacing: { after: 120 },
+              }),
+            ],
+          }),
+        },
+        footers: {
+          default: new Footer({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.SPACE_BETWEEN,
+                children: [
+                  new TextRun({
+                    text: 'Prepared by INISIO Advisory  •  Confidential',
+                    color: '64748B',
+                    size: 16,
+                    font: 'Arial',
+                  }),
+                  new TextRun({
+                    text: 'Page ',
+                    color: '64748B',
+                    size: 16,
+                    font: 'Arial',
+                  }),
+                  new TextRun({
+                    children: [PageNumber.CURRENT],
+                    color: '64748B',
+                    size: 16,
+                    font: 'Arial',
+                  }),
+                  new TextRun({
+                    text: ' of ',
+                    color: '64748B',
+                    size: 16,
+                    font: 'Arial',
+                  }),
+                  new TextRun({
+                    children: [PageNumber.TOTAL_PAGES],
+                    color: '64748B',
+                    size: 16,
+                    font: 'Arial',
+                  }),
+                ],
+              }),
+            ],
+          }),
+        },
         children: [
-          // -------------------------------------------------------------
-          // Top Corporate Header / Inisio Branding
-          // -------------------------------------------------------------
+          // ==========================================
+          // 1. TOP HEADER & COMPANY TITLE
+          // ==========================================
           new Paragraph({
-            alignment: AlignmentType.RIGHT,
             children: [
               new TextRun({
-                text: 'INISIO PROJECT INTELLIGENCE',
+                text: companyLegalName,
                 bold: true,
-                color: '1E40AF',
-                size: 20,
+                size: 32,
+                color: '0F172A',
                 font: 'Arial',
               }),
+            ],
+            spacing: { before: 80, after: 40 },
+          }),
+
+          new Paragraph({
+            children: [
               new TextRun({
-                text: ' | Confidential Institutional Dossier',
-                color: '64748B',
-                size: 18,
+                text: 'Company Profile',
+                bold: true,
+                size: 24,
+                color: '1E293B',
                 font: 'Arial',
               }),
             ],
             spacing: { after: 180 },
           }),
 
-          // -------------------------------------------------------------
-          // Cover / Main Title Block
-          // -------------------------------------------------------------
-          new Paragraph({
-            heading: HeadingLevel.HEADING_1,
-            children: [
-              new TextRun({
-                text: data.projectName || 'Greenfield Project Executive Teaser',
-                bold: true,
-                size: 36,
-                color: '0F172A',
-                font: 'Arial',
-              }),
-            ],
-            spacing: { before: 100, after: 100 },
-          }),
+          // ==========================================
+          // 2. GENERAL INFORMATION SECTION
+          // ==========================================
+          createSectionBanner('General Information'),
 
           new Paragraph({
             children: [
               new TextRun({
-                text: `Industry Sector: ${data.industry || 'Industrial & Manufacturing'}   •   Location: ${data.location || 'India'}`,
-                color: '334155',
-                bold: true,
+                text: `${companyLegalName} is engaged in the proposed greenfield establishment and operation of facilities in the ${data.industry} sector. The project is situated at ${data.location || 'India'}. It is promoted by ${data.fullName || 'the promoter'} and managed by an experienced management team.`,
                 size: 20,
-                font: 'Arial',
-              }),
-            ],
-          }),
-
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: `Dossier ID: ${docRefId}   •   Assessment Date: ${dateFormatted}   •   Classification: STRICTLY CONFIDENTIAL`,
-                color: '64748B',
-                size: 17,
-                font: 'Arial',
-              }),
-            ],
-            spacing: { after: 260 },
-          }),
-
-          // -------------------------------------------------------------
-          // Executive Abstract
-          // -------------------------------------------------------------
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: 'This automated Executive Project Teaser has been structured for Credit Committees, Investment Boards, and Institutional Lenders (PSU Banks, Private Scheduled Commercial Banks, and Development Financial Institutions). It summarizes capital outlay sizing, Means of Finance, Debt Service Coverage Ratios (DSCR), promoter equity readiness, and preliminary underwriting bankability.',
                 color: '1E293B',
-                size: 19,
+                font: 'Arial',
+              }),
+            ],
+            spacing: { before: 140, after: 120 },
+          }),
+
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `The company proposes to establish a state-of-the-art facility with an estimated total capital outlay of Rs ${data.totalCostCr} Crores (${costCrFormatted} Cr). ${descText}To ensure an uninterrupted operation and supply of raw materials, suitable land has been identified and arranged under ${data.landStatus} status (${data.collateralStatus || 'Freehold Clear Title'}), which is adequate for the proposed plant, storage facilities, and operational requirements.`,
+                size: 20,
+                color: '1E293B',
+                font: 'Arial',
+              }),
+            ],
+            spacing: { after: 120 },
+          }),
+
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `The project's technical design, engineering, DPR formulation, financial modeling, and loan syndication support are being provided by INISIO Greenfield Project Advisory, specializing in industrial project finance, TEV studies, and banking consortium structuring.`,
+                size: 20,
+                color: '1E293B',
+                font: 'Arial',
+              }),
+            ],
+            spacing: { after: 220 },
+          }),
+
+          // ==========================================
+          // 3. SERVICE OFFERINGS SECTION
+          // ==========================================
+          createSectionBanner('Service Offerings'),
+
+          new Paragraph({ text: '', spacing: { before: 100, after: 60 } }),
+
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: borderGrey,
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 40, type: WidthType.PERCENTAGE },
+                    shading: { fill: 'F8FAFC' },
+                    margins: { top: 120, bottom: 120, left: 150, right: 150 },
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: `The Production and Supply of ${data.industry}`,
+                            bold: true,
+                            size: 19,
+                            color: '0F172A',
+                            font: 'Arial',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  new TableCell({
+                    width: { size: 60, type: WidthType.PERCENTAGE },
+                    margins: { top: 120, bottom: 120, left: 150, right: 150 },
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: 'Commercial production, quality processing, and wholesale supply of primary outputs and value-added commercial derivatives.',
+                            size: 19,
+                            color: '334155',
+                            font: 'Arial',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+            ],
+          }),
+
+          new Paragraph({ text: '', spacing: { after: 220 } }),
+
+          // ==========================================
+          // 4. DIRECTORS DETAILS SECTION
+          // ==========================================
+          createSectionBanner('Directors Details'),
+
+          new Paragraph({ text: '', spacing: { before: 100, after: 60 } }),
+
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: borderGrey,
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 50, type: WidthType.PERCENTAGE },
+                    shading: { fill: 'F1F5F9' },
+                    margins: { top: 100, bottom: 100, left: 140, right: 140 },
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: 'Name',
+                            bold: true,
+                            size: 19,
+                            color: '0F172A',
+                            font: 'Arial',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  new TableCell({
+                    width: { size: 50, type: WidthType.PERCENTAGE },
+                    shading: { fill: 'F1F5F9' },
+                    margins: { top: 100, bottom: 100, left: 140, right: 140 },
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: 'Title',
+                            bold: true,
+                            size: 19,
+                            color: '0F172A',
+                            font: 'Arial',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+              ...directorsList.map((dir, idx) =>
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      width: { size: 50, type: WidthType.PERCENTAGE },
+                      shading: { fill: idx % 2 === 0 ? 'FFFFFF' : 'F8FAFC' },
+                      margins: { top: 100, bottom: 100, left: 140, right: 140 },
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({
+                              text: dir.name,
+                              bold: true,
+                              size: 19,
+                              color: '0F172A',
+                              font: 'Arial',
+                            }),
+                          ],
+                        }),
+                      ],
+                    }),
+                    new TableCell({
+                      width: { size: 50, type: WidthType.PERCENTAGE },
+                      shading: { fill: idx % 2 === 0 ? 'FFFFFF' : 'F8FAFC' },
+                      margins: { top: 100, bottom: 100, left: 140, right: 140 },
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({
+                              text: dir.title,
+                              size: 19,
+                              color: '334155',
+                              font: 'Arial',
+                            }),
+                          ],
+                        }),
+                      ],
+                    }),
+                  ],
+                })
+              ),
+            ],
+          }),
+
+          new Paragraph({ text: '', spacing: { after: 240 } }),
+
+          // ==========================================
+          // 5. RAW MATERIALS & MARKET OFFTAKE SECTION
+          // ==========================================
+          createSectionBanner('RAW MATERIALS & MARKET OFFTAKE'),
+
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `${companyLegalName} will procure essential raw materials, feedstocks, and machinery spares through ${rawSource} within the ${radius}.${customSuppliers} Long-term supply consistency will be maintained via structured vendor agreements.`,
+                size: 20,
+                color: '334155',
+                font: 'Arial',
+              }),
+            ],
+            spacing: { before: 140, after: 120 },
+          }),
+
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `On the sales and commercialization front, the company plans to supply finished outputs and by-products primarily to ${buyerType} under ${agreement}.${customBuyers} Direct B2B and institutional supply channels will drive revenue realization.`,
+                size: 20,
+                color: '334155',
                 font: 'Arial',
               }),
             ],
             spacing: { after: 240 },
           }),
 
-          // -------------------------------------------------------------
-          // SECTION 1: Executive Underwriting & Key Viability Indicators
-          // -------------------------------------------------------------
+          // ==========================================
+          // 6. PROJECT FUNDING FACILITIES SECTION
+          // ==========================================
+          createSectionBanner('Project Funding Facilities'),
+
           new Paragraph({
-            heading: HeadingLevel.HEADING_2,
             children: [
               new TextRun({
-                text: '1. Executive Underwriting & Key Viability Indicators',
+                text: 'Proposed Project Cost Statement',
                 bold: true,
-                size: 24,
-                color: '1E3A8A',
+                size: 22,
+                color: '0F172A',
                 font: 'Arial',
               }),
             ],
-            spacing: { before: 200, after: 120 },
+            spacing: { before: 140, after: 40 },
           }),
 
-          new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            borders: tableBorder,
-            rows: [
-              new TableRow({
-                children: [
-                  new TableCell({
-                    shading: headerShading,
-                    width: { size: 25, type: WidthType.PERCENTAGE },
-                    children: [new Paragraph({ children: [new TextRun({ text: 'Metric / Parameter', bold: true, color: 'FFFFFF', size: 18, font: 'Arial' })] })],
-                  }),
-                  new TableCell({
-                    shading: headerShading,
-                    width: { size: 25, type: WidthType.PERCENTAGE },
-                    children: [new Paragraph({ children: [new TextRun({ text: 'Assessed Value', bold: true, color: 'FFFFFF', size: 18, font: 'Arial' })] })],
-                  }),
-                  new TableCell({
-                    shading: headerShading,
-                    width: { size: 25, type: WidthType.PERCENTAGE },
-                    children: [new Paragraph({ children: [new TextRun({ text: 'Institutional Benchmark', bold: true, color: 'FFFFFF', size: 18, font: 'Arial' })] })],
-                  }),
-                  new TableCell({
-                    shading: headerShading,
-                    width: { size: 25, type: WidthType.PERCENTAGE },
-                    children: [new Paragraph({ children: [new TextRun({ text: 'Status / Viability', bold: true, color: 'FFFFFF', size: 18, font: 'Arial' })] })],
-                  }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph({ text: 'Bankability Rating' })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `${data.bankabilityRating || 'A+ (High)'} (${data.riskScoreOutOf10 ? data.riskScoreOutOf10.toFixed(1) : '8.4'}/10)`, bold: true, color: '1E40AF' })] })] }),
-                  new TableCell({ children: [new Paragraph({ text: 'Min. BBB (6.0/10)' })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Compliant (Underwriting Grade)', bold: true, color: '047857' })] })] }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph({ text: 'Feasibility Index' })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `${data.feasibilityScore || 85}/100 (${feasibilityTerm})`, bold: true, color: '047857' })] })] }),
-                  new TableCell({ children: [new Paragraph({ text: 'Score >= 70' })] }),
-                  new TableCell({ children: [new Paragraph({ text: 'High Techno-Economic Feasibility' })] }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph({ text: 'Indicative DSCR (Average)' })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `${dscr.toFixed(2)}x`, bold: true, color: 'B45309' })] })] }),
-                  new TableCell({ children: [new Paragraph({ text: '1.40x to 1.75x' })] }),
-                  new TableCell({ children: [new Paragraph({ text: dscr >= 1.5 ? 'Robust Debt Servicing Headroom' : 'Standard Debt Coverage' })] }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph({ text: 'Debt : Equity Mix' })] }),
-                  new TableCell({ children: [new Paragraph({ text: `${data.debtPct}% Debt : ${data.eqPct}% Equity` })] }),
-                  new TableCell({ children: [new Paragraph({ text: 'Max. 75:25 Debt:Equity' })] }),
-                  new TableCell({ children: [new Paragraph({ text: data.eqPct >= 20 ? 'Eligible for Bank Syndication' : 'Low Equity Buffer' })] }),
-                ],
-              }),
-            ],
-          }),
-
-          // -------------------------------------------------------------
-          // SECTION 2: Project Capital Outlay (CAPEX) & Means of Finance
-          // -------------------------------------------------------------
           new Paragraph({
-            heading: HeadingLevel.HEADING_2,
             children: [
               new TextRun({
-                text: '2. Capital Expenditure (CAPEX) & Means of Finance Sizing',
+                text: 'Debt Types: Project Term Loan',
                 bold: true,
-                size: 24,
-                color: '1E3A8A',
-                font: 'Arial',
-              }),
-            ],
-            spacing: { before: 240, after: 120 },
-          }),
-
-          new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            borders: tableBorder,
-            rows: [
-              new TableRow({
-                children: [
-                  new TableCell({
-                    shading: subHeaderShading,
-                    width: { size: 30, type: WidthType.PERCENTAGE },
-                    children: [new Paragraph({ children: [new TextRun({ text: 'CAPEX Item / Cost Head', bold: true, color: '0F172A', size: 18, font: 'Arial' })] })],
-                  }),
-                  new TableCell({
-                    shading: subHeaderShading,
-                    width: { size: 20, type: WidthType.PERCENTAGE },
-                    children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: 'Amount (₹ Cr)', bold: true, color: '0F172A', size: 18, font: 'Arial' })] })],
-                  }),
-                  new TableCell({
-                    shading: subHeaderShading,
-                    width: { size: 30, type: WidthType.PERCENTAGE },
-                    children: [new Paragraph({ children: [new TextRun({ text: 'Means of Finance Source', bold: true, color: '0F172A', size: 18, font: 'Arial' })] })],
-                  }),
-                  new TableCell({
-                    shading: subHeaderShading,
-                    width: { size: 20, type: WidthType.PERCENTAGE },
-                    children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: 'Amount (₹ Cr)', bold: true, color: '0F172A', size: 18, font: 'Arial' })] })],
-                  }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph({ text: 'Plant & Machinery / Technology' })] }),
-                  new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, text: `₹ ${machineryCr}` })] }),
-                  new TableCell({ children: [new Paragraph({ text: 'Proposed Term Loan (Bank Debt)' })] }),
-                  new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: `₹ ${userTermLoanCr}`, bold: true, color: '1E40AF' })] })] }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph({ text: 'Land & Civil Works Construction' })] }),
-                  new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, text: `₹ ${civilCr}` })] }),
-                  new TableCell({ children: [new Paragraph({ text: 'Promoter Equity Contribution' })] }),
-                  new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: `₹ ${userPromoterCr}`, bold: true, color: '047857' })] })] }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph({ text: 'Engineering, Consultancy & Pre-op' })] }),
-                  new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, text: `₹ ${consultancyCr}` })] }),
-                  new TableCell({ children: [new Paragraph({ text: 'Quasi-Equity / Subsidy / Others' })] }),
-                  new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, text: `₹ ${userOtherFinCr}` })] }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph({ text: 'Contingency & Other Outlay' })] }),
-                  new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, text: `₹ ${otherCostsCr}` })] }),
-                  new TableCell({ children: [new Paragraph({ text: 'Total Funding Sourced' })] }),
-                  new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, text: `₹ ${totalFinCalc}` })] }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({
-                    shading: highlightShading,
-                    children: [new Paragraph({ children: [new TextRun({ text: 'Total Project Cost (CAPEX)', bold: true, color: '0F172A' })] })],
-                  }),
-                  new TableCell({
-                    shading: highlightShading,
-                    children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: `₹ ${totalCostCalc} Cr`, bold: true, color: '1E3A8A' })] })],
-                  }),
-                  new TableCell({
-                    shading: highlightShading,
-                    children: [new Paragraph({ children: [new TextRun({ text: 'Total Means of Finance', bold: true, color: '0F172A' })] })],
-                  }),
-                  new TableCell({
-                    shading: highlightShading,
-                    children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: `₹ ${totalFinCalc} Cr`, bold: true, color: '047857' })] })],
-                  }),
-                ],
-              }),
-            ],
-          }),
-
-          // -------------------------------------------------------------
-          // SECTION 3: Promoter Track Record & Corporate Governance
-          // -------------------------------------------------------------
-          new Paragraph({
-            heading: HeadingLevel.HEADING_2,
-            children: [
-              new TextRun({
-                text: '3. Promoter Track Record & Readiness Profile',
-                bold: true,
-                size: 24,
-                color: '1E3A8A',
-                font: 'Arial',
-              }),
-            ],
-            spacing: { before: 240, after: 120 },
-          }),
-
-          new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            borders: tableBorder,
-            rows: [
-              new TableRow({
-                children: [
-                  new TableCell({ width: { size: 25, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: 'Promoter / Contact', bold: true })] })] }),
-                  new TableCell({ width: { size: 25, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: data.fullName || 'Promoter' })] }),
-                  new TableCell({ width: { size: 25, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: 'Industry Track Record', bold: true })] })] }),
-                  new TableCell({ width: { size: 25, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: rp?.industryExperience || `${data.promoterExp || '5+'} Years` })] }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Business Constitution', bold: true })] })] }),
-                  new TableCell({ children: [new Paragraph({ text: rp?.businessConstitution || 'Private Limited Company' })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Operating Vintage', bold: true })] })] }),
-                  new TableCell({ children: [new Paragraph({ text: rp?.businessVintage || '4 to 7 Years' })] }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Land Acquisition Status', bold: true })] })] }),
-                  new TableCell({ children: [new Paragraph({ text: data.landStatus || 'In Acquisition' })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Collateral Security Status', bold: true })] })] }),
-                  new TableCell({ children: [new Paragraph({ text: data.collateralStatus || 'Primary Fixed Assets Hypothecation' })] }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Collateral Coverage Ratio', bold: true })] })] }),
-                  new TableCell({ children: [new Paragraph({ text: `${rp?.collateralCoveragePct || '110'}% of Loan Request` })] }),
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Promoter CIBIL Standing', bold: true })] })] }),
-                  new TableCell({ children: [new Paragraph({ text: `${rp?.cibilScore || '785'} (High Credit Profile)` })] }),
-                ],
-              }),
-            ],
-          }),
-
-          // -------------------------------------------------------------
-          // SECTION 4: Supply Chain, Offtake & Commercial Framework
-          // -------------------------------------------------------------
-          new Paragraph({
-            heading: HeadingLevel.HEADING_2,
-            children: [
-              new TextRun({
-                text: '4. Commercial, Offtake & Supply Chain Infrastructure',
-                bold: true,
-                size: 24,
-                color: '1E3A8A',
-                font: 'Arial',
-              }),
-            ],
-            spacing: { before: 240, after: 120 },
-          }),
-
-          new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            borders: tableBorder,
-            rows: [
-              new TableRow({
-                children: [
-                  new TableCell({ width: { size: 30, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: 'Raw Material Sourcing', bold: true })] })] }),
-                  new TableCell({ width: { size: 70, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: data.rawMaterialSource || 'Domestic Industrial Vendors & Raw Material Hubs' })] }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Procurement Radius', bold: true })] })] }),
-                  new TableCell({ children: [new Paragraph({ text: data.procurementRadiusKm || '50 to 100 KM Radius (Economical Freight Zone)' })] }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Off-Take & Buyer Channels', bold: true })] })] }),
-                  new TableCell({ children: [new Paragraph({ text: data.primaryBuyersType || 'B2B Industrial Distributors & Institutional Clients' })] }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Off-Take Contract Status', bold: true })] })] }),
-                  new TableCell({ children: [new Paragraph({ text: data.offTakeAgreementStatus || 'MoUs & Letters of Intent (LoI) in execution' })] }),
-                ],
-              }),
-              new TableRow({
-                children: [
-                  new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Target Lender Category', bold: true })] })] }),
-                  new TableCell({ children: [new Paragraph({ text: data.targetBankCategory || 'PSU & Top Scheduled Commercial Banks' })] }),
-                ],
-              }),
-            ],
-          }),
-
-          // -------------------------------------------------------------
-          // SECTION 5: Institutional Road Map & Next Actionables
-          // -------------------------------------------------------------
-          new Paragraph({
-            heading: HeadingLevel.HEADING_2,
-            children: [
-              new TextRun({
-                text: '5. Actionable Bank Syndication Roadmap & Deliverables',
-                bold: true,
-                size: 24,
-                color: '1E3A8A',
-                font: 'Arial',
-              }),
-            ],
-            spacing: { before: 240, after: 120 },
-          }),
-
-          new Paragraph({
-            bullet: { level: 0 },
-            children: [
-              new TextRun({ text: 'Detailed Project Report (DPR): ', bold: true, color: '0F172A' }),
-              new TextRun({ text: 'Draft comprehensive, bank-grade technical appraisal report covering plant civil layout, machinery vendor quotes, production flowchart, and environmental compliance clearances.' }),
-            ],
-            spacing: { after: 80 },
-          }),
-          new Paragraph({
-            bullet: { level: 0 },
-            children: [
-              new TextRun({ text: 'CMA Data Financial Modeling: ', bold: true, color: '0F172A' }),
-              new TextRun({ text: 'Generate 7 to 10 year multi-scenario Credit Monitoring Arrangement (CMA) projections including DSCR, ISCR, projected balance sheets, cash flow waterfalls, and sensitivity analysis.' }),
-            ],
-            spacing: { after: 80 },
-          }),
-          new Paragraph({
-            bullet: { level: 0 },
-            children: [
-              new TextRun({ text: 'Chartered Accountant (CA) Clearance: ', bold: true, color: '0F172A' }),
-              new TextRun({ text: 'Complete financial audit, Means of Finance certification, and promoter net worth vetting for bank appraisal committee.' }),
-            ],
-            spacing: { after: 80 },
-          }),
-          new Paragraph({
-            bullet: { level: 0 },
-            children: [
-              new TextRun({ text: 'Lender Dossier Submission: ', bold: true, color: '0F172A' }),
-              new TextRun({ text: 'Formal syndication with lead PSU/private banks and development financial institutions (e.g. SBI, HDFC, Canara, SIDBI, IREDA).' }),
-            ],
-            spacing: { after: 180 },
-          }),
-
-          // -------------------------------------------------------------
-          // Disclaimer & Advisory Desk Footer
-          // -------------------------------------------------------------
-          new Paragraph({
-            children: [
-              new TextRun({
-                text: 'CONFIDENTIALITY & LEGAL NOTICE: ',
-                bold: true,
-                color: '475569',
-                size: 16,
-                font: 'Arial',
-              }),
-              new TextRun({
-                text: 'This document is generated by the Inisio Greenfield Project Assessment Engine for institutional underwriting evaluation. Projections, DSCR metrics, and capital cost breakups are subject to formal Techno-Economic Viability (TEV) validation, statutory audits, and lender credit approval policies.',
+                size: 18,
                 color: '64748B',
-                size: 16,
                 font: 'Arial',
               }),
             ],
-            spacing: { before: 200, after: 60 },
+            spacing: { after: 100 },
+          }),
+
+          // Project Cost Table
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: borderGrey,
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 65, type: WidthType.PERCENTAGE },
+                    shading: { fill: 'F1F5F9' },
+                    margins: { top: 100, bottom: 100, left: 140, right: 140 },
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: 'Particulars',
+                            bold: true,
+                            size: 19,
+                            color: '0F172A',
+                            font: 'Arial',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  new TableCell({
+                    width: { size: 35, type: WidthType.PERCENTAGE },
+                    shading: { fill: 'F1F5F9' },
+                    margins: { top: 100, bottom: 100, left: 140, right: 140 },
+                    children: [
+                      new Paragraph({
+                        alignment: AlignmentType.RIGHT,
+                        children: [
+                          new TextRun({
+                            text: 'Amount (INR Cr)',
+                            bold: true,
+                            size: 19,
+                            color: '0F172A',
+                            font: 'Arial',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    margins: { top: 90, bottom: 90, left: 140, right: 140 },
+                    children: [new Paragraph({ children: [new TextRun({ text: 'Consultancy & Pre-operative Expenses', size: 19, color: '334155', font: 'Arial' })] })],
+                  }),
+                  new TableCell({
+                    margins: { top: 90, bottom: 90, left: 140, right: 140 },
+                    children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: `Rs. ${consultancyCr} Cr`, size: 19, color: '334155', font: 'Arial' })] })],
+                  }),
+                ],
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    shading: { fill: 'F8FAFC' },
+                    margins: { top: 90, bottom: 90, left: 140, right: 140 },
+                    children: [new Paragraph({ children: [new TextRun({ text: 'Plant & Machinery / Technology', size: 19, color: '334155', font: 'Arial' })] })],
+                  }),
+                  new TableCell({
+                    shading: { fill: 'F8FAFC' },
+                    margins: { top: 90, bottom: 90, left: 140, right: 140 },
+                    children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: `Rs. ${machineryCr} Cr`, size: 19, color: '334155', font: 'Arial' })] })],
+                  }),
+                ],
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    margins: { top: 90, bottom: 90, left: 140, right: 140 },
+                    children: [new Paragraph({ children: [new TextRun({ text: 'Land Cost & Civil Works Construction', size: 19, color: '334155', font: 'Arial' })] })],
+                  }),
+                  new TableCell({
+                    margins: { top: 90, bottom: 90, left: 140, right: 140 },
+                    children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: `Rs. ${civilCr} Cr`, size: 19, color: '334155', font: 'Arial' })] })],
+                  }),
+                ],
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    shading: { fill: 'F8FAFC' },
+                    margins: { top: 90, bottom: 90, left: 140, right: 140 },
+                    children: [new Paragraph({ children: [new TextRun({ text: 'Other Project Costs & Contingency', size: 19, color: '334155', font: 'Arial' })] })],
+                  }),
+                  new TableCell({
+                    shading: { fill: 'F8FAFC' },
+                    margins: { top: 90, bottom: 90, left: 140, right: 140 },
+                    children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: `Rs. ${otherCostsCr} Cr`, size: 19, color: '334155', font: 'Arial' })] })],
+                  }),
+                ],
+              }),
+              // Total Project Cost Row
+              new TableRow({
+                children: [
+                  new TableCell({
+                    shading: { fill: 'EEF2FF' },
+                    margins: { top: 110, bottom: 110, left: 140, right: 140 },
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: 'Total Project Cost (CAPEX)',
+                            bold: true,
+                            size: 20,
+                            color: '0F172A',
+                            font: 'Arial',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  new TableCell({
+                    shading: { fill: 'EEF2FF' },
+                    margins: { top: 110, bottom: 110, left: 140, right: 140 },
+                    children: [
+                      new Paragraph({
+                        alignment: AlignmentType.RIGHT,
+                        children: [
+                          new TextRun({
+                            text: `Rs. ${costCrFormatted} Cr`,
+                            bold: true,
+                            size: 20,
+                            color: '1E40AF',
+                            font: 'Arial',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+            ],
           }),
 
           new Paragraph({
             children: [
               new TextRun({
-                text: 'For CA financial clearance, bank-grade DPR preparation, or syndication advisory: inisio.com | Email: advisory@inisio.com | Tel: +91 99887 76655',
+                text: 'Means of Finance',
                 bold: true,
-                color: '1E40AF',
-                size: 16,
+                size: 22,
+                color: '0F172A',
                 font: 'Arial',
               }),
             ],
+            spacing: { before: 200, after: 100 },
           }),
+
+          // Means of Finance Table
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: borderGrey,
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 50, type: WidthType.PERCENTAGE },
+                    shading: { fill: 'F1F5F9' },
+                    margins: { top: 100, bottom: 100, left: 140, right: 140 },
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: 'Funding Source',
+                            bold: true,
+                            size: 19,
+                            color: '0F172A',
+                            font: 'Arial',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  new TableCell({
+                    width: { size: 30, type: WidthType.PERCENTAGE },
+                    shading: { fill: 'F1F5F9' },
+                    margins: { top: 100, bottom: 100, left: 140, right: 140 },
+                    children: [
+                      new Paragraph({
+                        alignment: AlignmentType.RIGHT,
+                        children: [
+                          new TextRun({
+                            text: 'Amount (INR Cr)',
+                            bold: true,
+                            size: 19,
+                            color: '0F172A',
+                            font: 'Arial',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  new TableCell({
+                    width: { size: 20, type: WidthType.PERCENTAGE },
+                    shading: { fill: 'F1F5F9' },
+                    margins: { top: 100, bottom: 100, left: 140, right: 140 },
+                    children: [
+                      new Paragraph({
+                        alignment: AlignmentType.RIGHT,
+                        children: [
+                          new TextRun({
+                            text: 'Share (%)',
+                            bold: true,
+                            size: 19,
+                            color: '0F172A',
+                            font: 'Arial',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    margins: { top: 90, bottom: 90, left: 140, right: 140 },
+                    children: [new Paragraph({ children: [new TextRun({ text: 'Project Term Loan (Bank Debt)', bold: true, size: 19, color: '0F172A', font: 'Arial' })] })],
+                  }),
+                  new TableCell({
+                    margins: { top: 90, bottom: 90, left: 140, right: 140 },
+                    children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: `Rs. ${userTermLoanCr} Cr`, size: 19, color: '334155', font: 'Arial' })] })],
+                  }),
+                  new TableCell({
+                    margins: { top: 90, bottom: 90, left: 140, right: 140 },
+                    children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: `${fin.debtPct}%`, size: 19, color: '334155', font: 'Arial' })] })],
+                  }),
+                ],
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    shading: { fill: 'F8FAFC' },
+                    margins: { top: 90, bottom: 90, left: 140, right: 140 },
+                    children: [new Paragraph({ children: [new TextRun({ text: 'Promoter Contribution (Equity)', bold: true, size: 19, color: '0F172A', font: 'Arial' })] })],
+                  }),
+                  new TableCell({
+                    shading: { fill: 'F8FAFC' },
+                    margins: { top: 90, bottom: 90, left: 140, right: 140 },
+                    children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: `Rs. ${userPromoterCr} Cr`, size: 19, color: '334155', font: 'Arial' })] })],
+                  }),
+                  new TableCell({
+                    shading: { fill: 'F8FAFC' },
+                    margins: { top: 90, bottom: 90, left: 140, right: 140 },
+                    children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: `${fin.eqPct}%`, size: 19, color: '334155', font: 'Arial' })] })],
+                  }),
+                ],
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    margins: { top: 90, bottom: 90, left: 140, right: 140 },
+                    children: [new Paragraph({ children: [new TextRun({ text: 'Other Sources / Quasi-Equity', size: 19, color: '334155', font: 'Arial' })] })],
+                  }),
+                  new TableCell({
+                    margins: { top: 90, bottom: 90, left: 140, right: 140 },
+                    children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: `Rs. ${userOtherFinCr} Cr`, size: 19, color: '334155', font: 'Arial' })] })],
+                  }),
+                  new TableCell({
+                    margins: { top: 90, bottom: 90, left: 140, right: 140 },
+                    children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: `${fin.otherPct}%`, size: 19, color: '334155', font: 'Arial' })] })],
+                  }),
+                ],
+              }),
+              // Total Means of Finance Row
+              new TableRow({
+                children: [
+                  new TableCell({
+                    shading: { fill: 'ECFDF5' },
+                    margins: { top: 110, bottom: 110, left: 140, right: 140 },
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: 'Total Means of Finance',
+                            bold: true,
+                            size: 20,
+                            color: '0F172A',
+                            font: 'Arial',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  new TableCell({
+                    shading: { fill: 'ECFDF5' },
+                    margins: { top: 110, bottom: 110, left: 140, right: 140 },
+                    children: [
+                      new Paragraph({
+                        alignment: AlignmentType.RIGHT,
+                        children: [
+                          new TextRun({
+                            text: `Rs. ${totalFinCr} Cr`,
+                            bold: true,
+                            size: 20,
+                            color: '047857',
+                            font: 'Arial',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  new TableCell({
+                    shading: { fill: 'ECFDF5' },
+                    margins: { top: 110, bottom: 110, left: 140, right: 140 },
+                    children: [
+                      new Paragraph({
+                        alignment: AlignmentType.RIGHT,
+                        children: [
+                          new TextRun({
+                            text: '100%',
+                            bold: true,
+                            size: 20,
+                            color: '047857',
+                            font: 'Arial',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+            ],
+          }),
+
+          new Paragraph({ text: '', spacing: { after: 220 } }),
+
+          // ==========================================
+          // 7. PRESENT REQUIREMENT SECTION
+          // ==========================================
+          createSectionBanner('Present Requirement'),
+
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `The Company proposes to avail a Term Loan of Rs ${data.loanRequiredCr} crore to meet its capital expenditure requirements. The proposed facility will be utilised for the establishment of a ${data.industry} facility, including the procurement and installation of plant & machinery, development of civil infrastructure, and other project-related assets required for the successful implementation and commissioning of the project.`,
+                size: 20,
+                color: '334155',
+                font: 'Arial',
+              }),
+            ],
+            spacing: { before: 140, after: 220 },
+          }),
+
+          // ==========================================
+          // 8. PRIMARY & COLLATERALS SECTION
+          // ==========================================
+          createSectionBanner('Primary & Collaterals'),
+
+          new Paragraph({ text: '', spacing: { before: 100, after: 60 } }),
+
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: borderGrey,
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 35, type: WidthType.PERCENTAGE },
+                    shading: { fill: 'F1F5F9' },
+                    margins: { top: 100, bottom: 100, left: 140, right: 140 },
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: 'Security Type',
+                            bold: true,
+                            size: 19,
+                            color: '0F172A',
+                            font: 'Arial',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  new TableCell({
+                    width: { size: 65, type: WidthType.PERCENTAGE },
+                    shading: { fill: 'F1F5F9' },
+                    margins: { top: 100, bottom: 100, left: 140, right: 140 },
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: 'Description / Details',
+                            bold: true,
+                            size: 19,
+                            color: '0F172A',
+                            font: 'Arial',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    margins: { top: 100, bottom: 100, left: 140, right: 140 },
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: 'Primary Security',
+                            bold: true,
+                            size: 19,
+                            color: '0F172A',
+                            font: 'Arial',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  new TableCell({
+                    margins: { top: 100, bottom: 100, left: 140, right: 140 },
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: 'Hypothecation on all the plant & machinery, equipment, civil structures, and other fixed assets procured/to be procured out of the Term Loan.',
+                            size: 19,
+                            color: '334155',
+                            font: 'Arial',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    shading: { fill: 'F8FAFC' },
+                    margins: { top: 100, bottom: 100, left: 140, right: 140 },
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: 'Collateral Security',
+                            bold: true,
+                            size: 19,
+                            color: '0F172A',
+                            font: 'Arial',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  new TableCell({
+                    shading: { fill: 'F8FAFC' },
+                    margins: { top: 100, bottom: 100, left: 140, right: 140 },
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: data.collateralStatus || 'Freehold Clear Title Land / First Charge on Immovable Assets',
+                            size: 19,
+                            color: '334155',
+                            font: 'Arial',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+            ],
+          }),
+
+          new Paragraph({ text: '', spacing: { after: 220 } }),
+
+          // ==========================================
+          // 9. PRELIMINARY INFORMATION SECTION
+          // ==========================================
+          createSectionBanner('Preliminary Information'),
+
+          new Paragraph({ text: '', spacing: { before: 100, after: 60 } }),
+
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: borderGrey,
+            rows: [
+              { label: 'Entity Type', val: rp?.businessConstitution || 'Private Limited Company / Greenfield Entity' },
+              { label: 'Project / Legal Name', val: companyLegalName },
+              { label: 'Key Promoter', val: data.fullName || 'Promoter' },
+              { label: 'Contact Phone', val: data.mobile || 'Confidential / On Request' },
+              { label: 'Contact Email', val: data.email || 'Confidential / On Request' },
+              { label: 'Operating / Track Record', val: rp?.businessVintage || `${data.promoterExp || 'Experienced'} in Industry` },
+              ...(data.gstNumber ? [{ label: 'GST Number', val: data.gstNumber }] : []),
+              ...(data.panNumber ? [{ label: 'PAN Number', val: data.panNumber }] : []),
+              { label: 'Registered Location', val: `${data.location || 'India'}` },
+              { label: 'Proposed Plant Site', val: `${data.location || 'India'} (${data.landStatus})` },
+              { label: 'Feasibility Score', val: `${getFeasibilityTerm(data.feasibilityScore)} (${data.feasibilityScore}/100)` },
+              { label: 'Bankability Grade', val: `${data.bankabilityRating} / 10 (Tier-1 Bankable Grade)` }
+            ].map((item, idx) =>
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 38, type: WidthType.PERCENTAGE },
+                    shading: { fill: idx % 2 === 0 ? 'F8FAFC' : 'FFFFFF' },
+                    margins: { top: 90, bottom: 90, left: 140, right: 140 },
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: item.label,
+                            bold: true,
+                            size: 19,
+                            color: '0F172A',
+                            font: 'Arial',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                  new TableCell({
+                    width: { size: 62, type: WidthType.PERCENTAGE },
+                    shading: { fill: idx % 2 === 0 ? 'F8FAFC' : 'FFFFFF' },
+                    margins: { top: 90, bottom: 90, left: 140, right: 140 },
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({
+                            text: item.val,
+                            size: 19,
+                            color: '334155',
+                            font: 'Arial',
+                          }),
+                        ],
+                      }),
+                    ],
+                  }),
+                ],
+              })
+            ),
+          }),
+
+          new Paragraph({ text: '', spacing: { after: 180 } }),
         ],
       },
     ],
   });
 
   const blob = await Packer.toBlob(doc);
-  const safeFilename = `${(data.projectName || 'Greenfield_Project').replace(/[^a-zA-Z0-9_-]/g, '_')}_AI_Project_Teaser.docx`;
-  saveAs(blob, safeFilename);
+  const fileName = `Inisio_Teaser_${(data.projectName || data.fullName || 'Greenfield').replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
+  saveAs(blob, fileName);
 }

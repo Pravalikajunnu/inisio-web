@@ -177,19 +177,19 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 max-w-3xl mx-auto">
             <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl text-center shadow-2xs hover:border-blue-300 transition-colors">
               <Briefcase className="w-5 h-5 text-blue-600 mx-auto mb-1.5" />
-              <h3 className="text-xs sm:text-sm font-bold text-slate-900 font-manrope">Project Finance Experts</h3>
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900 font-manrope">Assess Project Viability</h3>
             </div>
             <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl text-center shadow-2xs hover:border-blue-300 transition-colors">
               <FileCheck className="w-5 h-5 text-blue-600 mx-auto mb-1.5" />
-              <h3 className="text-xs sm:text-sm font-bold text-slate-900 font-manrope">Bank-Ready Documentation</h3>
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900 font-manrope">Understand Funding Structure</h3>
             </div>
             <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl text-center shadow-2xs hover:border-blue-300 transition-colors">
               <Clock className="w-5 h-5 text-blue-600 mx-auto mb-1.5" />
-              <h3 className="text-xs sm:text-sm font-bold text-slate-900 font-manrope">Faster Due Diligence</h3>
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900 font-manrope">Check Bankability Readiness</h3>
             </div>
             <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl text-center shadow-2xs hover:border-blue-300 transition-colors">
               <ShieldCheck className="w-5 h-5 text-blue-600 mx-auto mb-1.5" />
-              <h3 className="text-xs sm:text-sm font-bold text-slate-900 font-manrope">End-to-End Advisory</h3>
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900 font-manrope">Prepare for the Next Step</h3>
             </div>
           </div>
 

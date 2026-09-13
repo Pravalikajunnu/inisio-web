@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { getStoredLeads, deleteLeadRecord, clearAllLeads, exportLeadsToCSV, LeadRecord } from '../utils/leadStore';
 import { UserProfileDetailModal } from './UserProfileDetailModal';
+import { LeadEditModal } from './LeadEditModal';
+import { AuthUser } from '../types';
 import {
   X,
   Lock,
@@ -19,15 +21,17 @@ import {
   TrendingUp,
   FileCheck2,
   ExternalLink,
-  Eye
+  Eye,
+  Edit3
 } from 'lucide-react';
 
 interface AdminLeadsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  currentUser?: AuthUser;
 }
 
-export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClose }) => {
+export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClose, currentUser }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -35,6 +39,16 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSource, setFilterSource] = useState<'ALL' | 'PDF' | 'FORM'>('ALL');
   const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null);
+  const [editingLead, setEditingLead] = useState<LeadRecord | null>(null);
+
+  const adminUser: AuthUser = currentUser || {
+    id: 'admin-modal-user',
+    email: 'admin@inisio.com',
+    name: 'Super Admin',
+    role: 'admin3',
+    createdAt: new Date().toISOString(),
+    lastLoginAt: new Date().toISOString()
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -331,10 +345,19 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
                               <button
                                 onClick={() => setSelectedLead(lead)}
                                 className="px-2.5 py-1 bg-blue-900/50 hover:bg-blue-800/80 text-blue-300 border border-blue-700/50 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
-                                title="View Complete Profile"
+                                title="View Complete Profile & Dossier"
                               >
                                 <Eye className="w-3.5 h-3.5" />
                                 <span>Profile</span>
+                              </button>
+
+                              <button
+                                onClick={() => setEditingLead(lead)}
+                                className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                                title="Edit Project Details"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                                <span>Edit</span>
                               </button>
 
                               <a
@@ -402,8 +425,24 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
       <UserProfileDetailModal
         lead={selectedLead}
         onClose={() => setSelectedLead(null)}
+        onEdit={(leadToEdit) => {
+          setSelectedLead(null);
+          setEditingLead(leadToEdit);
+        }}
         onDelete={(id) => {
           deleteLeadRecord(id);
+          loadData();
+        }}
+      />
+
+      {/* Admin Project Editor */}
+      <LeadEditModal
+        lead={editingLead}
+        user={adminUser}
+        isOpen={!!editingLead}
+        onClose={() => setEditingLead(null)}
+        onSaved={() => {
+          loadData();
         }}
       />
     </div>

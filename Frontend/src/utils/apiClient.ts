@@ -4,6 +4,9 @@
 
 const getAuthToken = (): string | null => {
   try {
+    const directToken = localStorage.getItem('inisio_auth_token');
+    if (directToken) return directToken;
+
     const saved = localStorage.getItem('inisio_active_user');
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -51,7 +54,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 }
 
 export const api = {
-  // Auth
+  // Auth & Email Verification
   auth: {
     login: (credentials: { email: string; password?: string }) =>
       request<any>('/auth/login', {
@@ -62,6 +65,11 @@ export const api = {
       request<any>('/auth/register', {
         method: 'POST',
         body: JSON.stringify(userData),
+      }),
+    verifyEmail: (email: string, otp: string) =>
+      request<any>('/auth/verify-email', {
+        method: 'POST',
+        body: JSON.stringify({ email, otp }),
       }),
     forgotPassword: (email: string) =>
       request<any>('/auth/forgot-password', {
@@ -83,6 +91,11 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ email }),
       }),
+    resendVerification: (email: string) =>
+      request<any>('/auth/resend-verification', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      }),
     getMe: () => request<any>('/auth/me'),
     updateProfile: (profileData: any) =>
       request<any>('/auth/profile', {
@@ -91,12 +104,33 @@ export const api = {
       }),
   },
 
+  // Users & Roles Management
+  users: {
+    getAll: () => request<any[]>('/users'),
+    getById: (id: string) => request<any>(`/users/${id}`),
+    updateRole: (id: string, role: string) =>
+      request<any>(`/users/${id}/role`, {
+        method: 'PUT',
+        body: JSON.stringify({ role }),
+      }),
+    updateStatus: (id: string, status: string) =>
+      request<any>(`/users/${id}/status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status }),
+      }),
+    delete: (id: string) =>
+      request<any>(`/users/${id}`, {
+        method: 'DELETE',
+      }),
+  },
+
   // Leads
   leads: {
-    getAll: (params?: { search?: string; filterSource?: string }) => {
+    getAll: (params?: { search?: string; filterSource?: string; email?: string }) => {
       const query = new URLSearchParams();
       if (params?.search) query.append('search', params.search);
       if (params?.filterSource) query.append('filterSource', params.filterSource);
+      if (params?.email) query.append('email', params.email);
       const qs = query.toString();
       return request<any[]>(`/leads${qs ? `?${qs}` : ''}`);
     },
@@ -132,6 +166,28 @@ export const api = {
       request<any>(`/consultations/${id}/status`, {
         method: 'PUT',
         body: JSON.stringify({ status, feedback }),
+      }),
+  },
+
+  // Notifications
+  notifications: {
+    getAll: () => request<any[]>('/notifications'),
+    create: (data: any) =>
+      request<any>('/notifications', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    markAsRead: (id: string) =>
+      request<any>(`/notifications/${id}/read`, {
+        method: 'PATCH',
+      }),
+    markAllAsRead: () =>
+      request<any>('/notifications/read-all', {
+        method: 'PATCH',
+      }),
+    clearAll: () =>
+      request<any>('/notifications/clear-all', {
+        method: 'DELETE',
       }),
   },
 

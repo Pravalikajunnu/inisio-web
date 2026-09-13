@@ -5,7 +5,7 @@ export const register = async (req, res, next) => {
   try {
     const { name, email, password, role, company, phone } = req.body;
     const user = await authService.registerUser({ name, email, password, role, company, phone });
-    return sendSuccess(res, user, 'User registered successfully', 201);
+    return sendSuccess(res, user, user.message || 'User registered successfully. Verification code sent.', 201);
   } catch (error) {
     next(error);
   }
@@ -14,8 +14,24 @@ export const register = async (req, res, next) => {
 export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
-    const user = await authService.loginUser({ email, password });
-    return sendSuccess(res, user, 'Logged in successfully', 200);
+    const result = await authService.loginUser({ email, password });
+    const message = result.isVerified === false
+      ? 'Email verification required. Verification code has been sent to your inbox.'
+      : 'Logged in successfully';
+    return sendSuccess(res, result, message, 200);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const verifyEmail = async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return sendError(res, 'Email and 6-digit OTP verification code are required', 400);
+    }
+    const result = await authService.verifyEmailOtp({ email, otp });
+    return sendSuccess(res, result, result.message || 'Email verified successfully', 200);
   } catch (error) {
     next(error);
   }
@@ -94,6 +110,7 @@ export const sendVerificationOtp = async (req, res, next) => {
 export default {
   register,
   login,
+  verifyEmail,
   getMe,
   updateProfile,
   forgotPassword,

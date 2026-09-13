@@ -48,6 +48,10 @@ export const errorHandler = (err, req, res, next) => {
     message = 'Authentication token expired. Please login again';
   }
 
+  if (message.includes('Invalid email or password') || message.includes('Please provide your password')) {
+    statusCode = 401;
+  }
+
   console.error(`[Error] ${req.method} ${req.originalUrl} - ${message}`);
   if (process.env.NODE_ENV === 'development' && err.stack) {
     console.error(err.stack);

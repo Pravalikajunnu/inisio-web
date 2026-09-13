@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { UserProjectDetail } from './UserDashboard';
 import { DetailedRiskProfileData } from './DetailedRiskProfileForm';
+import { ProjectDocument } from '../types';
+import { DocumentViewerModal, DocumentViewerTarget } from './DocumentViewerModal';
 import {
   X,
   Upload,
@@ -20,7 +22,8 @@ import {
   Landmark,
   FileSpreadsheet,
   Building,
-  Check
+  Check,
+  Eye
 } from 'lucide-react';
 
 export type EditSectionType = 'overview' | 'land' | 'bankability' | 'financials' | 'documents' | 'advisory' | 'all';
@@ -78,6 +81,7 @@ export const ProjectEditModal: React.FC<ProjectEditModalProps> = ({
   const [dprError, setDprError] = useState<string | null>(null);
   const [cmaError, setCmaError] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
+  const [viewingDoc, setViewingDoc] = useState<DocumentViewerTarget | null>(null);
 
   // Logo / Photo upload handler
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,14 +119,19 @@ export const ProjectEditModal: React.FC<ProjectEditModalProps> = ({
       return;
     }
 
-    setFormData(prev => ({
-      ...prev,
-      dprFile: {
-        name: file.name,
-        size: file.size,
-        uploadedAt: new Date().toISOString()
-      }
-    }));
+    const reader = new FileReader();
+    reader.onload = () => {
+      setFormData(prev => ({
+        ...prev,
+        dprFile: {
+          name: file.name,
+          size: file.size,
+          uploadedAt: new Date().toISOString(),
+          dataUrl: typeof reader.result === 'string' ? reader.result : undefined
+        }
+      }));
+    };
+    reader.readAsDataURL(file);
   };
 
   // CMA Document upload handler
@@ -139,14 +148,19 @@ export const ProjectEditModal: React.FC<ProjectEditModalProps> = ({
       return;
     }
 
-    setFormData(prev => ({
-      ...prev,
-      cmaFile: {
-        name: file.name,
-        size: file.size,
-        uploadedAt: new Date().toISOString()
-      }
-    }));
+    const reader = new FileReader();
+    reader.onload = () => {
+      setFormData(prev => ({
+        ...prev,
+        cmaFile: {
+          name: file.name,
+          size: file.size,
+          uploadedAt: new Date().toISOString(),
+          dataUrl: typeof reader.result === 'string' ? reader.result : undefined
+        }
+      }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleQuickAssignTeam = (teamName: string) => {
@@ -181,6 +195,52 @@ export const ProjectEditModal: React.FC<ProjectEditModalProps> = ({
       isNewToCredit: Boolean(project.riskProfileData?.isNewToCredit)
     };
 
+    const formatSize = (bytes?: number) => {
+      if (!bytes) return '1.5 MB';
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    };
+
+    // Update synced uploaded documents
+    let updatedDocs: ProjectDocument[] = [...(project.uploadedDocuments || [])];
+    if (formData.dprFile) {
+      const existingDprIndex = updatedDocs.findIndex(d => d.type === 'DPR' || d.name === formData.dprFile?.name);
+      const dprDoc: ProjectDocument = {
+        id: existingDprIndex >= 0 ? updatedDocs[existingDprIndex].id : `doc-dpr-${Date.now()}`,
+        type: 'DPR',
+        name: formData.dprFile.name,
+        size: formatSize(formData.dprFile.size),
+        uploadedAt: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+        status: 'Uploaded',
+        dpdpConsent: true,
+        dataUrl: formData.dprFile.dataUrl
+      };
+      if (existingDprIndex >= 0) {
+        updatedDocs[existingDprIndex] = dprDoc;
+      } else {
+        updatedDocs.unshift(dprDoc);
+      }
+    }
+
+    if (formData.cmaFile) {
+      const existingCmaIndex = updatedDocs.findIndex(d => d.type === 'Financial Model' || d.name === formData.cmaFile?.name);
+      const cmaDoc: ProjectDocument = {
+        id: existingCmaIndex >= 0 ? updatedDocs[existingCmaIndex].id : `doc-cma-${Date.now()}`,
+        type: 'Financial Model',
+        name: formData.cmaFile.name,
+        size: formatSize(formData.cmaFile.size),
+        uploadedAt: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+        status: 'Uploaded',
+        dpdpConsent: true,
+        dataUrl: formData.cmaFile.dataUrl
+      };
+      if (existingCmaIndex >= 0) {
+        updatedDocs[existingCmaIndex] = cmaDoc;
+      } else {
+        updatedDocs.unshift(cmaDoc);
+      }
+    }
+
     onSave({
       projectName: formData.projectName,
       industry: formData.industry,
@@ -197,6 +257,7 @@ export const ProjectEditModal: React.FC<ProjectEditModalProps> = ({
       photoOrLogo: formData.photoOrLogo,
       dprFile: formData.dprFile,
       cmaFile: formData.cmaFile,
+      uploadedDocuments: updatedDocs,
       assignedTeam: formData.assignedTeam,
       timelineDate: formData.timelineDate,
       timelineTime: formData.timelineTime,
@@ -577,13 +638,32 @@ export const ProjectEditModal: React.FC<ProjectEditModalProps> = ({
                           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                           <span className="font-semibold text-emerald-900 truncate">{formData.dprFile.name}</span>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, dprFile: null }))}
-                          className="text-slate-400 hover:text-red-600 p-1 cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setViewingDoc({
+                              name: formData.dprFile!.name,
+                              size: formData.dprFile!.size,
+                              type: 'DPR',
+                              uploadedAt: formData.dprFile!.uploadedAt,
+                              dataUrl: formData.dprFile!.dataUrl,
+                              status: 'Uploaded'
+                            })}
+                            className="p-1 text-blue-600 hover:text-blue-800 transition-colors cursor-pointer flex items-center gap-1 font-bold text-[11px]"
+                            title="Open & Preview DPR"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Open</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, dprFile: null }))}
+                            className="text-slate-400 hover:text-red-600 p-1 cursor-pointer"
+                            title="Remove DPR"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <label className="flex items-center justify-center gap-2 p-3 bg-white border border-dashed border-slate-300 rounded-lg hover:border-blue-500 text-xs font-bold text-slate-700 hover:text-blue-600 cursor-pointer transition-colors">
@@ -612,13 +692,32 @@ export const ProjectEditModal: React.FC<ProjectEditModalProps> = ({
                           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                           <span className="font-semibold text-emerald-900 truncate">{formData.cmaFile.name}</span>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, cmaFile: null }))}
-                          className="text-slate-400 hover:text-red-600 p-1 cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setViewingDoc({
+                              name: formData.cmaFile!.name,
+                              size: formData.cmaFile!.size,
+                              type: 'Financial Model',
+                              uploadedAt: formData.cmaFile!.uploadedAt,
+                              dataUrl: formData.cmaFile!.dataUrl,
+                              status: 'Uploaded'
+                            })}
+                            className="p-1 text-blue-600 hover:text-blue-800 transition-colors cursor-pointer flex items-center gap-1 font-bold text-[11px]"
+                            title="Open & Preview CMA"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Open</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, cmaFile: null }))}
+                            className="text-slate-400 hover:text-red-600 p-1 cursor-pointer"
+                            title="Remove CMA"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <label className="flex items-center justify-center gap-2 p-3 bg-white border border-dashed border-slate-300 rounded-lg hover:border-blue-500 text-xs font-bold text-slate-700 hover:text-blue-600 cursor-pointer transition-colors">
@@ -761,6 +860,13 @@ export const ProjectEditModal: React.FC<ProjectEditModalProps> = ({
           </div>
         </form>
 
+        {/* In-Modal Document Viewer */}
+        <DocumentViewerModal
+          documentItem={viewingDoc}
+          isOpen={Boolean(viewingDoc)}
+          onClose={() => setViewingDoc(null)}
+          projectName={formData.projectName}
+        />
       </div>
     </div>
   );

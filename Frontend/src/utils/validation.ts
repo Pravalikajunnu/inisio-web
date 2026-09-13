@@ -5,7 +5,7 @@ export function validateIndianMobileNumber(mobile: string): { isValid: boolean; 
   }
 
   // Clean whitespace, hyphens, brackets and leading country code / zero
-  const clean = trimmed.replace(/[\s\-\+\(\)]/g, '').replace(/^91(?=\d{10}$)/, '').replace(/^0(?=\d{10}$)/, '');
+  const clean = trimmed.replace(/[\s\-+()]/g, '').replace(/^91(?=\d{10}$)/, '').replace(/^0(?=\d{10}$)/, '');
 
   if (clean.length !== 10 || !/^\d{10}$/.test(clean)) {
     return { isValid: false, error: 'Please enter a valid 10-digit mobile number' };

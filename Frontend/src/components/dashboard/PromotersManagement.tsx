@@ -32,13 +32,13 @@ export const PromotersManagement: React.FC<PromotersManagementProps> = ({
   const [name, setName] = useState('');
   const [pan, setPan] = useState('');
   const [din, setDin] = useState('');
-  const [experienceYears, setExperienceYears] = useState<string | number>('10');
-  const [qualification, setQualification] = useState('B.Tech / Engineering');
-  const [shareholdingPct, setShareholdingPct] = useState<string | number>('50');
-  const [role, setRole] = useState('Managing Director');
-  const [kycStatus, setKycStatus] = useState<'Verified' | 'Pending' | 'Uploaded'>('Verified');
-  const [netWorthCr, setNetWorthCr] = useState<string | number>('5.0');
-  const [cibilScore, setCibilScore] = useState<string | number>('780');
+  const [experienceYears, setExperienceYears] = useState<string | number>('');
+  const [qualification, setQualification] = useState('');
+  const [shareholdingPct, setShareholdingPct] = useState<string | number>('');
+  const [role, setRole] = useState('Director / Co-Promoter');
+  const [kycStatus, setKycStatus] = useState<'Verified' | 'Pending' | 'Uploaded'>('Pending');
+  const [netWorthCr, setNetWorthCr] = useState<string | number>('');
+  const [cibilScore, setCibilScore] = useState<string | number>('');
 
   // Initialize with at least primary promoter if empty, with no dummy PAN or DIN
   const activePromoters: PromoterDetail[] = promoters && promoters.length > 0 ? promoters : [
@@ -47,12 +47,12 @@ export const PromotersManagement: React.FC<PromotersManagementProps> = ({
       name: primaryPromoterName || 'Lead Promoter',
       pan: '',
       din: '',
-      experienceYears: 12,
-      qualification: 'B.Tech / MBA (Operations)',
-      shareholdingPct: 70,
+      experienceYears: 10,
+      qualification: 'Graduate / Professional',
+      shareholdingPct: 100,
       role: 'Managing Director & Promoter',
       kycStatus: 'Pending' as const,
-      netWorthCr: 6.5,
+      netWorthCr: undefined,
       cibilScore: undefined
     }
   ];
@@ -62,12 +62,12 @@ export const PromotersManagement: React.FC<PromotersManagementProps> = ({
     setName('');
     setPan('');
     setDin('');
-    setExperienceYears('8');
-    setQualification('Graduate / Post Graduate');
-    setShareholdingPct('30');
-    setRole('Executive Director / Co-Promoter');
+    setExperienceYears('');
+    setQualification('');
+    setShareholdingPct('');
+    setRole('Director / Co-Promoter');
     setKycStatus('Pending');
-    setNetWorthCr('3.0');
+    setNetWorthCr('');
     setCibilScore('');
     setIsModalOpen(true);
   };
@@ -343,15 +343,24 @@ export const PromotersManagement: React.FC<PromotersManagementProps> = ({
                 </div>
                 <div>
                   <label className="block font-bold text-zinc-700 mb-1">Experience (Years) *</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="60"
+                  <select
                     required
                     value={experienceYears}
                     onChange={(e) => setExperienceYears(e.target.value)}
-                    className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:bg-white focus:ring-1 focus:ring-blue-500 outline-none"
-                  />
+                    className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg focus:bg-white focus:ring-1 focus:ring-blue-500 outline-none text-zinc-800 cursor-pointer"
+                  >
+                    <option value="">Select Experience</option>
+                    <option value="1">1 Year</option>
+                    <option value="2">2 Years</option>
+                    <option value="3">3 Years</option>
+                    <option value="4">4 Years</option>
+                    <option value="5">5 Years</option>
+                    <option value="7">7 Years</option>
+                    <option value="10">10 Years</option>
+                    <option value="12">12 Years</option>
+                    <option value="15">15+ Years</option>
+                    <option value="20">20+ Years</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block font-bold text-zinc-700 mb-1">Net Worth (₹ Cr)</label>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { generateProjectTeaserPDF, sendLeadToWhatsApp, TeaserPDFData } from '../utils/pdfGenerator';
 import { generateProjectTeaserDOCX } from '../utils/docxGenerator';
 import { getFeasibilityTerm, AuthUser, UserRole, PromoterDetail } from '../types';
@@ -95,7 +95,9 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
   const [step2Error, setStep2Error] = useState('');
   const [saveSuccessMessage, setSaveSuccessMessage] = useState('');
   const [isDataSaved, setIsDataSaved] = useState(false);
-  const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
+  const [createdProjectId, setCreatedProjectId] = useState<string | null>(editingProject?.id || null);
+  const createdProjectIdRef = useRef<string | null>(editingProject?.id || null);
+  const isSavingRef = useRef<boolean>(false);
   const [isDownloadingDocx, setIsDownloadingDocx] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isMembershipModalOpen, setIsMembershipModalOpen] = useState(false);
@@ -221,8 +223,8 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
         updated.push({
           id: `p-${nextIdx}`,
           name: '',
-          experienceYears: '5 Years',
-          qualification: 'Graduate / Professional'
+          experienceYears: '',
+          qualification: 'B.Tech / Engineering'
         });
       }
       return updated.slice(0, countNeeded);
@@ -262,7 +264,9 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
 
     if (editingProject) {
       if (editingProject.id || editingProject._id) {
-        setCreatedProjectId(editingProject.id || editingProject._id);
+        const pId = editingProject.id || editingProject._id;
+        setCreatedProjectId(pId);
+        createdProjectIdRef.current = pId;
         setIsDataSaved(true);
       }
 
@@ -593,6 +597,12 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       otherFinanceCr: financials.otherFinanceCr
     });
 
+    const promotersList = buildPromotersList();
+    const directors = promotersList.map(p => ({
+      name: p.name,
+      title: p.role || 'Director / Promoter'
+    }));
+
     return {
       // Step 1 Feasibility Inputs
       fullName: formData.fullName,
@@ -615,6 +625,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       debtPct: reconciled.debtPct,
       dscrEstimate: calculatedDscr,
       estInterestRate: '8.85% - 9.40%',
+      directors,
 
       // Step 2 Bankability Underwriting Inputs
       riskProfileData: riskProfileData || undefined,
@@ -699,7 +710,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
         // Link current project to user in leadStore
         const computed = computeResults();
         const activeBankability = riskProfileData ? String(comprehensiveRisk.scoreOutOf10) : String(computed.bankabilityRating);
-        const activeId = editingProject?.id || createdProjectId;
+        const activeId = editingProject?.id || createdProjectIdRef.current || createdProjectId;
         const payloadToSave = {
           projectName: formData.projectName || 'Greenfield Project',
           industry: formData.industry,
@@ -723,12 +734,18 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
 
         if (activeId) {
           updateLeadRecord(activeId, payloadToSave, loggedUser.name);
-        } else {
+        } else if (!isSavingRef.current) {
+          isSavingRef.current = true;
           saveLeadRecord({
             ...payloadToSave,
             source: 'Project Assessment Flow',
             downloadedPDF: false
-          }).then(saved => setCreatedProjectId(saved.id));
+          }).then(saved => {
+            setCreatedProjectId(saved.id);
+            createdProjectIdRef.current = saved.id;
+          }).finally(() => {
+            isSavingRef.current = false;
+          });
         }
 
         setInlineAuthSuccess(`Signed in successfully as ${loggedUser.name}! Your project has been saved to your dashboard.`);
@@ -819,9 +836,9 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       projectName: formData.projectName || 'Greenfield Project',
       industry: formData.industry,
       location: formData.location,
-      totalCostCr: formData.totalCostCr,
-      promoterContribCr: formData.promoterContribCr,
-      loanRequiredCr: formData.loanRequiredCr,
+      totalCostCr: updatedFinancials.totalProjectCost,
+      promoterContribCr: updatedFinancials.promoterContributionCr || formData.promoterContribCr,
+      loanRequiredCr: updatedFinancials.termLoanCr || formData.loanRequiredCr,
       landStatus: formData.landStatus,
       collateralStatus: formData.collateralStatus,
       promoterExp: formData.promoterExp,
@@ -837,16 +854,20 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
     };
 
     // Guarantee idempotent save: Only save once in the dashboard
-    const activeId = editingProject?.id || createdProjectId;
+    const activeId = editingProject?.id || createdProjectIdRef.current || createdProjectId;
     if (activeId) {
       updateLeadRecord(activeId, updatedPayload, formData.fullName || 'Promoter');
-    } else {
+    } else if (!isSavingRef.current) {
+      isSavingRef.current = true;
       saveLeadRecord({
         ...updatedPayload,
         source: 'Project Assessment Flow',
         downloadedPDF: false
       }).then(saved => {
         setCreatedProjectId(saved.id);
+        createdProjectIdRef.current = saved.id;
+      }).finally(() => {
+        isSavingRef.current = false;
       });
     }
 
@@ -885,16 +906,22 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       promotersList: buildPromotersList()
     };
 
-    const activeId = editingProject?.id || createdProjectId;
+    const activeId = editingProject?.id || createdProjectIdRef.current || createdProjectId;
     if (activeId) {
       updateLeadRecord(activeId, updatedPayload, formData.fullName || 'Promoter');
-    } else {
-      const saved = await saveLeadRecord({
-        ...updatedPayload,
-        source: 'Project Assessment Form',
-        downloadedPDF: false
-      });
-      setCreatedProjectId(saved.id);
+    } else if (!isSavingRef.current) {
+      isSavingRef.current = true;
+      try {
+        const saved = await saveLeadRecord({
+          ...updatedPayload,
+          source: 'Project Assessment Form',
+          downloadedPDF: false
+        });
+        setCreatedProjectId(saved.id);
+        createdProjectIdRef.current = saved.id;
+      } finally {
+        isSavingRef.current = false;
+      }
     }
 
     setSaveSuccessMessage('Project details updated successfully!');
@@ -930,19 +957,26 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       feasibilityScore: computed.feasibilityScore,
       bankabilityRating: activeBankability,
       riskProfileData: riskProfileData || undefined,
+      financials: financials,
       promotersList: buildPromotersList()
     };
 
-    const activeId = editingProject?.id || createdProjectId;
+    const activeId = editingProject?.id || createdProjectIdRef.current || createdProjectId;
     if (activeId) {
       updateLeadRecord(activeId, payload, formData.fullName || 'Promoter');
-    } else {
-      const saved = await saveLeadRecord({
-        ...payload,
-        source: 'Project Assessment Flow',
-        downloadedPDF: false
-      });
-      setCreatedProjectId(saved.id);
+    } else if (!isSavingRef.current) {
+      isSavingRef.current = true;
+      try {
+        const saved = await saveLeadRecord({
+          ...payload,
+          source: 'Project Assessment Flow',
+          downloadedPDF: false
+        });
+        setCreatedProjectId(saved.id);
+        createdProjectIdRef.current = saved.id;
+      } finally {
+        isSavingRef.current = false;
+      }
     }
 
     if (onNavigateToDashboard) {
@@ -1722,10 +1756,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                     <div className="bg-white p-3.5 rounded-xl border border-gray-200 space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-bold text-blue-700 uppercase tracking-wider">
-                          Primary Promoter (Lead Applicant)
-                        </span>
-                        <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
-                          Lead Contact
+                          Primary Promoter
                         </span>
                       </div>
 
@@ -1834,10 +1865,11 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                                   Experience (Years) *
                                 </label>
                                 <select
-                                  value={promoter.experienceYears}
+                                  value={promoter.experienceYears || ''}
                                   onChange={(e) => handleUpdateAdditionalPromoter(index, 'experienceYears', e.target.value)}
                                   className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white cursor-pointer"
                                 >
+                                  <option value="">Select Experience</option>
                                   <option value="1-3 Years">1-3 Years (Early Career)</option>
                                   <option value="3-5 Years">3-5 Years (Relevant Domain)</option>
                                   <option value="5-10 Years">5-10 Years (Senior Track Record)</option>

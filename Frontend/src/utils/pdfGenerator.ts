@@ -1,5 +1,4 @@
 import jsPDF from 'jspdf';
-import { saveLeadRecord } from './leadStore';
 import { getFeasibilityTerm } from '../types';
 import { DetailedRiskProfileData } from '../components/DetailedRiskProfileForm';
 import { reconcileProjectFinancials } from './financialUtils';
@@ -73,6 +72,18 @@ export function generateProjectTeaserPDF(data: TeaserPDFData, action: 'download'
   const contentWidth = pageWidth - margin * 2;
   const bottomMargin = 22;
   const maxY = pageHeight - bottomMargin;
+  const generatedAt = new Date();
+  const generatedDate = generatedAt.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
+  const generatedTime = generatedAt.toLocaleTimeString('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true
+  });
 
   let y = 20;
 
@@ -140,11 +151,15 @@ export function generateProjectTeaserPDF(data: TeaserPDFData, action: 'download'
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
     doc.setTextColor(120, 120, 120);
-    doc.text('Prepared by', margin, pageHeight - 12);
+    doc.text(`Generated ${generatedDate}, ${generatedTime}`, margin, pageHeight - 12);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(37, 99, 235);
     doc.text('INISIO', margin, pageHeight - 7);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text('Greenfield Project Advisory | Official Executive Teaser', pageWidth / 2, pageHeight - 7, { align: 'center' });
   };
 
   // ==================== PAGE 1 ====================
@@ -159,6 +174,11 @@ export function generateProjectTeaserPDF(data: TeaserPDFData, action: 'download'
   doc.setFontSize(12);
   doc.setTextColor(30, 41, 59);
   doc.text('Company Profile', margin, y);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(100, 116, 139);
+  doc.text(`Official PDF | Generated ${generatedDate} at ${generatedTime}`, pageWidth - margin, y, { align: 'right' });
 
   y += 9;
 
@@ -175,7 +195,7 @@ export function generateProjectTeaserPDF(data: TeaserPDFData, action: 'download'
   y += splitP1.length * 4.2 + 3;
 
   const descText = data.description ? `${data.description}. ` : '';
-  const genP2 = `The company proposes to establish a state-of-the-art facility with an estimated total capital outlay of Rs ${data.totalCostCr} Crores (${costCrFormatted} Cr). ${descText}To ensure an uninterrupted operation and supply of raw materials, suitable land has been identified and arranged under ${data.landStatus} status (${data.collateralStatus || 'Freehold Clear Title'}), which is adequate for the proposed plant, storage facilities, and operational requirements.`;
+  const genP2 = `The company proposes to establish a state-of-the-art facility with an estimated total capital outlay of Rs ${costCrFormatted} Crores. ${descText}To ensure an uninterrupted operation and supply of raw materials, suitable land has been identified and arranged under ${data.landStatus} status (${data.collateralStatus || 'Freehold Clear Title'}), which is adequate for the proposed plant, storage facilities, and operational requirements.`;
   const splitP2 = doc.splitTextToSize(genP2, contentWidth);
   checkPageBreak(splitP2.length * 4.2 + 3);
   doc.text(splitP2, margin, y);
@@ -404,7 +424,7 @@ export function generateProjectTeaserPDF(data: TeaserPDFData, action: 'download'
   // Present Requirement
   drawSectionBanner('Present Requirement', 25);
 
-  const reqText = `The Company proposes to avail a Term Loan of Rs ${data.loanRequiredCr} crore to meet its capital expenditure requirements. The proposed facility will be utilised for the establishment of a ${data.industry} facility, including the procurement and installation of plant & machinery, development of civil infrastructure, and other project-related assets required for the successful implementation and commissioning of the project.`;
+  const reqText = `The Company proposes to avail a Term Loan of Rs ${loanCrFormatted} crore to meet its capital expenditure requirements. The proposed facility will be utilised for the establishment of a ${data.industry} facility, including the procurement and installation of plant & machinery, development of civil infrastructure, and other project-related assets required for the successful implementation and commissioning of the project.`;
   const splitReq = doc.splitTextToSize(reqText, contentWidth);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
@@ -497,30 +517,65 @@ export function generateProjectTeaserPDF(data: TeaserPDFData, action: 'download'
     drawFooter(i, totalPages);
   }
 
-  // Trigger Save & Record Lead to Admin Store
-  saveLeadRecord({
-    fullName: data.fullName || 'Promoter',
-    mobile: data.mobile || 'N/A',
-    email: data.email || 'N/A',
-    projectName: companyLegalName,
-    industry: data.industry || 'General Industry',
-    location: data.location || 'India',
-    totalCostCr: data.totalCostCr,
-    loanRequiredCr: data.loanRequiredCr,
-    feasibilityScore: data.feasibilityScore,
-    bankabilityRating: data.bankabilityRating,
-    source: 'PDF Teaser Downloaded',
-    downloadedPDF: true,
-    notes: `Land: ${data.landStatus}. Collateral: ${data.collateralStatus || 'N/A'}. Exp: ${data.promoterExp}. Suppliers: ${data.rawMaterialSource || '-'}. Buyers: ${data.primaryBuyersType || '-'}`
-  });
-
   const fileName = `Inisio_Teaser_${(data.projectName || data.fullName || 'Greenfield').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
   
   if (action === 'preview') {
-    const pdfBlobUrl = doc.output('bloburl');
-    window.open(pdfBlobUrl, '_blank');
+    const pdfBlob = doc.output('blob');
+    const pdfBlobUrl = URL.createObjectURL(pdfBlob);
+
+    const previewWin = window.open('', '_blank', 'noopener,noreferrer');
+    if (previewWin) {
+      previewWin.document.write(`<!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <title>${data.projectName || 'Inisio Project'} - Executive Teaser Preview</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+              html, body {
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+                background: #f8fafc;
+              }
+              .pdf-frame {
+                width: 100%;
+                height: 100vh;
+                border: 0;
+                display: block;
+                background: white;
+              }
+            </style>
+          </head>
+          <body>
+            <embed class="pdf-frame" src="${pdfBlobUrl}" type="application/pdf" title="${fileName}">
+          </body>
+        </html>`);
+      previewWin.document.close();
+    } else {
+      const link = document.createElement('a');
+      link.href = pdfBlobUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    setTimeout(() => URL.revokeObjectURL(pdfBlobUrl), 3000);
   } else {
-    doc.save(fileName);
+    const pdfBlob = doc.output('blob');
+    const pdfBlobUrl = URL.createObjectURL(pdfBlob);
+    const link = document.createElement('a');
+    link.href = pdfBlobUrl;
+    link.download = fileName;
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(pdfBlobUrl), 3000);
   }
 }
 

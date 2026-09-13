@@ -32,6 +32,43 @@ export function getAllRegisteredUsers(): RegisteredUserRecord[] {
   }
 }
 
+export async function fetchUsersFromBackend(): Promise<RegisteredUserRecord[]> {
+  try {
+    const token = localStorage.getItem('inisio_auth_token');
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch('/api/users', { headers });
+    if (response.ok) {
+      const resData = await response.json();
+      if (resData && resData.data && Array.isArray(resData.data)) {
+        const mapped: RegisteredUserRecord[] = resData.data.map((u: any) => ({
+          id: u._id || u.id,
+          name: u.name || u.email?.split('@')[0],
+          email: u.email,
+          phone: u.phone || '+91 98765 43210',
+          company: u.company || 'Enterprise Promoter',
+          role: u.role || 'user',
+          createdAt: u.createdAt || new Date().toISOString(),
+          lastLoginAt: u.lastLoginAt || new Date().toISOString(),
+          loginCount: u.loginCount || 1,
+          status: u.status || 'active',
+        }));
+
+        localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(mapped));
+        return mapped;
+      }
+    }
+  } catch (err) {
+    console.warn('Backend users sync deferred to local cache:', err);
+  }
+  return getAllRegisteredUsers();
+}
+
 export function recordUserLogin(user: AuthUser): void {
   if (typeof window === 'undefined' || !user.email) return;
 
@@ -84,6 +121,16 @@ export function updateUserStatus(userId: string, newStatus: 'active' | 'suspende
   } catch (err) {
     console.error('Failed to update user status:', err);
   }
+
+  const token = localStorage.getItem('inisio_auth_token');
+  fetch(`/api/users/${userId}/status`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    },
+    body: JSON.stringify({ status: newStatus }),
+  }).catch(() => {});
 }
 
 function getInitialSeedUsers(): RegisteredUserRecord[] {

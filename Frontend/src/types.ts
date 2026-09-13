@@ -153,6 +153,7 @@ export interface ProjectDocument {
   uploadedAt: string;
   fileUrl?: string;
   dataUrl?: string;
+  storageKey?: string;
   status: 'Uploaded' | 'Under Review' | 'Verified';
   dpdpConsent: boolean;
 }

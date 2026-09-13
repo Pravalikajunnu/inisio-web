@@ -239,4 +239,51 @@ export const DEFAULT_SERVICES = [
   }
 ];
 
-export const DEFAULT_USERS = [];
+export const DEFAULT_USERS = [
+  {
+    name: 'Super Admin',
+    email: 'admin@inisio.com',
+    password: 'Password123!',
+    role: 'admin',
+    company: 'Inisio Capital Advisory HQ',
+    phone: '+91 63020 26462',
+    isVerified: true,
+  },
+  {
+    name: 'Executive Admin',
+    email: 'admin@gmail.com',
+    password: 'Password123!',
+    role: 'admin',
+    company: 'Inisio HQ',
+    phone: '+91 98480 12345',
+    isVerified: true,
+  },
+  {
+    name: 'CA Rajesh Agarwal',
+    email: 'ca@gmail.com',
+    password: 'Password123!',
+    role: 'ca',
+    company: 'Agarwal & Co. Chartered Accountants',
+    phone: '+91 98110 55443',
+    isVerified: true,
+  },
+  {
+    name: 'Prosync Advisory Lead',
+    email: 'prosync@gmail.com',
+    password: 'Password123!',
+    role: 'prosync',
+    company: 'Prosync Syndication Desk',
+    phone: '+91 98765 43210',
+    isVerified: true,
+  },
+  {
+    name: 'Pravalika Junnu',
+    email: 'pravalikajunnu14@gmail.com',
+    password: 'Password123!',
+    role: 'user',
+    company: 'Sri Venkateswara Agro Foods & Bio-Ethanol Ltd',
+    phone: '+91 98490 11223',
+    isVerified: true,
+  },
+];
+

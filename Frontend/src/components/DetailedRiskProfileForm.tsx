@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  UserCheck,
   Building2,
   Wallet,
   Users,
@@ -81,14 +80,6 @@ export function DetailedRiskProfileForm({
     e.preventDefault();
     setFormError('');
 
-    if (!formData.industryExperience) {
-      setFormError('Please select Industry Experience.');
-      return;
-    }
-    if (!formData.educationalBackground) {
-      setFormError('Please select Educational Background.');
-      return;
-    }
     if (!formData.businessConstitution) {
       setFormError('Please select Business Constitution.');
       return;
@@ -118,7 +109,13 @@ export function DetailedRiskProfileForm({
       return;
     }
 
-    onSubmitSuccess(formData);
+    const finalData: DetailedRiskProfileData = {
+      ...formData,
+      industryExperience: formData.industryExperience || '3 to 5 Years',
+      educationalBackground: formData.educationalBackground || 'Graduate (Degree)'
+    };
+
+    onSubmitSuccess(finalData);
   };
 
   return (
@@ -149,69 +146,12 @@ export function DetailedRiskProfileForm({
           </div>
         )}
 
-        {/* SECTION 1: PROMOTER PROFILE */}
+        {/* SECTION 1: BUSINESS INFORMATION */}
         <div className="space-y-4">
-          <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-            <UserCheck className="w-4 h-4 text-blue-600" />
-            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-              1. Promoter Experience &amp; Education
-            </h4>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                Industry Experience <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.industryExperience}
-                onChange={(e) => setFormData({ ...formData, industryExperience: e.target.value })}
-                required
-                className={`w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 ${
-                  formData.industryExperience ? 'text-slate-900' : 'text-slate-400'
-                }`}
-              >
-                <option value="" disabled hidden>Select Industry Experience</option>
-                {formData.industryExperience && !['0 to 2 Years (New Promoter)', '3 to 5 Years', '6 to 10 Years', 'More than 10 Years'].includes(formData.industryExperience) && (
-                  <option value={formData.industryExperience}>{formData.industryExperience}</option>
-                )}
-                <option value="0 to 2 Years (New Promoter)" className="text-slate-900">0 to 2 Years (New Promoter)</option>
-                <option value="3 to 5 Years" className="text-slate-900">3 to 5 Years</option>
-                <option value="6 to 10 Years" className="text-slate-900">6 to 10 Years</option>
-                <option value="More than 10 Years" className="text-slate-900">More than 10 Years</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                Educational Background <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.educationalBackground}
-                onChange={(e) => setFormData({ ...formData, educationalBackground: e.target.value })}
-                required
-                className={`w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 ${
-                  formData.educationalBackground ? 'text-slate-900' : 'text-slate-400'
-                }`}
-              >
-                <option value="" disabled hidden>Select Educational Background</option>
-                <option value="Graduate (Degree)" className="text-slate-900">Graduate (Degree)</option>
-                <option value="Post Graduate (Master's / MBA)" className="text-slate-900">Post Graduate (Master's / MBA)</option>
-                <option value="Engineering / Technical Degree" className="text-slate-900">Engineering / Technical Degree</option>
-                <option value="CA / Finance Professional" className="text-slate-900">CA / Finance Professional</option>
-                <option value="Diploma / School" className="text-slate-900">Diploma / School</option>
-                <option value="Other Education" className="text-slate-900">Other Education</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* SECTION 2: BUSINESS INFORMATION */}
-        <div className="space-y-4 pt-3 border-t border-slate-100">
           <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
             <Building2 className="w-4 h-4 text-blue-600" />
             <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-              2. Business Constitution &amp; Vintage
+              1. Business Constitution &amp; Vintage
             </h4>
           </div>
 
@@ -259,12 +199,12 @@ export function DetailedRiskProfileForm({
           </div>
         </div>
 
-        {/* SECTION 3: FINANCIAL & COLLATERAL */}
+        {/* SECTION 2: FINANCIAL & COLLATERAL */}
         <div className="space-y-4 pt-3 border-t border-slate-100">
           <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
             <Wallet className="w-4 h-4 text-blue-600" />
             <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-              3. Contribution &amp; Collateral
+              2. Contribution &amp; Collateral
             </h4>
           </div>
 
@@ -320,12 +260,12 @@ export function DetailedRiskProfileForm({
           </div>
         </div>
 
-        {/* SECTION 4: MANAGEMENT & WORKFORCE */}
+        {/* SECTION 3: MANAGEMENT & WORKFORCE */}
         <div className="space-y-4 pt-3 border-t border-slate-100">
           <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
             <Users className="w-4 h-4 text-blue-600" />
             <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-              4. Management &amp; Technical Workforce
+              3. Management &amp; Technical Workforce
             </h4>
           </div>
 
@@ -362,13 +302,13 @@ export function DetailedRiskProfileForm({
           </div>
         </div>
 
-        {/* SECTION 5: CIBIL / CREDIT SCORE WITH AUTHORISED CIC PARTNER FLOW */}
+        {/* SECTION 4: CIBIL / CREDIT SCORE WITH AUTHORISED CIC PARTNER FLOW */}
         <div className="space-y-4 pt-3 border-t border-slate-100">
           <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <div className="flex items-center gap-2">
               <CreditCard className="w-4 h-4 text-blue-600" />
               <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                5. Promoter Credit Profile (Authorised CIC Gateway)
+                4. Promoter Credit Profile (Authorised CIC Gateway)
               </h4>
             </div>
             <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">

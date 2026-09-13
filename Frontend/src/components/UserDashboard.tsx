@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AuthUser, PromoterDetail, CustomCostComponent, CustomFinanceComponent, ProjectDocument } from '../types';
 import { fetchLeadsFromBackend, updateLeadRecord, LeadRecord } from '../utils/leadStore';
 import { generateProjectTeaserPDF, TeaserPDFData } from '../utils/pdfGenerator';
+import { generateProjectTeaserDOCX } from '../utils/docxGenerator';
 import { ProjectEditModal, EditSectionType } from './ProjectEditModal';
 import { DocumentUploadModal } from './DocumentUploadModal';
 import { PhotoUploadModal } from './PhotoUploadModal';
@@ -44,6 +45,7 @@ import {
   Check,
   Activity,
   ExternalLink,
+  Eye,
   ChevronRight,
   ChevronDown,
   AlertCircle,
@@ -110,8 +112,8 @@ export interface UserProjectDetail {
   mobile?: string;
   email?: string;
   photoOrLogo?: string;
-  dprFile?: { name: string; size: number; uploadedAt: string } | null;
-  cmaFile?: { name: string; size: number; uploadedAt: string } | null;
+  dprFile?: { name: string; size: number; uploadedAt: string; dataUrl?: string; fileUrl?: string; storageKey?: string } | null;
+  cmaFile?: { name: string; size: number; uploadedAt: string; dataUrl?: string; fileUrl?: string; storageKey?: string } | null;
   assignedTeam?: string;
   timelineDate?: string;
   timelineTime?: string;
@@ -184,6 +186,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       }
 
       const projectMap = new Map<string, UserProjectDetail>();
+      const normalizeProjectKey = (name?: string) => (name || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 
       leads.forEach((lead) => {
         const cost = parseFloat(String(lead.totalCostCr || 0)) || 10;
@@ -201,7 +204,12 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
         const dscr = Math.round((1.35 + (score % 15) * 0.03) * 100) / 100;
         const interest = score >= 80 ? '8.65% - 9.15% p.a.' : '9.25% - 9.85% p.a.';
 
-        const dedupKey = `${lead.projectName}-${cost}`; if (!Array.from(projectMap.values()).some(p => `${p.projectName}-${p.totalCostCr}` === dedupKey)) { projectMap.set(lead.id, {
+        const normKey = normalizeProjectKey(lead.projectName);
+        const existingEntry = Array.from(projectMap.values()).find(p => 
+          p.id === lead.id || (normKey && normalizeProjectKey(p.projectName) === normKey)
+        );
+
+        const projectDetail: UserProjectDetail = {
           id: lead.id,
           projectName: lead.projectName || `${lead.industry || 'Industrial'} Project`,
           industry: lead.industry || 'Greenfield Project',
@@ -249,7 +257,25 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           uploadedDocuments: lead.uploadedDocuments,
           isFunded: lead.isFunded,
           successProbability: lead.successProbability
-        });
+        };
+
+        if (!existingEntry) {
+          projectMap.set(lead.id, projectDetail);
+        } else {
+          // Merge latest updated fields into the existing entry
+          const merged: UserProjectDetail = {
+            ...existingEntry,
+            ...projectDetail,
+            id: existingEntry.id || projectDetail.id,
+            financials: (projectDetail.financials && Object.keys(projectDetail.financials).length > 0) ? projectDetail.financials : existingEntry.financials,
+            promotersList: (projectDetail.promotersList && projectDetail.promotersList.length > 0) ? projectDetail.promotersList : existingEntry.promotersList,
+            customCostComponents: (projectDetail.customCostComponents && projectDetail.customCostComponents.length > 0) ? projectDetail.customCostComponents : existingEntry.customCostComponents,
+            customFinanceComponents: (projectDetail.customFinanceComponents && projectDetail.customFinanceComponents.length > 0) ? projectDetail.customFinanceComponents : existingEntry.customFinanceComponents,
+            uploadedDocuments: (projectDetail.uploadedDocuments && projectDetail.uploadedDocuments.length > 0) ? projectDetail.uploadedDocuments : existingEntry.uploadedDocuments,
+            riskProfileData: projectDetail.riskProfileData || existingEntry.riskProfileData,
+            commercialData: projectDetail.commercialData || existingEntry.commercialData,
+          };
+          projectMap.set(existingEntry.id, merged);
         }
       });
 
@@ -270,8 +296,13 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
         const dscr = Math.round((1.35 + (score % 15) * 0.03) * 100) / 100;
         const interest = score >= 80 ? '8.65% - 9.15% p.a.' : '9.25% - 9.85% p.a.';
 
-        if (!projectMap.has(id)) {
-          const dedupKey = `${proj.projectName || 'Greenfield Project'}-${cost}`; if (!Array.from(projectMap.values()).some(p => `${p.projectName}-${p.totalCostCr}` === dedupKey)) { projectMap.set(id, {
+        const normKey = normalizeProjectKey(proj.projectName);
+        const existingEntry = Array.from(projectMap.values()).find(p => 
+          p.id === id || (normKey && normalizeProjectKey(p.projectName) === normKey)
+        );
+
+        if (!existingEntry) {
+          projectMap.set(id, {
             id,
             projectName: proj.projectName || `${proj.industry || 'Industrial'} Project`,
             industry: proj.industry || 'Greenfield Project',
@@ -309,12 +340,17 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             loanApprovedAt: proj.loanApprovedAt,
             fundingDisbursedAt: proj.fundingDisbursedAt,
             financials: proj.financials,
-          lastEditedBy: proj.lastEditedBy,
+            lastEditedBy: proj.lastEditedBy,
             lastEditedAt: proj.lastEditedAt,
             riskProfileData: proj.riskProfileData,
-            commercialData: proj.commercialData
+            commercialData: proj.commercialData,
+            promotersList: proj.promotersList,
+            customCostComponents: proj.customCostComponents,
+            customFinanceComponents: proj.customFinanceComponents,
+            uploadedDocuments: proj.uploadedDocuments,
+            isFunded: proj.isFunded,
+            successProbability: proj.successProbability
           });
-        }
         }
       });
 
@@ -379,6 +415,9 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
     setUserProjects(updatedProjects);
 
     updateLeadRecord(activeProject.id, {
+      ...updates,
+      email: activeProject.email || user.email,
+      fullName: activeProject.fullName || user.name,
       projectName: updates.projectName !== undefined ? updates.projectName : activeProject.projectName,
       industry: updates.industry !== undefined ? updates.industry : activeProject.industry,
       location: updates.location !== undefined ? updates.location : activeProject.location,
@@ -394,7 +433,14 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       cmaFile: updates.cmaFile !== undefined ? (updates.cmaFile || undefined) : (activeProject.cmaFile || undefined),
       assignedTeam: updates.assignedTeam !== undefined ? updates.assignedTeam : activeProject.assignedTeam,
       timelineDate: updates.timelineDate !== undefined ? updates.timelineDate : activeProject.timelineDate,
-      timelineTime: updates.timelineTime !== undefined ? updates.timelineTime : activeProject.timelineTime
+      timelineTime: updates.timelineTime !== undefined ? updates.timelineTime : activeProject.timelineTime,
+      financials: updates.financials !== undefined ? updates.financials : activeProject.financials,
+      customCostComponents: updates.customCostComponents !== undefined ? updates.customCostComponents : activeProject.customCostComponents,
+      customFinanceComponents: updates.customFinanceComponents !== undefined ? updates.customFinanceComponents : activeProject.customFinanceComponents,
+      promotersList: updates.promotersList !== undefined ? updates.promotersList : activeProject.promotersList,
+      riskProfileData: updates.riskProfileData !== undefined ? updates.riskProfileData : activeProject.riskProfileData,
+      commercialData: updates.commercialData !== undefined ? updates.commercialData : activeProject.commercialData,
+      uploadedDocuments: updates.uploadedDocuments !== undefined ? updates.uploadedDocuments : activeProject.uploadedDocuments,
     }, user.name || user.email);
 
     triggerToast(`Project '${updatedProject.projectName}' updated successfully.`);
@@ -425,6 +471,8 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
     };
     setUserProjects(prev => prev.map(p => p.id === activeProject.id ? updated : p));
     updateLeadRecord(activeProject.id, {
+      email: activeProject.email || user.email,
+      projectName: activeProject.projectName,
       promotersList: updatedPromoters
     }, user.name || user.email);
     triggerToast('Promoters & board management profiles updated.');
@@ -438,6 +486,27 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
     calculatedEquityCr: number
   ) => {
     if (!activeProject) return;
+    const costByCategory = (category: CustomCostComponent['category']) => updatedCosts
+      .filter(component => component.category === category)
+      .reduce((sum, component) => sum + (Number(component.amountCr) || 0), 0);
+    const totalFinance = updatedFinances.reduce((sum, component) => sum + (Number(component.amountCr) || 0), 0);
+    const otherFinance = updatedFinances
+      .filter(component => component.type !== 'Term Debt' && component.type !== 'Promoter Equity')
+      .reduce((sum, component) => sum + (Number(component.amountCr) || 0), 0);
+    const synchronizedFinancials = {
+      ...activeProject.financials,
+      consultancyCostCr: costByCategory('Consultancy'),
+      machineryCostCr: costByCategory('Machinery'),
+      civilCostCr: costByCategory('Civil'),
+      otherCostsCr: updatedCosts
+        .filter(component => !['Consultancy', 'Machinery', 'Civil'].includes(component.category))
+        .reduce((sum, component) => sum + (Number(component.amountCr) || 0), 0),
+      termLoanCr: calculatedDebtCr,
+      promoterContributionCr: calculatedEquityCr,
+      otherFinanceCr: otherFinance,
+      totalProjectCost: calculatedTotalCostCr,
+      totalMeansOfFinance: totalFinance
+    };
     const updated = {
       ...activeProject,
       totalCostCr: calculatedTotalCostCr,
@@ -446,13 +515,17 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       debtPercent: calculatedTotalCostCr > 0 ? Math.round((calculatedDebtCr / calculatedTotalCostCr) * 100) : 70,
       equityPercent: calculatedTotalCostCr > 0 ? Math.round((calculatedEquityCr / calculatedTotalCostCr) * 100) : 30,
       customCostComponents: updatedCosts,
-      customFinanceComponents: updatedFinances
+      customFinanceComponents: updatedFinances,
+      financials: synchronizedFinancials
     };
     setUserProjects(prev => prev.map(p => p.id === activeProject.id ? updated : p));
     updateLeadRecord(activeProject.id, {
+      email: activeProject.email || user.email,
+      projectName: activeProject.projectName,
       totalCostCr: calculatedTotalCostCr,
       loanRequiredCr: calculatedDebtCr,
       promoterContribCr: calculatedEquityCr,
+      financials: synchronizedFinancials,
       customCostComponents: updatedCosts,
       customFinanceComponents: updatedFinances
     }, user.name || user.email);
@@ -467,6 +540,8 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
     };
     setUserProjects(prev => prev.map(p => p.id === activeProject.id ? updated : p));
     updateLeadRecord(activeProject.id, {
+      email: activeProject.email || user.email,
+      projectName: activeProject.projectName,
       uploadedDocuments: updatedDocs
     }, user.name || user.email);
     triggerToast('Project document repository updated.');
@@ -481,14 +556,49 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
     };
     setUserProjects(prev => prev.map(p => p.id === activeProject.id ? updated : p));
     updateLeadRecord(activeProject.id, {
+      email: activeProject.email || user.email,
+      projectName: activeProject.projectName,
       isFunded: isFundedVal,
       status: isFundedVal ? 'Bank Sanction' : undefined
     }, user.name || user.email);
     triggerToast(isFundedVal ? 'Project marked as 100% Funded & Disbursed!' : 'Funding status updated.');
   };
 
-  const handleDownloadTeaserPDF = (proj: UserProjectDetail) => {
-    const pdfData: TeaserPDFData = {
+  const buildTeaserData = (proj: UserProjectDetail): TeaserPDFData => {
+    let consultancyCr = proj.financials?.consultancyCostCr ? String(proj.financials.consultancyCostCr) : '';
+    let machineryCr = proj.financials?.machineryCostCr ? String(proj.financials.machineryCostCr) : '';
+    let civilCr = proj.financials?.civilCostCr ? String(proj.financials.civilCostCr) : '';
+    let otherCostsCr = proj.financials?.otherCostsCr ? String(proj.financials.otherCostsCr) : '';
+
+    if (proj.customCostComponents && proj.customCostComponents.length > 0) {
+      const mach = proj.customCostComponents.filter(c => c.category === 'Machinery' || c.title?.toLowerCase().includes('machinery')).reduce((s, c) => s + c.amountCr, 0);
+      const civ = proj.customCostComponents.filter(c => c.category === 'Civil' || c.title?.toLowerCase().includes('civil') || c.title?.toLowerCase().includes('building')).reduce((s, c) => s + c.amountCr, 0);
+      const cons = proj.customCostComponents.filter(c => c.category === 'Consultancy' || c.category === 'Pre-operative' || c.title?.toLowerCase().includes('consultancy')).reduce((s, c) => s + c.amountCr, 0);
+      const oth = proj.customCostComponents.filter(c => !['Machinery', 'Civil', 'Consultancy', 'Pre-operative'].includes(c.category) && !c.title?.toLowerCase().includes('machinery') && !c.title?.toLowerCase().includes('civil') && !c.title?.toLowerCase().includes('building') && !c.title?.toLowerCase().includes('consultancy')).reduce((s, c) => s + c.amountCr, 0);
+      if (mach > 0) machineryCr = mach.toFixed(2);
+      if (civ > 0) civilCr = civ.toFixed(2);
+      if (cons > 0) consultancyCr = cons.toFixed(2);
+      if (oth > 0) otherCostsCr = oth.toFixed(2);
+    }
+
+    let termLoanCr = proj.financials?.termLoanCr ? String(proj.financials.termLoanCr) : String(proj.loanRequiredCr);
+    let promoterContribCr = proj.financials?.promoterContributionCr ? String(proj.financials.promoterContributionCr) : String(proj.promoterContribCr);
+    let otherFinanceCr = proj.financials?.otherFinanceCr ? String(proj.financials.otherFinanceCr) : '0.00';
+
+    if (proj.customFinanceComponents && proj.customFinanceComponents.length > 0) {
+      const tLoan = proj.customFinanceComponents.filter(f => f.type === 'Term Debt' || f.title?.toLowerCase().includes('debt') || f.title?.toLowerCase().includes('loan')).reduce((s, f) => s + f.amountCr, 0);
+      const eq = proj.customFinanceComponents.filter(f => f.type === 'Promoter Equity' || f.title?.toLowerCase().includes('equity') || f.title?.toLowerCase().includes('promoter')).reduce((s, f) => s + f.amountCr, 0);
+      const othFin = proj.customFinanceComponents.filter(f => !['Term Debt', 'Promoter Equity'].includes(f.type) && !f.title?.toLowerCase().includes('debt') && !f.title?.toLowerCase().includes('loan') && !f.title?.toLowerCase().includes('equity') && !f.title?.toLowerCase().includes('promoter')).reduce((s, f) => s + f.amountCr, 0);
+      if (tLoan > 0) termLoanCr = tLoan.toFixed(2);
+      if (eq > 0) promoterContribCr = eq.toFixed(2);
+      if (othFin > 0) otherFinanceCr = othFin.toFixed(2);
+    }
+
+    const directors = proj.promotersList && proj.promotersList.length > 0
+      ? proj.promotersList.map(p => ({ name: p.name, title: p.role || 'Director / Key Promoter' }))
+      : [{ name: user.name || proj.fullName || 'Promoter', title: 'Managing Director / Key Promoter' }];
+
+    return {
       fullName: user.name || proj.fullName || 'Promoter',
       mobile: user.phone || proj.mobile || '9848012345',
       email: user.email || proj.email,
@@ -496,8 +606,8 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       industry: proj.industry,
       location: proj.location,
       totalCostCr: String(proj.totalCostCr),
-      promoterContribCr: String(proj.promoterContribCr),
-      loanRequiredCr: String(proj.loanRequiredCr),
+      promoterContribCr: promoterContribCr || String(proj.promoterContribCr),
+      loanRequiredCr: termLoanCr || String(proj.loanRequiredCr),
       landStatus: proj.landStatus,
       collateralStatus: proj.collateralStatus,
       promoterExp: proj.promoterExp,
@@ -509,11 +619,40 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       debtPct: proj.debtPercent,
       dscrEstimate: proj.dscrEstimate,
       estInterestRate: proj.estInterestRate,
-      riskProfileData: proj.riskProfileData
+      riskProfileData: proj.riskProfileData,
+      commercialData: proj.commercialData,
+      directors,
+      machineryCostCr,
+      civilCostCr,
+      consultancyCostCr,
+      otherCostsCr,
+      termLoanCr,
+      promoterContributionCr,
+      otherFinanceCr
     };
+  };
 
-    generateProjectTeaserPDF(pdfData);
+  const handlePreviewTeaserPDF = (proj: UserProjectDetail) => {
+    const pdfData = buildTeaserData(proj);
+    generateProjectTeaserPDF(pdfData, 'preview');
+    triggerToast(`Opening ${proj.projectName} Teaser preview in new tab...`);
+  };
+
+  const handleDownloadTeaserPDF = (proj: UserProjectDetail) => {
+    const pdfData = buildTeaserData(proj);
+    generateProjectTeaserPDF(pdfData, 'download');
     triggerToast(`Downloaded ${proj.projectName} Teaser PDF!`);
+  };
+
+  const handleDownloadTeaserDOCX = async (proj: UserProjectDetail) => {
+    try {
+      const pdfData = buildTeaserData(proj);
+      await generateProjectTeaserDOCX(pdfData);
+      triggerToast(`Downloaded ${proj.projectName} Teaser DOCX!`);
+    } catch (e) {
+      console.error(e);
+      triggerToast('Error generating DOCX document');
+    }
   };
 
   const handleDownloadCMAModel = (proj: UserProjectDetail) => {
@@ -1017,12 +1156,30 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               {activeProject && (
                 <>
                   <button
+                    onClick={() => handlePreviewTeaserPDF(activeProject)}
+                    className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-blue-200"
+                    title="Preview Official AI Executive Teaser PDF in New Tab"
+                  >
+                    <Eye className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Preview Teaser</span>
+                  </button>
+
+                  <button
                     onClick={() => handleDownloadTeaserPDF(activeProject)}
                     className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
-                    title="Download 14-Page Executive Teaser PDF"
+                    title="Download Official AI Executive Teaser PDF"
                   >
                     <Download className="w-3.5 h-3.5 text-blue-600" />
                     <span>Teaser PDF</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleDownloadTeaserDOCX(activeProject)}
+                    className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+                    title="Download Official AI Executive Teaser DOCX"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Teaser Word</span>
                   </button>
 
                   <button
@@ -1555,6 +1712,47 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           setMembership(getUserMembership(user.email));
         }}
       />
+
+      {/* Document Upload Modal */}
+      {activeProject && (
+        <DocumentUploadModal
+          isOpen={isDocUploadModalOpen}
+          project={activeProject}
+          onClose={() => setIsDocUploadModalOpen(false)}
+          onSave={(updates) => {
+            handleSaveModalProject({
+              dprFile: updates.dprFile !== undefined ? (updates.dprFile || undefined) : undefined,
+              cmaFile: updates.cmaFile !== undefined ? (updates.cmaFile || undefined) : undefined,
+              uploadedDocuments: updates.uploadedDocuments || activeProject.uploadedDocuments
+            });
+            triggerToast('DPR / CMA Documents uploaded and synchronized successfully.');
+          }}
+        />
+      )}
+
+      {/* Project Edit Modal */}
+      {activeProject && (
+        <ProjectEditModal
+          isOpen={isEditingModalOpen}
+          project={activeProject}
+          initialSection={editSection}
+          onClose={() => setIsEditingModalOpen(false)}
+          onSave={(updates) => {
+            handleSaveModalProject(updates);
+          }}
+        />
+      )}
+
+      {/* Photo/Logo Upload Modal */}
+      {activeProject && (
+        <PhotoUploadModal
+          isOpen={isPhotoUploadModalOpen}
+          currentPhoto={activeProject.photoOrLogo}
+          projectName={activeProject.projectName}
+          onClose={() => setIsPhotoUploadModalOpen(false)}
+          onSave={handleSavePhotoOrLogo}
+        />
+      )}
     </div>
   );
 };

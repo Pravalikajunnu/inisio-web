@@ -1,25 +1,43 @@
 import Consultation from '../models/Consultation.js';
 import { isDBConnected } from '../config/db.js';
+import { sendConsultationConfirmationEmail } from '../utils/emailService.js';
 
 let memoryConsultations = [];
 
 export const createConsultation = async (data) => {
+  let createdItem = null;
+
   if (isDBConnected()) {
     try {
-      return await Consultation.create(data);
+      createdItem = await Consultation.create(data);
     } catch (err) {
       console.warn('MongoDB create failed in createConsultation, using memory fallback:', err.message);
     }
   }
-  const item = {
-    _id: `cons_${Date.now()}`,
-    ...data,
-    status: data.status || 'Pending',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-  memoryConsultations.unshift(item);
-  return item;
+
+  if (!createdItem) {
+    createdItem = {
+      _id: `cons_${Date.now()}`,
+      ...data,
+      status: data.status || 'Pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    memoryConsultations.unshift(createdItem);
+  }
+
+  // Dispatch email notification via Nodemailer
+  if (createdItem.email) {
+    sendConsultationConfirmationEmail({
+      to: createdItem.email,
+      name: createdItem.fullName || 'Valued Promoter',
+      preferredDate: createdItem.preferredDate,
+      preferredTime: createdItem.preferredTime,
+      topic: createdItem.projectStage || createdItem.message || 'Greenfield Project Bankability Consultation',
+    }).catch((e) => console.warn('Consultation confirmation email error:', e.message));
+  }
+
+  return createdItem;
 };
 
 export const getAllConsultations = async (filter = {}) => {
@@ -73,4 +91,3 @@ export default {
   getConsultationById,
   updateConsultationStatus,
 };
-

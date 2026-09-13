@@ -5,7 +5,7 @@ dotenv.config();
 
 export const generateToken = (payload) => {
   const secret = process.env.JWT_SECRET || 'inisio_secure_jwt_secret_token_2026_greenfield';
-  const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
+  const expiresIn = process.env.JWT_EXPIRE || process.env.JWT_EXPIRES_IN || '7d';
 
   return jwt.sign(payload, secret, {
     expiresIn,

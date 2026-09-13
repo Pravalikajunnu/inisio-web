@@ -32,8 +32,8 @@ export interface LeadRecord {
   promoterExp?: string;
   status?: string;
   photoOrLogo?: string;
-  dprFile?: { name: string; size: number; uploadedAt: string };
-  cmaFile?: { name: string; size: number; uploadedAt: string };
+  dprFile?: { name: string; size: number; uploadedAt: string; dataUrl?: string; fileUrl?: string };
+  cmaFile?: { name: string; size: number; uploadedAt: string; dataUrl?: string; fileUrl?: string };
   assignedTeam?: string;
   assignedRole?: string;
   assignedAt?: string;
@@ -72,13 +72,67 @@ export interface LeadRecord {
 }
 
 const STORAGE_KEY = 'inisio_admin_leads_v1';
+const MAX_INLINE_DOC_BYTES = 900 * 1024;
+
+const sanitizeDocumentPayload = <T>(value: T): T => {
+  if (!value || typeof value !== 'object') return value;
+
+  if (Array.isArray(value)) {
+    return value.map(item => sanitizeDocumentPayload(item)) as unknown as T;
+  }
+
+  const clone = { ...value } as any;
+
+  if (typeof clone.dataUrl === 'string' && clone.dataUrl.length > MAX_INLINE_DOC_BYTES) {
+    delete clone.dataUrl;
+  }
+
+  if (typeof clone.fileUrl === 'string' && clone.fileUrl.length > MAX_INLINE_DOC_BYTES) {
+    delete clone.fileUrl;
+  }
+
+  if (Array.isArray(clone.uploadedDocuments)) {
+    clone.uploadedDocuments = clone.uploadedDocuments.map((doc: any) => sanitizeDocumentPayload(doc));
+  }
+
+  if (clone.dprFile && typeof clone.dprFile === 'object') {
+    clone.dprFile = sanitizeDocumentPayload(clone.dprFile);
+  }
+
+  if (clone.cmaFile && typeof clone.cmaFile === 'object') {
+    clone.cmaFile = sanitizeDocumentPayload(clone.cmaFile);
+  }
+
+  return clone;
+};
+
+const normalizeLead = (lead: Partial<LeadRecord>): LeadRecord => ({
+  ...lead,
+  id: String(lead.id || `lead-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`),
+  timestamp: String(lead.timestamp || new Date().toISOString()),
+  fullName: String(lead.fullName || ''),
+  mobile: String(lead.mobile || ''),
+  email: String(lead.email || ''),
+  projectName: String(lead.projectName || ''),
+  industry: String(lead.industry || ''),
+  location: String(lead.location || ''),
+  totalCostCr: lead.totalCostCr ?? '',
+  loanRequiredCr: lead.loanRequiredCr ?? '',
+  source: String(lead.source || 'Web Portal Submission'),
+  downloadedPDF: Boolean(lead.downloadedPDF),
+  editHistory: Array.isArray(lead.editHistory) ? lead.editHistory : [],
+  promotersList: Array.isArray(lead.promotersList) ? lead.promotersList : [],
+  customCostComponents: Array.isArray(lead.customCostComponents) ? lead.customCostComponents : [],
+  customFinanceComponents: Array.isArray(lead.customFinanceComponents) ? lead.customFinanceComponents : [],
+    uploadedDocuments: Array.isArray(lead.uploadedDocuments) ? sanitizeDocumentPayload(lead.uploadedDocuments) : [],
+});
 
 export function getStoredLeads(userEmail?: string): LeadRecord[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     let leads: LeadRecord[] = [];
     if (raw) {
-      leads = JSON.parse(raw);
+      leads = JSON.parse(raw).map(normalizeLead);
     }
 
     // If userEmail provided, filter specifically for this user's email (case-insensitive match)
@@ -96,12 +150,13 @@ export function getStoredLeads(userEmail?: string): LeadRecord[] {
 
 export async function fetchLeadsFromBackend(email?: string): Promise<LeadRecord[]> {
   try {
+    const localMatches = getStoredLeads(email);
     const url = email ? `/api/leads?email=${encodeURIComponent(email)}` : '/api/leads';
     const response = await fetch(url);
     if (response.ok) {
       const data = await response.json();
       if (data && data.data && Array.isArray(data.data)) {
-        const formatted: LeadRecord[] = data.data.map((item: any) => ({
+        const formatted: LeadRecord[] = data.data.map((item: any) => normalizeLead({
           id: item._id || item.id,
           timestamp: item.timestamp || item.createdAt || new Date().toISOString(),
           fullName: item.fullName,
@@ -112,12 +167,12 @@ export async function fetchLeadsFromBackend(email?: string): Promise<LeadRecord[
           location: item.location || '',
           totalCostCr: item.totalCostCr || '',
           loanRequiredCr: item.loanRequiredCr || '',
+          promoterContribCr: item.promoterContribCr,
           feasibilityScore: item.feasibilityScore,
           bankabilityRating: item.bankabilityRating,
           source: item.source || 'Web Portal Submission',
           downloadedPDF: item.downloadedPDF || false,
           notes: item.notes,
-          promoterContribCr: item.promoterContribCr,
           landStatus: item.landStatus,
           collateralStatus: item.collateralStatus,
           promoterExp: item.promoterExp,
@@ -125,18 +180,59 @@ export async function fetchLeadsFromBackend(email?: string): Promise<LeadRecord[
           photoOrLogo: item.photoOrLogo,
           dprFile: item.dprFile,
           cmaFile: item.cmaFile,
+          assignedTeam: item.assignedTeam,
+          assignedRole: item.assignedRole,
+          assignedAt: item.assignedAt,
+          timelineDate: item.timelineDate,
+          timelineTime: item.timelineTime,
+          lastEditedBy: item.lastEditedBy,
+          lastEditedAt: item.lastEditedAt,
+          editHistory: item.editHistory || [],
           riskProfileData: item.riskProfileData,
           commercialData: item.commercialData,
-          consultationStatus: item.consultationStatus,
+          promotersList: item.promotersList || [],
+          customCostComponents: item.customCostComponents || [],
+          customFinanceComponents: item.customFinanceComponents || [],
+          uploadedDocuments: item.uploadedDocuments || [],
+          successProbability: item.successProbability,
+          isFunded: item.isFunded,
+          dprAssignedTo: item.dprAssignedTo,
           consultationAssignedTo: item.consultationAssignedTo,
-          consultationNotes: item.consultationNotes
+          consultationStatus: item.consultationStatus,
+          consultationNotes: item.consultationNotes,
+          membershipTier: item.membershipTier,
+          financials: item.financials || {},
+          bankAppliedAt: item.bankAppliedAt,
+          loanApprovedAt: item.loanApprovedAt,
+          fundingDisbursedAt: item.fundingDisbursedAt
         }));
-        
+
+        const merged = [...formatted];
+        localMatches.forEach((localLead) => {
+          const matchingIndex = merged.findIndex((item) => String(item.id) === String(localLead.id) || (
+            item.email && localLead.email && item.email.toLowerCase() === localLead.email.toLowerCase() && item.projectName && localLead.projectName && item.projectName.toLowerCase() === localLead.projectName.toLowerCase()
+          ));
+          if (matchingIndex < 0) {
+            merged.push(localLead);
+            return;
+          }
+
+          const backendLead = merged[matchingIndex];
+          merged[matchingIndex] = {
+            ...backendLead,
+            dprFile: backendLead.dprFile || localLead.dprFile,
+            cmaFile: backendLead.cmaFile || localLead.cmaFile,
+            uploadedDocuments: backendLead.uploadedDocuments?.length
+              ? backendLead.uploadedDocuments
+              : localLead.uploadedDocuments
+          };
+        });
+
         if (!email) {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(formatted));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
         }
-        window.dispatchEvent(new CustomEvent('inisio_lead_added'));
-        return formatted;
+
+        if (merged.length > 0) return merged;
       }
     }
   } catch (err) {
@@ -172,14 +268,24 @@ export async function saveLeadRecord(lead: Omit<LeadRecord, 'id' | 'timestamp'>)
     timestamp: backendLead?.createdAt || backendLead?.timestamp || new Date().toISOString()
   };
 
-  // Prevent duplicate insertion if an identical ID already exists
-  const existingIdx = leads.findIndex(l => l.id === newLead.id);
+  // Prevent duplicate insertion if an identical ID or identical user + project name already exists
+  const isSameProject = (a: LeadRecord, b: LeadRecord) => {
+    if (a.id && b.id && a.id === b.id) return true;
+    const aEmail = (a.email || '').trim().toLowerCase();
+    const bEmail = (b.email || '').trim().toLowerCase();
+    const aName = (a.projectName || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    const bName = (b.projectName || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+    return Boolean(aEmail && bEmail && aEmail === bEmail && aName && bName && aName === bName);
+  };
+
+  const existingIdx = leads.findIndex(l => isSameProject(l, newLead));
   const updatedLeads = existingIdx >= 0 
-    ? leads.map((l, idx) => idx === existingIdx ? newLead : l)
-    : [newLead, ...leads.filter(l => !(l.email?.toLowerCase() === newLead.email?.toLowerCase() && l.projectName === newLead.projectName && l.totalCostCr === newLead.totalCostCr))];
+    ? leads.map((l, idx) => idx === existingIdx ? { ...l, ...newLead, id: l.id || newLead.id } : l)
+    : [newLead, ...leads.filter(l => !isSameProject(l, newLead))];
 
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLeads));
+    const safeLeads = sanitizeDocumentPayload(updatedLeads);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(safeLeads));
     window.dispatchEvent(new CustomEvent('inisio_lead_added', { detail: newLead }));
   } catch (err) {
     console.error('Failed to save lead record:', err);
@@ -248,7 +354,8 @@ export function updateLeadRecord(id: string, updates: Partial<LeadRecord>, edite
   });
 
   if (updatedRecord) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLeads));
+    const safeLeads = sanitizeDocumentPayload(updatedLeads);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(safeLeads));
     window.dispatchEvent(new CustomEvent('inisio_lead_added', { detail: { ...updatedRecord, localUpdate: true } }));
 
     // Notify admin about this update

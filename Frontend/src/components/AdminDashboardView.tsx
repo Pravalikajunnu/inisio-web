@@ -101,12 +101,17 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
   };
 
   const filteredLeads = leads.filter(l => {
+    const fullName = l.fullName || '';
+    const mobile = l.mobile || '';
+    const email = l.email || '';
+    const industry = l.industry || '';
+    const projectName = l.projectName || '';
     const matchesSearch =
-      l.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      l.mobile.includes(searchQuery) ||
-      l.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      l.industry.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      l.projectName.toLowerCase().includes(searchQuery.toLowerCase());
+      fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      mobile.includes(searchQuery) ||
+      email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      industry.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      projectName.toLowerCase().includes(searchQuery.toLowerCase());
 
     if (!matchesSearch) return false;
 
@@ -129,12 +134,17 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
   });
 
   const filteredUsers = usersList.filter(u => {
+    const name = u.name || '';
+    const email = u.email || '';
+    const phone = u.phone || '';
+    const company = u.company || '';
+    const role = u.role || '';
     return (
-      u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (u.phone && u.phone.includes(searchQuery)) ||
-      (u.company && u.company.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      u.role.toLowerCase().includes(searchQuery.toLowerCase())
+      name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      phone.includes(searchQuery) ||
+      company.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      role.toLowerCase().includes(searchQuery.toLowerCase())
     );
   });
 
@@ -393,7 +403,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
                         minute: '2-digit'
                       });
 
-                      const userProjects = leads.filter(l => l.email.toLowerCase() === u.email.toLowerCase());
+                      const userProjects = leads.filter(l => (l.email || '').toLowerCase() === (u.email || '').toLowerCase());
 
                       return (
                         <tr key={u.id} className="hover:bg-zinc-50 transition-colors">
@@ -418,8 +428,18 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
                               {u.role}
                             </span>
                             {userProjects.length > 0 && (
-                              <div className="text-[10px] text-emerald-700 mt-1 font-semibold">
-                                {userProjects.length} Project{userProjects.length > 1 ? 's' : ''} Created
+                              <div className="mt-1.5 flex flex-wrap gap-1">
+                                {userProjects.map(p => (
+                                  <button
+                                    key={p.id}
+                                    onClick={() => setSelectedLead(p)}
+                                    className="px-2 py-0.5 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-semibold border border-blue-200 flex items-center gap-1 cursor-pointer transition-colors"
+                                    title="View & Edit Project"
+                                  >
+                                    <Building2 className="w-2.5 h-2.5" />
+                                    <span className="truncate max-w-[120px]">{p.projectName || 'Project'}</span>
+                                  </button>
+                                ))}
                               </div>
                             )}
                           </td>
@@ -690,16 +710,14 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
                                 <span>Track</span>
                               </button>
 
-                              {(user.role === 'admin2' || user.role === 'admin3') && (
-                                <button
-                                  onClick={() => setEditingLead(lead)}
-                                  className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer border border-amber-200/50"
-                                  title="Edit Specific Fields"
-                                >
-                                  <Edit3 className="w-3 h-3" />
-                                  <span>Edit</span>
-                                </button>
-                              )}
+                              <button
+                                onClick={() => setEditingLead(lead)}
+                                className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer border border-amber-200/50"
+                                title="Edit Project Details"
+                              >
+                                <Edit3 className="w-3 h-3" />
+                                <span>Edit</span>
+                              </button>
 
                               <a
                                 href={`https://wa.me/91${lead.mobile.replace(/[^0-9]/g, '')}?text=${waText}`}
@@ -766,6 +784,10 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
       <UserProfileDetailModal
         lead={selectedLead}
         onClose={() => setSelectedLead(null)}
+        onEdit={(leadToEdit) => {
+          setSelectedLead(null);
+          setEditingLead(leadToEdit);
+        }}
         onDelete={user.role === 'admin3' ? (id) => {
           deleteLeadRecord(id);
           loadData();
