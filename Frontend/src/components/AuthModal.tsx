@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthUser, UserRole } from '../types';
+import { validateIndianMobileNumber } from '../utils/validation';
 import {
   X,
   Lock,
@@ -171,6 +172,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setError('Password must be at least 6 characters');
       setLoading(false);
       return;
+    }
+
+    if (mode === 'signup') {
+      const phoneValidation = validateIndianMobileNumber(phone);
+      if (!phoneValidation.isValid) {
+        setError(phoneValidation.error);
+        setLoading(false);
+        return;
+      }
     }
 
     if (mode === 'forgot-password') {
@@ -428,9 +438,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                           <input
                             type="tel"
+                            required
                             value={phone}
                             onChange={(e) => setPhone(e.target.value)}
-                            placeholder="9848012345"
+                            placeholder="Enter your 10-digit mobile number"
                             className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
                           />
                         </div>

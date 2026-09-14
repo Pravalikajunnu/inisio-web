@@ -622,7 +622,7 @@ export const resetPassword = async ({ email, otp, newPassword }) => {
     email: cleanEmail,
     role: memUser?.role || 'user',
     company: memUser?.company || 'Enterprise Promoter',
-    phone: memUser?.phone || '+91 98765 43210',
+    phone: memUser?.phone || '',
     isVerified: true,
     token,
     message: 'Password successfully updated! You are now logged in.',

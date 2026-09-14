@@ -8,17 +8,17 @@ import {
   clearAllLeads,
 } from '../controllers/leadController.js';
 import { authenticateUser, authorizeRoles, optionalAuth } from '../middleware/authMiddleware.js';
-import { validateBody } from '../middleware/validateMiddleware.js';
+import { validateBody, validateIndianPhone } from '../middleware/validateMiddleware.js';
 
 const router = express.Router();
 
 // Public submission
-router.post('/', validateBody(['fullName', 'mobile', 'email']), createLead);
+router.post('/', validateBody(['fullName', 'mobile', 'email']), validateIndianPhone('mobile'), createLead);
 
 // Lead retrieval & management (Admins & CAs)
 router.get('/', optionalAuth, getLeads);
 router.get('/:id', optionalAuth, getLeadById);
-router.put('/:id', optionalAuth, updateLead);
+router.put('/:id', optionalAuth, validateIndianPhone('mobile'), updateLead);
 router.delete('/clear-all', authenticateUser, authorizeRoles('admin'), clearAllLeads);
 router.delete('/:id', authenticateUser, authorizeRoles('admin'), deleteLead);
 

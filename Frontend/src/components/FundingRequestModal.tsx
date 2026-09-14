@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AuthUser } from '../types';
+import { validateIndianMobileNumber } from '../utils/validation';
 import {
   Coins,
   CheckCircle2,
@@ -54,6 +55,11 @@ export const FundingRequestModal: React.FC<FundingRequestModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const phoneValidation = validateIndianMobileNumber(phone);
+    if (!phoneValidation.isValid) {
+      alert(phoneValidation.error);
+      return;
+    }
     setIsSubmitting(true);
 
     setTimeout(() => {

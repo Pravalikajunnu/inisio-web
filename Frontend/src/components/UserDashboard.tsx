@@ -600,7 +600,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
 
     return {
       fullName: user.name || proj.fullName || 'Promoter',
-      mobile: user.phone || proj.mobile || '9848012345',
+      mobile: user.phone || proj.mobile || '',
       email: user.email || proj.email,
       projectName: proj.projectName,
       industry: proj.industry,

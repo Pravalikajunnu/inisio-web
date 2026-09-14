@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LeadRecord, updateLeadRecord } from '../utils/leadStore';
+import { validateIndianMobileNumber } from '../utils/validation';
 import { AuthUser, PromoterDetail, ProjectDocument } from '../types';
 import { DocumentViewerModal, DocumentViewerTarget } from './DocumentViewerModal';
 import {
@@ -219,6 +220,11 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const phoneValidation = validateIndianMobileNumber(String(formData.mobile || ''));
+    if (!phoneValidation.isValid) {
+      alert(phoneValidation.error);
+      return;
+    }
 
     // Check if DPR/CMA are in documents
     const dprDoc = documents.find(d => d.type?.includes('DPR') || d.name.toLowerCase().includes('dpr'));

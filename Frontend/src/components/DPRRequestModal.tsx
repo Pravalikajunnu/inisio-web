@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AuthUser } from '../types';
+import { validateIndianMobileNumber } from '../utils/validation';
 import {
   FileText,
   CheckCircle2,
@@ -55,6 +56,11 @@ export const DPRRequestModal: React.FC<DPRRequestModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const phoneValidation = validateIndianMobileNumber(phone);
+    if (!phoneValidation.isValid) {
+      alert(phoneValidation.error);
+      return;
+    }
     setIsSubmitting(true);
 
     setTimeout(() => {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ConsultationFormData } from '../types';
 import { MAIN_SECTORS } from '../data/landingData';
 import { saveLeadRecord } from '../utils/leadStore';
+import { validateIndianMobileNumber } from '../utils/validation';
 import {
   X,
   PhoneCall,
@@ -50,6 +51,11 @@ export const ConsultationModal: React.FC<ConsultationModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const phoneValidation = validateIndianMobileNumber(formData.phone);
+    if (!phoneValidation.isValid) {
+      alert(phoneValidation.error);
+      return;
+    }
 
     saveLeadRecord({
       fullName: formData.fullName || 'Consultation Lead',

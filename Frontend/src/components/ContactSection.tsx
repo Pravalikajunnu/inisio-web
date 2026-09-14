@@ -11,6 +11,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { MAIN_SECTORS } from '../data/landingData';
+import { validateIndianMobileNumber } from '../utils/validation';
 
 export const ContactSection: React.FC = () => {
   const [submitted, setSubmitted] = useState(false);
@@ -26,6 +27,11 @@ export const ContactSection: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const phoneValidation = validateIndianMobileNumber(formData.phone);
+    if (!phoneValidation.isValid) {
+      alert(phoneValidation.error);
+      return;
+    }
     setSubmitted(true);
 
     saveLeadRecord({

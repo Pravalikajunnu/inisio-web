@@ -6,12 +6,12 @@ import {
   updateConsultationStatus,
 } from '../controllers/consultationController.js';
 import { authenticateUser, authorizeRoles } from '../middleware/authMiddleware.js';
-import { validateBody } from '../middleware/validateMiddleware.js';
+import { validateBody, validateIndianPhone } from '../middleware/validateMiddleware.js';
 
 const router = express.Router();
 
 // Public booking
-router.post('/', validateBody(['fullName', 'email', 'phone']), createConsultation);
+router.post('/', validateBody(['fullName', 'email', 'phone']), validateIndianPhone('phone'), createConsultation);
 
 // Advisor & Admin routes
 router.get('/', authenticateUser, authorizeRoles('admin', 'ca'), getConsultations);

@@ -11,12 +11,12 @@ import {
   sendVerificationOtp,
 } from '../controllers/authController.js';
 import { authenticateUser } from '../middleware/authMiddleware.js';
-import { validateBody } from '../middleware/validateMiddleware.js';
+import { validateBody, validateIndianPhone } from '../middleware/validateMiddleware.js';
 
 const router = express.Router();
 
 // Public routes
-router.post('/register', validateBody(['name', 'email', 'password']), register);
+router.post('/register', validateBody(['name', 'email', 'password']), validateIndianPhone('phone'), register);
 router.post('/login', validateBody(['email', 'password']), login);
 router.post('/verify-email', validateBody(['email', 'otp']), verifyEmail);
 router.post('/verify-otp', validateBody(['email', 'otp']), verifyOtp);
@@ -27,6 +27,6 @@ router.post('/resend-verification', validateBody(['email']), sendVerificationOtp
 
 // Protected routes
 router.get('/me', authenticateUser, getMe);
-router.put('/profile', authenticateUser, updateProfile);
+router.put('/profile', authenticateUser, validateIndianPhone('phone'), updateProfile);
 
 export default router;
