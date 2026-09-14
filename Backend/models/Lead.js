@@ -2,6 +2,12 @@ import mongoose from 'mongoose';
 
 const leadSchema = new mongoose.Schema(
   {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
+      index: true,
+    },
     fullName: {
       type: String,
       required: [true, 'Please add promoter full name'],
@@ -47,6 +53,11 @@ const leadSchema = new mongoose.Schema(
     bankabilityRating: {
       type: String,
       default: 'A',
+    },
+    dscrEstimate: {
+      type: Number,
+      default: 0,
+      min: 0,
     },
     source: {
       type: String,
@@ -150,7 +161,7 @@ const leadSchema = new mongoose.Schema(
     },
     successProbability: {
       type: Number,
-      default: 85,
+      default: 25,
     },
     isFunded: {
       type: Boolean,
@@ -166,11 +177,28 @@ const leadSchema = new mongoose.Schema(
     },
     consultationStatus: {
       type: String,
-      default: 'Pending',
+      enum: ['New', 'In Progress', 'Customer Declined', 'Completed', 'Pending'],
+      default: 'New',
     },
     consultationNotes: {
       type: String,
       default: '',
+    },
+    assessmentCompleted: {
+      type: Boolean,
+      default: false,
+    },
+    documentsUploaded: {
+      type: Boolean,
+      default: false,
+    },
+    dprCompleted: {
+      type: Boolean,
+      default: false,
+    },
+    bankApplicationSubmitted: {
+      type: Boolean,
+      default: false,
     },
     membershipTier: {
       type: String,

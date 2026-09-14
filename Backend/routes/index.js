@@ -9,6 +9,7 @@ import industryRoutes from './industryRoutes.js';
 import serviceRoutes from './serviceRoutes.js';
 import contactRoutes from './contactRoutes.js';
 import notificationRoutes from './notificationRoutes.js';
+import documentRoutes from './documentRoutes.js';
 
 const router = express.Router();
 
@@ -33,5 +34,6 @@ router.use('/industries', industryRoutes);
 router.use('/services', serviceRoutes);
 router.use('/contact', contactRoutes);
 router.use('/notifications', notificationRoutes);
+router.use('/documents', documentRoutes);
 
 export default router;

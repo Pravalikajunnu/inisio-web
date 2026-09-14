@@ -36,7 +36,7 @@ export const PromotersManagement: React.FC<PromotersManagementProps> = ({
   const [qualification, setQualification] = useState('');
   const [shareholdingPct, setShareholdingPct] = useState<string | number>('');
   const [role, setRole] = useState('Director / Co-Promoter');
-  const [kycStatus, setKycStatus] = useState<'Verified' | 'Pending' | 'Uploaded'>('Pending');
+  const [kycStatus, setKycStatus] = useState<'Pending' | 'Under Review' | 'Verified' | 'Rejected' | 'Uploaded'>('Pending');
   const [netWorthCr, setNetWorthCr] = useState<string | number>('');
   const [cibilScore, setCibilScore] = useState<string | number>('');
 
@@ -231,9 +231,11 @@ export const PromotersManagement: React.FC<PromotersManagementProps> = ({
               </div>
               <div>
                 <span className="text-[10px] text-zinc-400 uppercase font-semibold block">KYC Status</span>
-                <span className={`font-bold flex items-center gap-1 ${
+                  <span className={`font-bold flex items-center gap-1 ${
                   p.kycStatus === 'Verified' 
                     ? 'text-emerald-700' 
+                    : p.kycStatus === 'Rejected'
+                    ? 'text-rose-700'
                     : p.kycStatus === 'Uploaded' 
                     ? 'text-blue-700' 
                     : 'text-amber-700'
@@ -243,7 +245,7 @@ export const PromotersManagement: React.FC<PromotersManagementProps> = ({
                   ) : (
                     <ShieldCheck className="w-3 h-3 text-amber-500" />
                   )}
-                  <span>{p.kycStatus === 'Verified' ? 'Verified' : p.kycStatus === 'Uploaded' ? 'Documents Uploaded' : 'Pending Verification'}</span>
+                  <span>{p.kycStatus || 'Pending'}</span>
                 </span>
               </div>
             </div>

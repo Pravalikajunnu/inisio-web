@@ -5,11 +5,33 @@ import { isDBConnected } from '../config/db.js';
 
 let memoryLeads = [];
 
-export const getAllLeads = async (query = {}) => {
+const isSuperAdmin = (role = '') => ['superadmin', 'admin', 'admin1', 'admin2', 'admin3'].includes(role);
+
+const canAccessLead = (lead, requester) => {
+  if (!requester) return false;
+  if (isSuperAdmin(requester.role)) return true;
+  if (requester.role === 'ca') return lead.assignedCA === requester.email;
+  if (requester.role === 'dpr_consultant') return lead.dprAssignedTo === requester.email;
+  if (requester.role === 'prosync' || requester.role === 'prosync_admin') {
+    return lead.consultationAssignedTo === requester.email || lead.consultationAssignedTo === 'Prosync';
+  }
+  return String(lead.userId) === String(requester._id);
+};
+
+export const getAllLeads = async (query = {}, requester = null) => {
   let leadsList = [];
   if (isDBConnected()) {
     try {
       let filter = {};
+      if (requester?.role === 'user') {
+        filter.userId = requester._id;
+      } else if (requester?.role === 'ca') {
+        filter.assignedCA = requester.email;
+      } else if (requester?.role === 'dpr_consultant') {
+        filter.dprAssignedTo = requester.email;
+      } else if (requester?.role === 'prosync' || requester?.role === 'prosync_admin') {
+        filter.consultationAssignedTo = { $in: [requester.email, 'Prosync'] };
+      }
       if (query.email) {
         filter.email = { $regex: new RegExp(`^${query.email}$`, 'i') };
       }
@@ -83,7 +105,7 @@ export const getAllLeads = async (query = {}) => {
   return Array.from(dedupedMap.values());
 };
 
-export const createLead = async (leadData) => {
+export const createLead = async (leadData, userId = null) => {
   const normEmail = (leadData.email || '').trim().toLowerCase();
   const normProject = (leadData.projectName || '').trim().toLowerCase();
 
@@ -99,7 +121,7 @@ export const createLead = async (leadData) => {
         if (existing) {
           const updated = await Lead.findByIdAndUpdate(
             existing._id,
-            { ...leadData, updatedAt: new Date() },
+            { ...leadData, userId: userId || existing.userId, updatedAt: new Date() },
             { new: true }
           );
           return updated;
@@ -108,6 +130,7 @@ export const createLead = async (leadData) => {
 
       const lead = await Lead.create({
         ...leadData,
+        userId,
         timestamp: new Date(),
       });
 
@@ -156,11 +179,11 @@ export const createLead = async (leadData) => {
   return created;
 };
 
-export const getLeadById = async (id) => {
+export const getLeadById = async (id, requester = null) => {
   if (isDBConnected()) {
     try {
       const lead = await Lead.findById(id);
-      if (lead) return lead;
+      if (lead && canAccessLead(lead, requester)) return lead;
     } catch (err) {}
   }
   const found = memoryLeads.find((l) => String(l._id) === String(id));
@@ -168,20 +191,24 @@ export const getLeadById = async (id) => {
   return found;
 };
 
-export const updateLead = async (id, updates) => {
+export const updateLead = async (id, updates, requester = null) => {
   const normEmail = (updates.email || '').trim().toLowerCase();
   const normProject = (updates.projectName || '').trim().toLowerCase();
 
   if (isDBConnected()) {
     try {
       if (mongoose.Types.ObjectId.isValid(id)) {
-        const lead = await Lead.findByIdAndUpdate(id, { ...updates, updatedAt: new Date() }, { new: true });
-        if (lead) return lead;
+        const lead = await Lead.findById(id);
+        if (lead && canAccessLead(lead, requester)) {
+          Object.assign(lead, updates);
+          lead.updatedAt = new Date();
+          return await lead.save();
+        }
       }
 
       // Try find by exact string id
       let lead = await Lead.findOne({ _id: id });
-      if (lead) {
+      if (lead && canAccessLead(lead, requester)) {
         Object.assign(lead, updates);
         lead.updatedAt = new Date();
         await lead.save();
@@ -229,6 +256,38 @@ export const updateLead = async (id, updates) => {
   return created;
 };
 
+export const assignLead = async (id, { dprAssignedTo, consultationAssignedTo }, requester) => {
+  if (!isSuperAdmin(requester?.role)) throw new Error('Only a Super Admin can assign project work');
+  if (!isDBConnected()) throw new Error('Database unavailable; assignments require MongoDB');
+
+  const lead = await Lead.findById(id);
+  if (!lead) throw new Error('Lead not found');
+  if (dprAssignedTo !== undefined) lead.dprAssignedTo = dprAssignedTo;
+  if (consultationAssignedTo !== undefined) {
+    lead.consultationAssignedTo = consultationAssignedTo;
+    if (consultationAssignedTo) lead.consultationStatus = 'New';
+  }
+  lead.assignedAt = new Date().toISOString();
+  return lead.save();
+};
+
+export const updateLeadProgress = async (id, progress, requester) => {
+  if (!isDBConnected()) throw new Error('Database unavailable; project progress requires MongoDB');
+  const lead = await Lead.findById(id);
+  if (!lead || !canAccessLead(lead, requester)) throw new Error('Project not found or access denied');
+
+  const fields = ['assessmentCompleted', 'documentsUploaded', 'dprCompleted', 'bankApplicationSubmitted', 'isFunded'];
+  fields.forEach((field) => {
+    if (progress[field] !== undefined) lead[field] = Boolean(progress[field]);
+  });
+  if (lead.bankApplicationSubmitted) lead.bankAppliedAt = lead.bankAppliedAt || new Date().toISOString();
+  if (lead.isFunded) lead.fundingDisbursedAt = lead.fundingDisbursedAt || new Date().toISOString();
+  lead.successProbability = lead.isFunded
+    ? 100
+    : 25 + (lead.assessmentCompleted ? 15 : 0) + (lead.documentsUploaded ? 15 : 0) + (lead.dprCompleted ? 20 : 0) + (lead.bankApplicationSubmitted ? 25 : 0);
+  return lead.save();
+};
+
 export const deleteLead = async (id) => {
   if (isDBConnected()) {
     try {
@@ -257,6 +316,8 @@ export default {
   createLead,
   getLeadById,
   updateLead,
+  assignLead,
+  updateLeadProgress,
   deleteLead,
   clearAllLeads,
 };

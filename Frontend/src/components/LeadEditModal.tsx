@@ -523,7 +523,7 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
                     <strong className="text-blue-700 font-bold">{debtPct}% Debt : {eqPct}% Equity</strong>
                   </div>
                   <div className="text-[11px] text-zinc-400">
-                    Est. DSCR: <strong>1.48x</strong> | Benchmark ROI: <strong>8.75% p.a.</strong>
+                    Est. DSCR: <strong>System calculated after assessment submission</strong>
                   </div>
                 </div>
               </div>

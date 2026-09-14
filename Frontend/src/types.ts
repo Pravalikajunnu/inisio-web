@@ -104,7 +104,7 @@ export function getFeasibilityTerm(score: number | string): 'Good' | 'Average' |
   return 'Moderate';
 }
 
-export type UserRole = 'user' | 'admin' | 'admin1' | 'admin2' | 'admin3' | 'ca' | 'prosync' | 'superadmin';
+export type UserRole = 'user' | 'ca' | 'superadmin' | 'dpr_consultant' | 'prosync_admin' | 'admin' | 'admin1' | 'admin2' | 'admin3' | 'prosync';
 
 export interface AuthUser {
   email: string;
@@ -126,7 +126,7 @@ export interface PromoterDetail {
   qualification: string;
   shareholdingPct?: number | string;
   role?: string;
-  kycStatus?: 'Verified' | 'Pending' | 'Uploaded';
+  kycStatus?: 'Pending' | 'Under Review' | 'Verified' | 'Rejected' | 'Uploaded';
   netWorthCr?: number | string;
   cibilScore?: number | string;
 }

@@ -21,6 +21,11 @@ import { getFeasibilityTerm } from '../types';
 import { reconcileProjectFinancials } from './financialUtils';
 
 export async function generateProjectTeaserDOCX(data: TeaserPDFData): Promise<void> {
+  const generatedDate = new Date().toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
   const fin = reconcileProjectFinancials({
     totalCostCr: data.totalCostCr,
     loanRequiredCr: data.loanRequiredCr,
@@ -131,14 +136,14 @@ export async function generateProjectTeaserDOCX(data: TeaserPDFData): Promise<vo
                 alignment: AlignmentType.RIGHT,
                 children: [
                   new TextRun({
-                    text: 'INISIO PROJECT INTELLIGENCE',
+                    text: 'INISIO | PROJECT INTELLIGENCE',
                     bold: true,
                     color: '1E40AF',
                     size: 16,
                     font: 'Arial',
                   }),
                   new TextRun({
-                    text: ' | Executive Teaser Dossier',
+                    text: ` | Executive Teaser Dossier | ${generatedDate}`,
                     color: '64748B',
                     size: 16,
                     font: 'Arial',
@@ -1024,5 +1029,19 @@ export async function generateProjectTeaserDOCX(data: TeaserPDFData): Promise<vo
 
   const blob = await Packer.toBlob(doc);
   const fileName = `Inisio_Teaser_${(data.projectName || data.fullName || 'Greenfield').replace(/[^a-zA-Z0-9]/g, '_')}.docx`;
-  saveAs(blob, fileName);
+
+  try {
+    saveAs(blob, fileName);
+  } catch (error) {
+    console.error('DOCX teaser download failed with saveAs fallback:', error);
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = fileName;
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 3000);
+  }
 }

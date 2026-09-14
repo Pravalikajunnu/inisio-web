@@ -3,6 +3,7 @@ import { ConsultationFormData } from '../types';
 import { MAIN_SECTORS } from '../data/landingData';
 import { saveLeadRecord } from '../utils/leadStore';
 import { validateIndianMobileNumber } from '../utils/validation';
+import api from '../utils/apiClient';
 import {
   X,
   PhoneCall,
@@ -49,7 +50,7 @@ export const ConsultationModal: React.FC<ConsultationModalProps> = ({
     return `https://wa.me/${targetWhatsAppNumber}?text=${encodeURIComponent(text)}`;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const phoneValidation = validateIndianMobileNumber(formData.phone);
     if (!phoneValidation.isValid) {
@@ -57,7 +58,19 @@ export const ConsultationModal: React.FC<ConsultationModalProps> = ({
       return;
     }
 
-    saveLeadRecord({
+    await api.consultations.create({
+      fullName: formData.fullName,
+      email: formData.email,
+      phone: formData.phone,
+      companyName: formData.companyName,
+      industry: formData.industry,
+      projectCostCr: formData.projectCostCr,
+      additionalNotes: formData.additionalNotes,
+      assignedAdvisor: 'Prosync',
+      status: 'pending'
+    }).catch(() => undefined);
+
+    await saveLeadRecord({
       fullName: formData.fullName || 'Consultation Lead',
       mobile: formData.phone || 'N/A',
       email: formData.email || 'N/A',
@@ -68,7 +81,9 @@ export const ConsultationModal: React.FC<ConsultationModalProps> = ({
       loanRequiredCr: 'N/A',
       source: 'Advisory Call Booked',
       downloadedPDF: false,
-      notes: formData.additionalNotes
+      notes: formData.additionalNotes,
+      consultationAssignedTo: 'Prosync',
+      consultationStatus: 'New'
     });
 
     const whatsappUrl = constructWhatsAppUrl();

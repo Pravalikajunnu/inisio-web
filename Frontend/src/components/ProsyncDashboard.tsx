@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AuthUser } from '../types';
 import { getStoredLeads, updateLeadRecord, fetchLeadsFromBackend, LeadRecord } from '../utils/leadStore';
+import api from '../utils/apiClient';
 import {
   Users2,
   Calendar,
@@ -39,41 +40,42 @@ export const ProsyncDashboard: React.FC<ProsyncDashboardProps> = ({ user, onLogo
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const loadData = () => {
-    const allLeads = getStoredLeads();
-    // In Prosync view, we show consultation leads or all assigned leads
-    setLeads(allLeads);
+  const loadData = async () => {
+    try {
+      const assignedLeads = await fetchLeadsFromBackend();
+      setLeads(assignedLeads.filter((lead) => Boolean(lead.consultationAssignedTo)));
+    } catch (error) {
+      setLeads([]);
+      triggerToast('Unable to load consultation projects.');
+    }
   };
 
   useEffect(() => {
-    fetchLeadsFromBackend().then(() => loadData()).catch(() => loadData());
+    loadData();
     window.addEventListener('inisio_lead_added', loadData);
     return () => window.removeEventListener('inisio_lead_added', loadData);
   }, []);
 
   const handleUpdateStatus = (leadId: string, status: 'In Progress' | 'Customer Declined' | 'Completed') => {
-    const updated = updateLeadRecord(leadId, {
+    api.leads.update(leadId, {
       consultationStatus: status,
-      consultationAssignedTo: 'Prosync',
       consultationNotes: consultationNotes || undefined
-    }, 'Prosync Advisor');
-
-    if (updated) {
+    }).then(() => {
       loadData();
-      if (selectedLead && selectedLead.id === leadId) {
-        setSelectedLead({ ...selectedLead, consultationStatus: status, consultationNotes });
-      }
+      if (selectedLead && selectedLead.id === leadId) setSelectedLead({ ...selectedLead, consultationStatus: status, consultationNotes });
       triggerToast(`Status updated to '${status}'.`);
-    }
+    }).catch(() => {
+      triggerToast('Unable to update consultation status.');
+    });
   };
 
   const handleSaveNotes = (leadId: string) => {
-    updateLeadRecord(leadId, {
+    api.leads.update(leadId, {
       consultationNotes,
-      consultationAssignedTo: 'Prosync'
-    }, 'Prosync Advisor');
-    loadData();
-    triggerToast('Consultation notes saved successfully.');
+    }).then(() => {
+      loadData();
+      triggerToast('Consultation notes saved successfully.');
+    }).catch(() => triggerToast('Unable to save consultation notes.'));
   };
 
   const filteredLeads = leads.filter(lead => {

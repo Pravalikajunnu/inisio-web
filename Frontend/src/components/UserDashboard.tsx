@@ -15,6 +15,7 @@ import { UnderwritingChecklist } from './dashboard/UnderwritingChecklist';
 import { DocumentsCompliance } from './dashboard/DocumentsCompliance';
 import { getUserMembership, MembershipPlan } from '../utils/membershipStore';
 import { MembershipPlansModal } from './MembershipPlansModal';
+import { calculateSystemDscr, reconcileProjectFinancials } from '../utils/financialUtils';
 import {
   Building,
   Building2,
@@ -115,6 +116,7 @@ export interface UserProjectDetail {
   dprFile?: { name: string; size: number; uploadedAt: string; dataUrl?: string; fileUrl?: string; storageKey?: string } | null;
   cmaFile?: { name: string; size: number; uploadedAt: string; dataUrl?: string; fileUrl?: string; storageKey?: string } | null;
   assignedTeam?: string;
+  assessmentCompleted?: boolean;
   timelineDate?: string;
   timelineTime?: string;
   timestamp?: string;
@@ -151,6 +153,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   const [showToast, setShowToast] = useState<string | null>(null);
   const [dprRequestSuccess, setDprRequestSuccess] = useState<boolean>(false);
   const [isMembershipModalOpen, setIsMembershipModalOpen] = useState<boolean>(false);
+  const [isGeneratingTeaser, setIsGeneratingTeaser] = useState(false);
   const [membership, setMembership] = useState(() => getUserMembership(user.email));
 
   useEffect(() => {
@@ -189,20 +192,20 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       const normalizeProjectKey = (name?: string) => (name || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 
       leads.forEach((lead) => {
-        const cost = parseFloat(String(lead.totalCostCr || 0)) || 10;
-        const loan = parseFloat(String(lead.loanRequiredCr || 0)) || Math.round(cost * 0.75 * 10) / 10;
-        const equity = parseFloat(String(lead.promoterContribCr || 0)) || Math.round((cost - loan) * 10) / 10;
-        const dPct = cost > 0 ? Math.round((loan / cost) * 100) : 75;
-        const eqPct = 100 - dPct;
-        const score = Number(lead.feasibilityScore || 82);
+        const cost = Number(lead.totalCostCr) || 0;
+        const loan = Number(lead.loanRequiredCr) || 0;
+        const equity = Number(lead.promoterContribCr) || 0;
+        const dPct = cost > 0 ? Math.round((loan / cost) * 100) : 0;
+        const eqPct = cost > 0 ? Math.round((equity / cost) * 100) : 0;
+        const score = Number(lead.feasibilityScore) || 0;
         
         let rating = 'Investment Grade (A)';
         if (score >= 85) rating = 'Prime Bankable (AAA)';
         else if (score >= 75) rating = 'Highly Viable (AA)';
         else if (score >= 65) rating = 'Moderate (BBB)';
 
-        const dscr = Math.round((1.35 + (score % 15) * 0.03) * 100) / 100;
-        const interest = score >= 80 ? '8.65% - 9.15% p.a.' : '9.25% - 9.85% p.a.';
+        const dscr = Number(lead.dscrEstimate) || calculateSystemDscr({ industry: lead.industry || '' });
+        const interest = String((lead as any).estInterestRate || '');
 
         const normKey = normalizeProjectKey(lead.projectName);
         const existingEntry = Array.from(projectMap.values()).find(p => 
@@ -223,23 +226,24 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           bankabilityRating: rating,
           dscrEstimate: dscr,
           estInterestRate: interest,
-          landStatus: lead.landStatus || 'Industrial Land Allotted',
-          collateralStatus: lead.collateralStatus || 'Factory & Plant Machinery',
+          landStatus: lead.landStatus || 'Not provided',
+          collateralStatus: lead.collateralStatus || 'Not provided',
           promoterExp: lead.promoterExp || 'Over 10+ Years Industry Track Record',
           status: (lead.status || 'In Appraisal') as any,
           stageNumber: lead.status === 'CA Approved' ? 4 : (lead.downloadedPDF ? 3 : 2),
-          assignedCA: 'CA Rajesh Sharma (FCA #847201)',
-          assignedBank: 'SBI / Canara Bank / HDFC Bank Consortium',
+          assignedCA: lead.consultationAssignedTo || '',
+          assignedBank: '',
           downloadedDate: lead.timestamp ? new Date(lead.timestamp).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently',
           downloadedPDF: Boolean(lead.downloadedPDF),
-          notes: lead.notes || 'Targeting debt syndication with Central / State capital subsidy.',
+          notes: lead.notes || '',
           fullName: lead.fullName,
           mobile: lead.mobile,
           email: lead.email,
           photoOrLogo: lead.photoOrLogo || '',
           dprFile: lead.dprFile || null,
           cmaFile: lead.cmaFile || null,
-          assignedTeam: lead.assignedTeam || 'CA Rajesh Sharma (FCA #847201), Priya Verma (Financial Analyst)',
+          assignedTeam: lead.assignedTeam || lead.consultationAssignedTo || '',
+          assessmentCompleted: lead.assessmentCompleted,
           timelineDate: lead.timelineDate || '',
           timelineTime: lead.timelineTime || '',
           timestamp: lead.timestamp,
@@ -281,20 +285,20 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
 
       apiProjects.forEach((proj) => {
         const id = proj._id || proj.id;
-        const cost = parseFloat(String(proj.totalCostCr || 0)) || 10;
-        const loan = parseFloat(String(proj.loanRequiredCr || 0)) || Math.round(cost * 0.75 * 10) / 10;
-        const equity = parseFloat(String(proj.promoterContribCr || 0)) || Math.round((cost - loan) * 10) / 10;
-        const dPct = cost > 0 ? Math.round((loan / cost) * 100) : 75;
-        const eqPct = 100 - dPct;
-        const score = Number(proj.feasibilityScore || 82);
+        const cost = Number(proj.totalCostCr) || 0;
+        const loan = Number(proj.loanRequiredCr) || 0;
+        const equity = Number(proj.promoterContribCr) || 0;
+        const dPct = cost > 0 ? Math.round((loan / cost) * 100) : 0;
+        const eqPct = cost > 0 ? Math.round((equity / cost) * 100) : 0;
+        const score = Number(proj.feasibilityScore) || 0;
 
         let rating = 'Investment Grade (A)';
         if (score >= 85) rating = 'Prime Bankable (AAA)';
         else if (score >= 75) rating = 'Highly Viable (AA)';
         else if (score >= 65) rating = 'Moderate (BBB)';
 
-        const dscr = Math.round((1.35 + (score % 15) * 0.03) * 100) / 100;
-        const interest = score >= 80 ? '8.65% - 9.15% p.a.' : '9.25% - 9.85% p.a.';
+        const dscr = Number(proj.dscrEstimate) || calculateSystemDscr({ industry: proj.industry || '' });
+        const interest = String(proj.estInterestRate || '');
 
         const normKey = normalizeProjectKey(proj.projectName);
         const existingEntry = Array.from(projectMap.values()).find(p => 
@@ -316,23 +320,24 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             bankabilityRating: rating,
             dscrEstimate: dscr,
             estInterestRate: interest,
-            landStatus: proj.landStatus || 'Industrial Land Allotted',
-            collateralStatus: proj.collateralStatus || 'Factory & Plant Machinery',
+            landStatus: proj.landStatus || 'Not provided',
+            collateralStatus: proj.collateralStatus || 'Not provided',
             promoterExp: proj.promoterExp || 'Over 10+ Years Industry Track Record',
             status: (proj.status || 'In Appraisal') as any,
             stageNumber: proj.status === 'CA Approved' ? 4 : (proj.downloadedPDF ? 3 : 2),
-            assignedCA: 'CA Rajesh Sharma (FCA #847201)',
-            assignedBank: 'SBI / Canara Bank / HDFC Bank Consortium',
+            assignedCA: proj.assignedCA || '',
+            assignedBank: proj.assignedBank || '',
             downloadedDate: proj.createdAt ? new Date(proj.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently',
             downloadedPDF: Boolean(proj.downloadedPDF),
-            notes: proj.description || 'Targeting debt syndication with Central / State capital subsidy.',
+            notes: proj.description || '',
             fullName: proj.fullName,
             mobile: proj.mobile,
             email: proj.email,
             photoOrLogo: proj.photoOrLogo || '',
             dprFile: proj.dprFile || null,
             cmaFile: proj.cmaFile || null,
-            assignedTeam: proj.assignedTeam || 'CA Rajesh Sharma (FCA #847201), Priya Verma (Financial Analyst)',
+            assignedTeam: proj.assignedTeam || '',
+            assessmentCompleted: Boolean(proj.assessmentCompleted),
             timelineDate: proj.timelineDate || '',
             timelineTime: proj.timelineTime || '',
             timestamp: proj.createdAt,
@@ -365,7 +370,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       } else if (list.length > 1) {
         setSelectedProjectId((prev) => {
           if (prev && list.some(p => p.id === prev)) return prev;
-          return ''; // Require user to select from list
+          return list[0].id;
         });
       }
     } catch (e) {
@@ -569,12 +574,14 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
     let machineryCr = proj.financials?.machineryCostCr ? String(proj.financials.machineryCostCr) : '';
     let civilCr = proj.financials?.civilCostCr ? String(proj.financials.civilCostCr) : '';
     let otherCostsCr = proj.financials?.otherCostsCr ? String(proj.financials.otherCostsCr) : '';
+    const customCosts = Array.isArray(proj.customCostComponents) ? proj.customCostComponents.filter(Boolean) : [];
+    const customFinances = Array.isArray(proj.customFinanceComponents) ? proj.customFinanceComponents.filter(Boolean) : [];
 
-    if (proj.customCostComponents && proj.customCostComponents.length > 0) {
-      const mach = proj.customCostComponents.filter(c => c.category === 'Machinery' || c.title?.toLowerCase().includes('machinery')).reduce((s, c) => s + c.amountCr, 0);
-      const civ = proj.customCostComponents.filter(c => c.category === 'Civil' || c.title?.toLowerCase().includes('civil') || c.title?.toLowerCase().includes('building')).reduce((s, c) => s + c.amountCr, 0);
-      const cons = proj.customCostComponents.filter(c => c.category === 'Consultancy' || c.category === 'Pre-operative' || c.title?.toLowerCase().includes('consultancy')).reduce((s, c) => s + c.amountCr, 0);
-      const oth = proj.customCostComponents.filter(c => !['Machinery', 'Civil', 'Consultancy', 'Pre-operative'].includes(c.category) && !c.title?.toLowerCase().includes('machinery') && !c.title?.toLowerCase().includes('civil') && !c.title?.toLowerCase().includes('building') && !c.title?.toLowerCase().includes('consultancy')).reduce((s, c) => s + c.amountCr, 0);
+    if (customCosts.length > 0) {
+      const mach = customCosts.filter(c => c.category === 'Machinery' || c.title?.toLowerCase().includes('machinery')).reduce((s, c) => s + (Number(c.amountCr) || 0), 0);
+      const civ = customCosts.filter(c => c.category === 'Civil' || c.title?.toLowerCase().includes('civil') || c.title?.toLowerCase().includes('building')).reduce((s, c) => s + (Number(c.amountCr) || 0), 0);
+      const cons = customCosts.filter(c => c.category === 'Consultancy' || c.category === 'Pre-operative' || c.title?.toLowerCase().includes('consultancy')).reduce((s, c) => s + (Number(c.amountCr) || 0), 0);
+      const oth = customCosts.filter(c => !['Machinery', 'Civil', 'Consultancy', 'Pre-operative'].includes(c.category) && !c.title?.toLowerCase().includes('machinery') && !c.title?.toLowerCase().includes('civil') && !c.title?.toLowerCase().includes('building') && !c.title?.toLowerCase().includes('consultancy')).reduce((s, c) => s + (Number(c.amountCr) || 0), 0);
       if (mach > 0) machineryCr = mach.toFixed(2);
       if (civ > 0) civilCr = civ.toFixed(2);
       if (cons > 0) consultancyCr = cons.toFixed(2);
@@ -585,73 +592,111 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
     let promoterContribCr = proj.financials?.promoterContributionCr ? String(proj.financials.promoterContributionCr) : String(proj.promoterContribCr);
     let otherFinanceCr = proj.financials?.otherFinanceCr ? String(proj.financials.otherFinanceCr) : '0.00';
 
-    if (proj.customFinanceComponents && proj.customFinanceComponents.length > 0) {
-      const tLoan = proj.customFinanceComponents.filter(f => f.type === 'Term Debt' || f.title?.toLowerCase().includes('debt') || f.title?.toLowerCase().includes('loan')).reduce((s, f) => s + f.amountCr, 0);
-      const eq = proj.customFinanceComponents.filter(f => f.type === 'Promoter Equity' || f.title?.toLowerCase().includes('equity') || f.title?.toLowerCase().includes('promoter')).reduce((s, f) => s + f.amountCr, 0);
-      const othFin = proj.customFinanceComponents.filter(f => !['Term Debt', 'Promoter Equity'].includes(f.type) && !f.title?.toLowerCase().includes('debt') && !f.title?.toLowerCase().includes('loan') && !f.title?.toLowerCase().includes('equity') && !f.title?.toLowerCase().includes('promoter')).reduce((s, f) => s + f.amountCr, 0);
+    if (customFinances.length > 0) {
+      const tLoan = customFinances.filter(f => f.type === 'Term Debt' || f.title?.toLowerCase().includes('debt') || f.title?.toLowerCase().includes('loan')).reduce((s, f) => s + (Number(f.amountCr) || 0), 0);
+      const eq = customFinances.filter(f => f.type === 'Promoter Equity' || f.title?.toLowerCase().includes('equity') || f.title?.toLowerCase().includes('promoter')).reduce((s, f) => s + (Number(f.amountCr) || 0), 0);
+      const othFin = customFinances.filter(f => !['Term Debt', 'Promoter Equity'].includes(f.type) && !f.title?.toLowerCase().includes('debt') && !f.title?.toLowerCase().includes('loan') && !f.title?.toLowerCase().includes('equity') && !f.title?.toLowerCase().includes('promoter')).reduce((s, f) => s + (Number(f.amountCr) || 0), 0);
       if (tLoan > 0) termLoanCr = tLoan.toFixed(2);
       if (eq > 0) promoterContribCr = eq.toFixed(2);
       if (othFin > 0) otherFinanceCr = othFin.toFixed(2);
     }
 
-    const directors = proj.promotersList && proj.promotersList.length > 0
-      ? proj.promotersList.map(p => ({ name: p.name, title: p.role || 'Director / Key Promoter' }))
+    const promoters = Array.isArray(proj.promotersList) ? proj.promotersList.filter(Boolean) : [];
+    const directors = promoters.length > 0
+      ? promoters.map(p => ({ name: p.name || 'Promoter', title: p.role || 'Director / Key Promoter' }))
       : [{ name: user.name || proj.fullName || 'Promoter', title: 'Managing Director / Key Promoter' }];
+
+    const reconciled = reconcileProjectFinancials({
+      totalCostCr: proj.totalCostCr,
+      loanRequiredCr: proj.loanRequiredCr,
+      promoterContribCr: proj.promoterContribCr,
+      debtPct: proj.debtPercent,
+      eqPct: proj.equityPercent,
+      consultancyCostCr: consultancyCr,
+      machineryCostCr: machineryCr,
+      civilCostCr: civilCr,
+      otherCostsCr: otherCostsCr,
+      termLoanCr,
+      promoterContributionCr: promoterContribCr,
+      otherFinanceCr
+    });
 
     return {
       fullName: user.name || proj.fullName || 'Promoter',
       mobile: user.phone || proj.mobile || '',
-      email: user.email || proj.email,
-      projectName: proj.projectName,
-      industry: proj.industry,
-      location: proj.location,
-      totalCostCr: String(proj.totalCostCr),
-      promoterContribCr: promoterContribCr || String(proj.promoterContribCr),
-      loanRequiredCr: termLoanCr || String(proj.loanRequiredCr),
-      landStatus: proj.landStatus,
-      collateralStatus: proj.collateralStatus,
-      promoterExp: proj.promoterExp,
+      email: user.email || proj.email || '',
+      projectName: proj.projectName || 'Greenfield Project',
+      industry: proj.industry || 'Greenfield Project',
+      location: proj.location || 'India',
+      totalCostCr: reconciled.totalCostFormatted,
+      promoterContribCr: reconciled.promoterContributionFormatted,
+      loanRequiredCr: reconciled.termLoanFormatted,
+      landStatus: proj.landStatus || 'Not provided',
+      collateralStatus: proj.collateralStatus || 'Not provided',
+      promoterExp: proj.promoterExp || 'Experienced in Industry',
       description: proj.notes || `Targeting ${proj.assignedBank} debt syndication.`,
-      feasibilityScore: proj.feasibilityScore,
-      bankabilityRating: proj.bankabilityRating,
-      estimatedLoan: String(proj.loanRequiredCr),
-      eqPct: proj.equityPercent,
-      debtPct: proj.debtPercent,
-      dscrEstimate: proj.dscrEstimate,
-      estInterestRate: proj.estInterestRate,
+      feasibilityScore: Number(proj.feasibilityScore) || 0,
+      bankabilityRating: proj.bankabilityRating || 'Investment Grade (A)',
+      estimatedLoan: reconciled.termLoanFormatted,
+      eqPct: reconciled.eqPct,
+      debtPct: reconciled.debtPct,
+      dscrEstimate: Number(proj.dscrEstimate) || calculateSystemDscr({ industry: proj.industry || '' }),
+      estInterestRate: proj.estInterestRate || '8.85% - 9.40%',
       riskProfileData: proj.riskProfileData,
       commercialData: proj.commercialData,
       directors,
-      machineryCostCr,
-      civilCostCr,
-      consultancyCostCr,
-      otherCostsCr,
-      termLoanCr,
-      promoterContributionCr,
-      otherFinanceCr
+      machineryCostCr: reconciled.machineryFormatted,
+      civilCostCr: reconciled.civilFormatted,
+      consultancyCostCr: reconciled.consultancyFormatted,
+      otherCostsCr: reconciled.otherCostsFormatted,
+      termLoanCr: reconciled.termLoanFormatted,
+      promoterContributionCr: reconciled.promoterContributionFormatted,
+      otherFinanceCr: reconciled.otherFinanceFormatted
     };
   };
 
-  const handlePreviewTeaserPDF = (proj: UserProjectDetail) => {
-    const pdfData = buildTeaserData(proj);
-    generateProjectTeaserPDF(pdfData, 'preview');
-    triggerToast(`Opening ${proj.projectName} Teaser preview in new tab...`);
+  const handlePreviewTeaserPDF = async (proj: UserProjectDetail) => {
+    if (isGeneratingTeaser) return;
+    setIsGeneratingTeaser(true);
+    try {
+      const pdfData = buildTeaserData(proj);
+      await generateProjectTeaserPDF(pdfData, 'preview');
+      triggerToast(`Opening ${proj.projectName} Teaser preview in new tab...`);
+    } catch (error) {
+      console.error('Failed to preview teaser PDF:', error);
+      triggerToast('Unable to preview the teaser PDF. Please try again.');
+    } finally {
+      setIsGeneratingTeaser(false);
+    }
   };
 
-  const handleDownloadTeaserPDF = (proj: UserProjectDetail) => {
-    const pdfData = buildTeaserData(proj);
-    generateProjectTeaserPDF(pdfData, 'download');
-    triggerToast(`Downloaded ${proj.projectName} Teaser PDF!`);
+  const handleDownloadTeaserPDF = async (proj: UserProjectDetail) => {
+    if (isGeneratingTeaser) return;
+    setIsGeneratingTeaser(true);
+    try {
+      const pdfData = buildTeaserData(proj);
+      await generateProjectTeaserPDF(pdfData, 'download');
+      triggerToast(`Downloaded ${proj.projectName} Teaser PDF!`);
+    } catch (error) {
+      console.error('Failed to download teaser PDF:', error);
+      triggerToast('Unable to download the teaser PDF. Please try again.');
+    } finally {
+      setIsGeneratingTeaser(false);
+    }
   };
 
   const handleDownloadTeaserDOCX = async (proj: UserProjectDetail) => {
+    if (isGeneratingTeaser) return;
+    setIsGeneratingTeaser(true);
     try {
       const pdfData = buildTeaserData(proj);
       await generateProjectTeaserDOCX(pdfData);
       triggerToast(`Downloaded ${proj.projectName} Teaser DOCX!`);
     } catch (e) {
-      console.error(e);
-      triggerToast('Error generating DOCX document');
+      console.error('Failed to download teaser DOCX:', e);
+      triggerToast('Unable to download the teaser Word document. Please try again.');
+    } finally {
+      setIsGeneratingTeaser(false);
     }
   };
 
@@ -710,8 +755,8 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   };
   const adminStageLevel = statusMap[activeProject?.status as string] || 0;
 
-  const isAssessmentCompleted = Boolean(activeProject && (activeProject.projectName || activeProject.totalCostCr)) || adminStageLevel >= 1;
-  const isRatingCompleted = Boolean(activeProject && (activeProject.feasibilityScore !== undefined || activeProject.bankabilityRating)) || adminStageLevel >= 2;
+  const isAssessmentCompleted = Boolean(activeProject?.assessmentCompleted);
+  const isRatingCompleted = isAssessmentCompleted && Boolean(activeProject?.feasibilityScore || activeProject?.bankabilityRating);
   const isDocCompleted = Boolean(activeProject?.dprFile?.uploadedAt || activeProject?.cmaFile?.uploadedAt) || adminStageLevel >= 3;
   const isBankAppCompleted = Boolean(activeProject?.bankAppliedAt) || adminStageLevel >= 4;
   const isLoanApproved = Boolean(activeProject?.loanApprovedAt) || adminStageLevel >= 5;
@@ -848,7 +893,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                           <Crown className="w-3.5 h-3.5" />
                           <span>Enterprise Syndication</span>
                         </span>
-                      ) : (
+                      ) : userProjects.some(project => project.assessmentCompleted) ? (
                         <button
                           type="button"
                           onClick={() => setIsMembershipModalOpen(true)}
@@ -857,7 +902,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                           <Sparkles className="w-3.5 h-3.5 text-amber-600" />
                           <span>Free Starter ({userProjects.length}/1 Used) • Upgrade</span>
                         </button>
-                      )}
+                      ) : null}
                     </div>
                     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-8 gap-y-4 text-sm text-slate-500">
                       <div>
@@ -1039,7 +1084,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                   <Crown className="w-3.5 h-3.5 text-amber-500" />
                   <span>{membership.plan === 'pro' ? 'Pro Member' : 'Enterprise'}</span>
                 </span>
-              ) : (
+              ) : activeProject.assessmentCompleted ? (
                 <button
                   type="button"
                   onClick={() => setIsMembershipModalOpen(true)}
@@ -1048,7 +1093,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                   <Sparkles className="w-3.5 h-3.5 text-amber-600" />
                   <span>Upgrade to Pro</span>
                 </button>
-              )}
+              ) : null}
 
               {/* Back to Projects List (if multiple projects exist) */}
               {userProjects.length > 1 && (
@@ -1146,30 +1191,17 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               {activeProject && (
                 <>
                   <button
-                    onClick={() => handlePreviewTeaserPDF(activeProject)}
-                    className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer border border-blue-200"
-                    title="Preview Official AI Executive Teaser PDF in New Tab"
+                    type="button"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      void handleDownloadTeaserPDF(activeProject);
+                    }}
+                    disabled={isGeneratingTeaser}
+                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                    title="Download Project Teaser PDF"
                   >
-                    <Eye className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Preview Teaser</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleDownloadTeaserPDF(activeProject)}
-                    className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
-                    title="Download Official AI Executive Teaser PDF"
-                  >
-                    <Download className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Teaser PDF</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleDownloadTeaserDOCX(activeProject)}
-                    className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
-                    title="Download Official AI Executive Teaser DOCX"
-                  >
-                    <FileText className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>Teaser Word</span>
+                    <Download className="w-3.5 h-3.5" />
+                    <span>{isGeneratingTeaser ? 'Generating...' : 'Download Teaser'}</span>
                   </button>
 
                   <button
@@ -1318,9 +1350,11 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               </div>
 
               <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-100 col-span-2 sm:col-span-1">
-                <span className="text-[11px] font-medium text-zinc-400 block uppercase tracking-wider">DSCR & Rate</span>
-                <div className="text-lg font-bold text-zinc-900 mt-1">{activeProject.dscrEstimate}x</div>
-                <span className="text-[11px] text-zinc-500 font-medium">{activeProject.estInterestRate}</span>
+                <span className="text-[11px] font-medium text-zinc-400 block uppercase tracking-wider">AI-Generated DSCR</span>
+                <div className="text-lg font-bold text-zinc-900 mt-1">
+                  {activeProject.dscrEstimate > 0 ? `${activeProject.dscrEstimate.toFixed(2)}x` : 'Pending'}
+                </div>
+                <span className="text-[11px] text-zinc-500 font-medium">{activeProject.dscrEstimate > 0 ? 'Based on project inputs' : 'Complete assessment for calculation'}</span>
               </div>
             </div>
 
@@ -1502,6 +1536,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                 totalCostCr={activeProject.totalCostCr}
                 loanRequiredCr={activeProject.loanRequiredCr}
                 promoterContribCr={activeProject.promoterContribCr}
+                financials={activeProject.financials}
                 customCosts={activeProject.customCostComponents}
                 customFinances={activeProject.customFinanceComponents}
                 onSaveFinancials={handleSaveFinancials}
@@ -1529,6 +1564,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                 documents={activeProject.uploadedDocuments || []}
                 onUpdateDocuments={handleUpdateDocuments}
                 projectName={activeProject.projectName}
+                leadId={activeProject.id}
               />
             )}
 
@@ -1611,48 +1647,12 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                       className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs rounded-xl shadow-xs cursor-pointer transition-all"
                     >
                       <MessageSquare className="w-4 h-4" />
-                      <span>Connect to Inisio</span>
+                      <span>Contact Inisio Support</span>
                     </a>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    
-                    {/* Advisor 1 */}
-                    <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-100 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
-                        RS
-                      </div>
-                      <div className="min-w-0 flex-1 text-xs">
-                        <div className="font-bold text-zinc-900 truncate">{activeProject.assignedCA || 'CA Rajesh Sharma'}</div>
-                        <div className="text-zinc-500 truncate">Lead CA &amp; Underwriting Head</div>
-                        <div className="text-[10px] text-blue-600 font-medium mt-0.5">ICAI #847201</div>
-                      </div>
-                    </div>
-
-                    {/* Advisor 2 */}
-                    <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-100 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-800 font-bold text-xs flex items-center justify-center shrink-0">
-                        PV
-                      </div>
-                      <div className="min-w-0 flex-1 text-xs">
-                        <div className="font-bold text-zinc-900 truncate">Priya Verma</div>
-                        <div className="text-zinc-500 truncate">Senior Financial Analyst</div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5">CMA &amp; DSCR Modeling</div>
-                      </div>
-                    </div>
-
-                    {/* Advisor 3 */}
-                    <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-100 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-zinc-200 text-zinc-800 font-bold text-xs flex items-center justify-center shrink-0">
-                        VM
-                      </div>
-                      <div className="min-w-0 flex-1 text-xs">
-                        <div className="font-bold text-zinc-900 truncate">Vikram Malhotra</div>
-                        <div className="text-zinc-500 truncate">Relationship Manager</div>
-                        <div className="text-[10px] text-zinc-500 mt-0.5">Bank Consortium Liaison</div>
-                      </div>
-                    </div>
-
+                  <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-100 text-sm text-zinc-800">
+                    <span className="font-semibold">Assigned support team:</span> {activeProject.assignedTeam}
                   </div>
                 )}
 

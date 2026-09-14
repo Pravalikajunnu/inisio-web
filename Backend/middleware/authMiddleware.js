@@ -100,9 +100,15 @@ export const authorizeRoles = (...roles) => {
     const userRole = req.user.role || 'user';
 
     // Allow admin aliases if 'admin' is authorized
+    const normalizedRole = userRole === 'admin' || userRole === 'admin1' || userRole === 'admin2' || userRole === 'admin3'
+      ? 'superadmin'
+      : userRole === 'prosync'
+        ? 'prosync_admin'
+        : userRole;
     const isAuthorized =
       roles.includes(userRole) ||
-      (roles.includes('admin') && (userRole.startsWith('admin') || req.user.email === 'admin@gmail.com'));
+      roles.includes(normalizedRole) ||
+      (roles.includes('superadmin') && (userRole.startsWith('admin') || req.user.email === 'admin@gmail.com'));
 
     if (!isAuthorized) {
       return sendError(

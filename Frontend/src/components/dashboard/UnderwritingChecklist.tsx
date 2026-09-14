@@ -1,35 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   ClipboardList,
-  CheckCircle2,
   AlertCircle,
   ShieldCheck,
   Building,
   FileCheck,
   Zap,
   Lock,
-  ChevronDown,
-  ChevronUp
 } from 'lucide-react';
 
 export const UnderwritingChecklist: React.FC = () => {
-  const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({
-    'c-1': true,
-    'c-2': true,
-    'c-3': true,
-    'l-1': true,
-    'l-2': false,
-    't-1': true,
-    'f-1': true,
-    'f-2': false
-  });
-
-  const [expandedSection, setExpandedSection] = useState<string | null>('all');
-
-  const toggleCheck = (id: string) => {
-    setCheckedItems(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-
   const sections = [
     {
       id: 'corporate',
@@ -78,8 +58,6 @@ export const UnderwritingChecklist: React.FC = () => {
   ];
 
   const totalItems = sections.reduce((sum, s) => sum + s.items.length, 0);
-  const completedCount = Object.values(checkedItems).filter(Boolean).length;
-  const progressPct = Math.round((completedCount / totalItems) * 100);
 
   return (
     <div className="bg-white rounded-2xl border border-zinc-200 p-5 sm:p-6 shadow-xs space-y-5">
@@ -94,19 +72,13 @@ export const UnderwritingChecklist: React.FC = () => {
               Indicative Institutional Underwriting Checklist
             </h3>
             <p className="text-xs text-zinc-500">
-              Interactive readiness checklist required by PSU, Private banks, and NBFC consortiums.
+              View-only readiness reference for PSU, Private banks, and NBFC consortiums.
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="text-right">
-            <div className="text-xs font-bold text-zinc-800">{completedCount} of {totalItems} Verified</div>
-            <div className="text-[10px] text-blue-600 font-semibold">{progressPct}% Prepared</div>
-          </div>
-          <div className="w-12 h-2 bg-zinc-100 rounded-full overflow-hidden border border-zinc-200">
-            <div className="h-full bg-blue-600 rounded-full" style={{ width: `${progressPct}%` }} />
-          </div>
+          <span className="text-xs font-semibold text-zinc-500">{totalItems} reference requirements</span>
         </div>
       </div>
 
@@ -116,7 +88,7 @@ export const UnderwritingChecklist: React.FC = () => {
         <div>
           <span className="font-bold text-amber-900">Important Disclaimer:</span>
           <p className="text-xs text-amber-900 leading-relaxed mt-0.5 font-medium">
-            Disclaimer: This checklist is indicative, not exhaustive, and requirements may differ from bank to bank.
+            Checklist is indicative and not exhaustive. Requirements may vary depending on the bank and project nature.
           </p>
         </div>
       </div>
@@ -137,23 +109,14 @@ export const UnderwritingChecklist: React.FC = () => {
 
               <div className="space-y-2">
                 {sec.items.map((item) => {
-                  const isChecked = !!checkedItems[item.id];
                   return (
-                    <label
+                    <div
                       key={item.id}
-                      onClick={() => toggleCheck(item.id)}
-                      className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-white transition-colors cursor-pointer text-xs"
+                      className="flex items-start gap-2.5 p-2 rounded-lg text-xs"
                     >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => {}}
-                        className="w-4 h-4 mt-0.5 rounded text-blue-600 border-zinc-300 focus:ring-blue-500 cursor-pointer"
-                      />
-                      <span className={`${isChecked ? 'text-zinc-900 font-medium' : 'text-zinc-500'}`}>
-                        {item.text}
-                      </span>
-                    </label>
+                      <span className="mt-0.5 h-4 w-4 shrink-0 rounded border border-zinc-300 bg-zinc-100" aria-hidden="true" />
+                      <span className="text-zinc-700">{item.text}</span>
+                    </div>
                   );
                 })}
               </div>

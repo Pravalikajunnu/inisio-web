@@ -3,7 +3,7 @@ import { sendSuccess, sendError } from '../utils/responseHandler.js';
 
 export const getLeads = async (req, res, next) => {
   try {
-    const leads = await leadService.getAllLeads(req.query);
+    const leads = await leadService.getAllLeads(req.query, req.user);
     return sendSuccess(res, leads, 'Leads retrieved successfully');
   } catch (error) {
     next(error);
@@ -12,7 +12,7 @@ export const getLeads = async (req, res, next) => {
 
 export const createLead = async (req, res, next) => {
   try {
-    const lead = await leadService.createLead(req.body);
+    const lead = await leadService.createLead(req.body, req.user?._id || null);
     return sendSuccess(res, lead, 'Lead captured successfully', 201);
   } catch (error) {
     next(error);
@@ -21,7 +21,7 @@ export const createLead = async (req, res, next) => {
 
 export const getLeadById = async (req, res, next) => {
   try {
-    const lead = await leadService.getLeadById(req.params.id);
+    const lead = await leadService.getLeadById(req.params.id, req.user);
     return sendSuccess(res, lead, 'Lead retrieved');
   } catch (error) {
     next(error);
@@ -30,7 +30,7 @@ export const getLeadById = async (req, res, next) => {
 
 export const updateLead = async (req, res, next) => {
   try {
-    const lead = await leadService.updateLead(req.params.id, req.body);
+    const lead = await leadService.updateLead(req.params.id, req.body, req.user);
     return sendSuccess(res, lead, 'Lead updated successfully');
   } catch (error) {
     next(error);
@@ -55,6 +55,24 @@ export const clearAllLeads = async (req, res, next) => {
   }
 };
 
+export const assignLead = async (req, res, next) => {
+  try {
+    const lead = await leadService.assignLead(req.params.id, req.body, req.user);
+    return sendSuccess(res, lead, 'Project assignment updated');
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateLeadProgress = async (req, res, next) => {
+  try {
+    const lead = await leadService.updateLeadProgress(req.params.id, req.body, req.user);
+    return sendSuccess(res, lead, 'Project progress updated');
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   getLeads,
   createLead,
@@ -62,4 +80,6 @@ export default {
   updateLead,
   deleteLead,
   clearAllLeads,
+  assignLead,
+  updateLeadProgress,
 };

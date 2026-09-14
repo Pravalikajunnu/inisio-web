@@ -2,7 +2,7 @@
  * Inisio Client-Side API Helper for Communication with Express + MongoDB Backend
  */
 
-const getAuthToken = (): string | null => {
+export const getAuthToken = (): string | null => {
   try {
     const directToken = localStorage.getItem('inisio_auth_token');
     if (directToken) return directToken;
@@ -18,25 +18,47 @@ const getAuthToken = (): string | null => {
   return null;
 };
 
+export const getApiBaseUrl = (): string => {
+  const env = (import.meta as any).env || {};
+  const configuredUrl = env.VITE_API_URL || env.VITE_BACKEND_URL;
+  if (!configuredUrl) return '/api';
+
+  const baseUrl = configuredUrl.replace(/\/$/, '');
+  return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
+};
+
+export const resolveApiUrl = (endpoint: string): string => {
+  if (endpoint.startsWith('http')) return endpoint;
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  return `${getApiBaseUrl()}${cleanEndpoint}`;
+};
+
+export async function fetchAuthenticatedBlob(endpoint: string): Promise<Blob> {
+  const token = getAuthToken();
+  const response = await fetch(resolveApiUrl(endpoint), {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error?.message || `Unable to retrieve document (${response.status})`);
+  }
+
+  return response.blob();
+}
+
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = getAuthToken();
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string> || {}),
-  };
+  const isMultipart = options.body instanceof FormData;
+  const headers: Record<string, string> = isMultipart
+    ? { ...(options.headers as Record<string, string> || {}) }
+    : { 'Content-Type': 'application/json', ...(options.headers as Record<string, string> || {}) };
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const baseUrl = (import.meta as any).env?.VITE_API_URL 
-    ? (import.meta as any).env.VITE_API_URL.replace(/\/$/, '')
-    : (import.meta as any).env?.VITE_BACKEND_URL 
-      ? `${(import.meta as any).env.VITE_BACKEND_URL.replace(/\/$/, '')}/api`
-      : '/api';
-
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${cleanEndpoint}`;
+  const url = resolveApiUrl(endpoint);
 
   const response = await fetch(url, {
     ...options,
@@ -144,6 +166,16 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify(updates),
       }),
+    assign: (id: string, assignment: { dprAssignedTo?: string; consultationAssignedTo?: string }) =>
+      request<any>(`/leads/${id}/assignment`, {
+        method: 'PUT',
+        body: JSON.stringify(assignment),
+      }),
+    updateProgress: (id: string, progress: Record<string, boolean>) =>
+      request<any>(`/leads/${id}/progress`, {
+        method: 'PUT',
+        body: JSON.stringify(progress),
+      }),
     delete: (id: string) =>
       request<any>(`/leads/${id}`, {
         method: 'DELETE',
@@ -242,6 +274,23 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify({ status, notes }),
       }),
+  },
+
+  documents: {
+    listForProject: (leadId: string) => request<any[]>(`/documents/project/${leadId}`),
+    upload: (leadId: string, category: string, file: File) => {
+      const formData = new FormData();
+      formData.append('leadId', leadId);
+      formData.append('category', category);
+      formData.append('file', file);
+      return request<any>('/documents/upload', {
+        method: 'POST',
+        body: formData,
+        headers: {},
+      });
+    },
+    downloadUrl: (id: string) => resolveApiUrl(`/documents/${id}/download`),
+    downloadBlob: (id: string) => fetchAuthenticatedBlob(`/documents/${id}/download`),
   },
 
   // Industries & Services

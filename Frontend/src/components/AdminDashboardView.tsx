@@ -7,6 +7,7 @@ import { UserProfileDetailModal } from './UserProfileDetailModal';
 import { LeadEditModal } from './LeadEditModal';
 import { AdminNotificationModal } from './AdminNotificationModal';
 import { AuthUser } from '../types';
+import api from '../utils/apiClient';
 import {
   ShieldCheck,
   Users,
@@ -70,7 +71,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
   };
 
   useEffect(() => {
-    fetchLeadsFromBackend().then(() => loadData()).catch(() => loadData());
+    loadData();
     
     const handleUpdate = () => loadData();
     const handleNotifUpdate = () => setUnreadNotifs(getUnreadNotificationCount());
@@ -93,9 +94,30 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
     };
   }, []);
 
-  const loadData = () => {
-    setLeads(getStoredLeads());
-    setUsersList(getAllRegisteredUsers());
+  const loadData = async () => {
+    try {
+      const [backendLeads, backendUsers] = await Promise.all([
+        fetchLeadsFromBackend(),
+        api.users.getAll()
+      ]);
+      setLeads(backendLeads);
+      setUsersList(backendUsers.map((u: any) => ({
+        id: u._id || u.id,
+        name: u.name || '',
+        email: u.email || '',
+        phone: u.phone || '',
+        company: u.company || '',
+        role: u.role || 'user',
+        createdAt: u.createdAt || '',
+        lastLoginAt: u.lastLoginAt || '',
+        loginCount: u.loginCount || 0,
+        status: u.status || 'active'
+      })));
+    } catch (error) {
+      setLeads([]);
+      setUsersList([]);
+      triggerToast('Unable to load live admin data.');
+    }
     setVisitorSummary(getVisitorSummary());
     setUnreadNotifs(getUnreadNotificationCount());
   };

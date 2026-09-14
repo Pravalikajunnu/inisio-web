@@ -6,6 +6,7 @@ import { LocationDropdowns } from './LocationDropdowns';
 import { validateIndianMobileNumber } from '../utils/validation';
 import { DetailedRiskProfileForm, DetailedRiskProfileData } from './DetailedRiskProfileForm';
 import { calculateComprehensiveRiskScore } from '../utils/underwritingScorer';
+import { calculateSystemDscr } from '../utils/financialUtils';
 import {
   X,
   ArrowRight,
@@ -118,7 +119,9 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
       estimatedLoan: result?.maxLoanAmountCr || loanAmt.toFixed(2),
       eqPct: formData.equityPercent,
       debtPct: 100 - formData.equityPercent,
-      dscrEstimate: result?.dscrEstimate || 1.45,
+      dscrEstimate: result?.dscrEstimate || calculateSystemDscr({
+        industry: formData.industry
+      }),
       estInterestRate: result?.estInterestRate || '8.85% - 9.40%',
       strengthPoints: result?.strengthPoints,
       keyRisks: result?.keyRisks,
@@ -183,7 +186,9 @@ export const AssessmentModal: React.FC<AssessmentModalProps> = ({
       else grade = 'C';
 
       // Estimated DSCR calculation
-      const dscr = parseFloat((1.35 + (score - 70) * 0.015).toFixed(2));
+      const dscr = calculateSystemDscr({
+        industry: formData.industry
+      });
       const payback = parseFloat((4.5 + (100 - score) * 0.05).toFixed(1));
 
       setResult({

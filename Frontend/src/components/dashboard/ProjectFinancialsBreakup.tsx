@@ -20,6 +20,15 @@ interface ProjectFinancialsBreakupProps {
   totalCostCr: number;
   loanRequiredCr: number;
   promoterContribCr: number;
+  financials?: {
+    consultancyCostCr?: string | number;
+    machineryCostCr?: string | number;
+    civilCostCr?: string | number;
+    otherCostsCr?: string | number;
+    termLoanCr?: string | number;
+    promoterContributionCr?: string | number;
+    otherFinanceCr?: string | number;
+  };
   customCosts?: CustomCostComponent[];
   customFinances?: CustomFinanceComponent[];
   onSaveFinancials: (
@@ -36,6 +45,7 @@ export const ProjectFinancialsBreakup: React.FC<ProjectFinancialsBreakupProps> =
   totalCostCr,
   loanRequiredCr,
   promoterContribCr,
+  financials,
   customCosts = [],
   customFinances = [],
   onSaveFinancials,
@@ -61,19 +71,24 @@ export const ProjectFinancialsBreakup: React.FC<ProjectFinancialsBreakupProps> =
     return '₹ Cr';
   };
 
-  // Default base breakdown if custom arrays are empty
+  const persistedCosts = financials ? [
+    { id: 'financials-machinery', title: 'Plant & Heavy Machinery', amountCr: Number(financials.machineryCostCr) || 0, category: 'Machinery' as const },
+    { id: 'financials-civil', title: 'Civil Works & Factory Building', amountCr: Number(financials.civilCostCr) || 0, category: 'Civil' as const },
+    { id: 'financials-consultancy', title: 'Consultancy & Pre-operative Expenses', amountCr: Number(financials.consultancyCostCr) || 0, category: 'Consultancy' as const },
+    { id: 'financials-other', title: 'Other Project Costs', amountCr: Number(financials.otherCostsCr) || 0, category: 'Other' as const }
+  ] : [];
+  const persistedFinances = financials ? [
+    { id: 'financials-loan', title: 'Institutional Term Debt / Bank Loan', amountCr: Number(financials.termLoanCr) || 0, type: 'Term Debt' as const },
+    { id: 'financials-equity', title: 'Promoter Equity Contribution', amountCr: Number(financials.promoterContributionCr) || 0, type: 'Promoter Equity' as const },
+    { id: 'financials-other-finance', title: 'Other Sources / Grants', amountCr: Number(financials.otherFinanceCr) || 0, type: 'Other' as const }
+  ] : [];
+
+  // Use saved assessment values first; only empty new projects use editable rows.
   const activeCosts: CustomCostComponent[] = customCosts && customCosts.length > 0 ? customCosts : [
-    { id: 'c-1', title: 'Plant & Heavy Machinery', amountCr: Math.round(totalCostCr * 0.60 * 100) / 100, category: 'Machinery' },
-    { id: 'c-2', title: 'Civil Works & Factory Building', amountCr: Math.round(totalCostCr * 0.25 * 100) / 100, category: 'Civil' },
-    { id: 'c-3', title: 'Engineering, Utilities & Power', amountCr: Math.round(totalCostCr * 0.08 * 100) / 100, category: 'Technology' },
-    { id: 'c-4', title: 'Consultancy & Pre-operative Expenses', amountCr: Math.round(totalCostCr * 0.04 * 100) / 100, category: 'Consultancy' },
-    { id: 'c-5', title: 'Margin for Working Capital', amountCr: Math.round(totalCostCr * 0.03 * 100) / 100, category: 'Working Capital' }
+    ...(persistedCosts.length ? persistedCosts : [])
   ];
 
-  const activeFinances: CustomFinanceComponent[] = customFinances && customFinances.length > 0 ? customFinances : [
-    { id: 'f-1', title: 'Institutional Term Debt / Bank Loan', amountCr: loanRequiredCr || (Math.round(totalCostCr * 0.70 * 100) / 100), type: 'Term Debt' },
-    { id: 'f-2', title: 'Promoter Equity Contribution', amountCr: promoterContribCr || (Math.round(totalCostCr * 0.30 * 100) / 100), type: 'Promoter Equity' }
-  ];
+  const activeFinances: CustomFinanceComponent[] = customFinances && customFinances.length > 0 ? customFinances : persistedFinances;
 
   const [costs, setCosts] = useState<CustomCostComponent[]>(() => activeCosts);
   const [finances, setFinances] = useState<CustomFinanceComponent[]>(() => activeFinances);
@@ -90,13 +105,7 @@ export const ProjectFinancialsBreakup: React.FC<ProjectFinancialsBreakupProps> =
       }
     } else if (prevCostsRef.current !== '') {
       prevCostsRef.current = '';
-      setCosts([
-        { id: 'c-1', title: 'Plant & Heavy Machinery', amountCr: Math.round(totalCostCr * 0.60 * 100) / 100, category: 'Machinery' },
-        { id: 'c-2', title: 'Civil Works & Factory Building', amountCr: Math.round(totalCostCr * 0.25 * 100) / 100, category: 'Civil' },
-        { id: 'c-3', title: 'Engineering, Utilities & Power', amountCr: Math.round(totalCostCr * 0.08 * 100) / 100, category: 'Technology' },
-        { id: 'c-4', title: 'Consultancy & Pre-operative Expenses', amountCr: Math.round(totalCostCr * 0.04 * 100) / 100, category: 'Consultancy' },
-        { id: 'c-5', title: 'Margin for Working Capital', amountCr: Math.round(totalCostCr * 0.03 * 100) / 100, category: 'Working Capital' }
-      ]);
+      setCosts(financials ? persistedCosts : []);
     }
   }, [customCosts, totalCostCr]);
 
@@ -109,10 +118,7 @@ export const ProjectFinancialsBreakup: React.FC<ProjectFinancialsBreakupProps> =
       }
     } else if (prevFinancesRef.current !== '') {
       prevFinancesRef.current = '';
-      setFinances([
-        { id: 'f-1', title: 'Institutional Term Debt / Bank Loan', amountCr: loanRequiredCr || (Math.round(totalCostCr * 0.70 * 100) / 100), type: 'Term Debt' },
-        { id: 'f-2', title: 'Promoter Equity Contribution', amountCr: promoterContribCr || (Math.round(totalCostCr * 0.30 * 100) / 100), type: 'Promoter Equity' }
-      ]);
+      setFinances(financials ? persistedFinances : []);
     }
   }, [customFinances, loanRequiredCr, promoterContribCr, totalCostCr]);
 

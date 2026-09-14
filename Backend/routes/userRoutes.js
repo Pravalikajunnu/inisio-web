@@ -12,7 +12,7 @@ const router = express.Router();
 
 // Admin only routes
 router.use(authenticateUser);
-router.use(authorizeRoles('admin'));
+router.use(authorizeRoles('superadmin'));
 
 router.get('/', getAllUsers);
 router.get('/:id', getUserById);

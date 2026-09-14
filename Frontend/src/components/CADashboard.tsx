@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AuthUser } from '../types';
-import { getStoredLeads, updateLeadRecord, fetchLeadsFromBackend, LeadRecord } from '../utils/leadStore';
+import { updateLeadRecord, fetchLeadsFromBackend, LeadRecord } from '../utils/leadStore';
+import api from '../utils/apiClient';
 import {
   Briefcase,
   FileCheck,
@@ -60,13 +61,13 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
     setTimeout(() => setShowToast(null), 3500);
   };
 
-  const loadAudits = () => {
-    const leads = getStoredLeads();
+  const loadAudits = async () => {
+    const leads = await fetchLeadsFromBackend();
     const mapped: CAProjectAudit[] = leads.map(l => {
-      const capex = parseFloat(String(l.totalCostCr || 0)) || 10;
-      const loan = parseFloat(String(l.loanRequiredCr || 0)) || Math.round(capex * 0.75 * 10) / 10;
-      const equity = parseFloat(String(l.promoterContribCr || 0)) || Math.round((capex - loan) * 10) / 10;
-      const dscr = 1.35 + (Number(l.feasibilityScore || 80) % 20) * 0.02;
+      const capex = parseFloat(String(l.totalCostCr || 0)) || 0;
+      const loan = parseFloat(String(l.loanRequiredCr || 0)) || 0;
+      const equity = parseFloat(String(l.promoterContribCr || 0)) || 0;
+      const dscr = Number(l.dscrEstimate) || 0;
 
       return {
         id: l.id,
@@ -77,7 +78,7 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
         loanCr: loan,
         equityCr: equity,
         dscr: Math.round(dscr * 100) / 100,
-        subsidyEligible: true,
+        subsidyEligible: Boolean(l.riskProfileData),
         status: (l.status === 'CA Approved' ? 'CA Approved' : 'Pending Audit') as any,
         updatedAt: l.timestamp ? new Date(l.timestamp).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }) : 'Recently',
         stageNumber: l.status === 'CA Approved' ? 4 : 3,
@@ -93,8 +94,11 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
   };
 
   useEffect(() => {
-    fetchLeadsFromBackend().then(() => loadAudits()).catch(() => loadAudits());
-    const handleUpdate = () => loadAudits();
+    loadAudits().catch(() => {
+      setAudits([]);
+      triggerToast('Unable to load assigned projects.');
+    });
+    const handleUpdate = () => { loadAudits().catch(() => setAudits([])); };
     window.addEventListener('inisio_lead_added', handleUpdate);
     return () => window.removeEventListener('inisio_lead_added', handleUpdate);
   }, []);
@@ -103,7 +107,7 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
     setAudits(prev =>
       prev.map(item => (item.id === id ? { ...item, status: 'CA Approved', stageNumber: 4 } : item))
     );
-    updateLeadRecord(id, { status: 'CA Approved' });
+    api.leads.update(id, { status: 'CA Approved' }).catch(() => triggerToast('Unable to save CA approval.'));
     if (selectedAudit && selectedAudit.id === id) {
       setSelectedAudit(prev => prev ? { ...prev, status: 'CA Approved', stageNumber: 4 } : null);
     }
@@ -204,8 +208,10 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
 
           <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-200/80 space-y-1">
             <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider block">Average Portfolio DSCR</span>
-            <div className="text-xl font-bold text-zinc-900">1.48x</div>
-            <span className="text-[11px] text-emerald-700 font-medium">Benchmark &gt; 1.25x Met</span>
+            <div className="text-xl font-bold text-zinc-900">
+              {audits.length > 0 ? (audits.reduce((sum, audit) => sum + audit.dscr, 0) / audits.length).toFixed(2) : '0.00'}x
+            </div>
+            <span className="text-[11px] text-emerald-700 font-medium">System-calculated project average</span>
           </div>
         </div>
 

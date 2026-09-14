@@ -14,8 +14,8 @@ const router = express.Router();
 router.post('/', validateBody(['fullName', 'email', 'phone']), validateIndianPhone('phone'), createConsultation);
 
 // Advisor & Admin routes
-router.get('/', authenticateUser, authorizeRoles('admin', 'ca'), getConsultations);
-router.get('/:id', authenticateUser, authorizeRoles('admin', 'ca'), getConsultationById);
-router.put('/:id/status', authenticateUser, authorizeRoles('admin', 'ca'), updateConsultationStatus);
+router.get('/', authenticateUser, authorizeRoles('superadmin', 'ca', 'prosync_admin'), getConsultations);
+router.get('/:id', authenticateUser, authorizeRoles('superadmin', 'ca', 'prosync_admin'), getConsultationById);
+router.put('/:id/status', authenticateUser, authorizeRoles('superadmin', 'ca', 'prosync_admin'), updateConsultationStatus);
 
 export default router;

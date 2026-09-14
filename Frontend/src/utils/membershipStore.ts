@@ -32,7 +32,9 @@ export function getUserMembership(userEmail?: string): UserMembership {
     }
 
     // Default for guest / new user
-    const guestCount = parseInt(localStorage.getItem(GLOBAL_GUEST_ASSESSMENT_COUNT_KEY) || '0', 10);
+    const guestCount = userEmail
+      ? 0
+      : parseInt(localStorage.getItem(GLOBAL_GUEST_ASSESSMENT_COUNT_KEY) || '0', 10);
     return {
       plan: 'free',
       isMember: false,
@@ -90,7 +92,9 @@ export function recordAssessmentCompletion(userEmail?: string): void {
     };
 
     localStorage.setItem(MEMBERSHIP_STORAGE_PREFIX + emailKey, JSON.stringify(updated));
-    localStorage.setItem(GLOBAL_GUEST_ASSESSMENT_COUNT_KEY, String(newCount));
+    if (!userEmail) {
+      localStorage.setItem(GLOBAL_GUEST_ASSESSMENT_COUNT_KEY, String(newCount));
+    }
     
     window.dispatchEvent(new CustomEvent('inisio_membership_updated', { detail: updated }));
   } catch (e) {

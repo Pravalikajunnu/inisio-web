@@ -21,6 +21,7 @@ import { UserDashboard } from './components/UserDashboard';
 import { CADashboard } from './components/CADashboard';
 import { AdminDashboardView } from './components/AdminDashboardView';
 import { ProsyncDashboard } from './components/ProsyncDashboard';
+import { DPRConsultantDashboard } from './components/DPRConsultantDashboard';
 import { LatestBlogs } from './components/LatestBlogs';
 import { MembershipPlansModal } from './components/MembershipPlansModal';
 import { canUserStartAssessment, getUserMembership } from './utils/membershipStore';
@@ -115,12 +116,14 @@ export default function App() {
     }
 
     // Redirect to corresponding dashboard based on exact email/role request
-    if (user.role === 'admin' || user.role === 'admin1' || user.role === 'admin2' || user.role === 'admin3' || user.email === 'admin@gmail.com') {
+    if (user.role === 'superadmin' || user.role === 'admin' || user.role === 'admin1' || user.role === 'admin2' || user.role === 'admin3' || user.email === 'admin@gmail.com') {
       setActiveTab('admin-dashboard');
     } else if (user.role === 'ca' || user.email === 'ca@gmail.com') {
       setActiveTab('ca-dashboard');
-    } else if (user.role === 'prosync' || user.email === 'prosync@gmail.com') {
+    } else if (user.role === 'prosync_admin' || user.role === 'prosync' || user.email === 'prosync@gmail.com') {
       setActiveTab('prosync-dashboard');
+    } else if (user.role === 'dpr_consultant') {
+      setActiveTab('dpr-dashboard');
     } else {
       setActiveTab('user-dashboard');
     }
@@ -147,7 +150,8 @@ export default function App() {
 
     // Check if user has already completed one free assessment
     const storedLeads = currentUser?.email ? getStoredLeads(currentUser.email) : getStoredLeads();
-    const eligibility = canUserStartAssessment(currentUser?.email, storedLeads.length);
+    const submittedAssessmentCount = storedLeads.filter(lead => lead.assessmentCompleted === true).length;
+    const eligibility = canUserStartAssessment(currentUser?.email, submittedAssessmentCount);
 
     if (!eligibility.allowed) {
       setMembershipModalReason("You've completed your 1 free project assessment! Upgrade to Inisio Membership to evaluate additional greenfield projects.");
@@ -237,6 +241,10 @@ export default function App() {
             <div className="animate-in fade-in duration-300">
               <CADashboard user={currentUser} />
             </div>
+          )}
+
+          {activeTab === 'dpr-dashboard' && currentUser && (
+            <DPRConsultantDashboard user={currentUser} onLogout={handleLogout} />
           )}
 
           {activeTab === 'admin-dashboard' && currentUser && (

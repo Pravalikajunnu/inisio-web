@@ -3,6 +3,7 @@ import { UserProjectDetail } from './UserDashboard';
 import { ProjectDocument } from '../types';
 import { DocumentViewerModal, DocumentViewerTarget } from './DocumentViewerModal';
 import { storeDocumentData } from '../utils/documentStorage';
+import api from '../utils/apiClient';
 import {
   X,
   FileText,
@@ -116,6 +117,17 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
   const handleSave = async () => {
     const persistFile = async (file: UploadFile | null, category: DocCategory) => {
       if (!file?.dataUrl) return file;
+      if (project.id) {
+        const uploaded = await fetch(file.dataUrl).then(response => response.blob()).then(blob =>
+          api.documents.upload(project.id, category === 'dpr' ? 'DPR' : 'Financial Model', new File([blob], file.name, { type: blob.type }))
+        );
+        return {
+          ...file,
+          dataUrl: undefined,
+          storageKey: uploaded.storageName,
+          fileUrl: api.documents.downloadUrl(uploaded._id)
+        };
+      }
       const storageKey = file.storageKey || `project-${project.id}-${category}`;
       await storeDocumentData(file.dataUrl, storageKey);
       return { ...file, storageKey };

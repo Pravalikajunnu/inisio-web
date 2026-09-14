@@ -39,7 +39,7 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
   const cleanEmail = email.toLowerCase().trim();
 
   // Validate allowed roles
-  const validRoles = ['user', 'ca', 'prosync', 'admin', 'admin1', 'admin2', 'admin3'];
+  const validRoles = ['user', 'ca', 'superadmin', 'dpr_consultant', 'prosync_admin', 'admin', 'admin1', 'admin2', 'admin3', 'prosync'];
   const assignedRole = validRoles.includes(role) ? role : 'user';
 
   const defaultCompany = company || (

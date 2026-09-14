@@ -43,6 +43,22 @@ export interface ReconciledFinancials {
   otherPct: number;
 }
 
+export interface SystemDscrInput {
+  industry: string;
+}
+
+export function calculateSystemDscr(input: SystemDscrInput): number {
+  const industry = (input.industry || '').toLowerCase();
+  if (industry.includes('renewable') || industry.includes('solar') || industry.includes('wind') || industry.includes('energy')) return 1.35;
+  if (industry.includes('manufactur') || industry.includes('engineering') || industry.includes('chemical') || industry.includes('textile')) return 1.48;
+  if (industry.includes('food') || industry.includes('rice') || industry.includes('flour') || industry.includes('spice') || industry.includes('agri')) return 1.45;
+  if (industry.includes('health') || industry.includes('pharma')) return 1.50;
+  if (industry.includes('logistic') || industry.includes('warehouse') || industry.includes('transport')) return 1.35;
+  if (industry.includes('hospital') || industry.includes('hotel') || industry.includes('tourism')) return 1.35;
+  if (industry.includes('real estate') || industry.includes('commercial')) return 1.30;
+  return 1.40;
+}
+
 /**
  * Reconciles and guarantees valid, non-zero project cost statement and means of finance
  */

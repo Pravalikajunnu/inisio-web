@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { ProjectDocument } from '../../types';
 import { DocumentViewerModal, DocumentViewerTarget } from '../DocumentViewerModal';
 import { storeDocumentData } from '../../utils/documentStorage';
+import api, { fetchAuthenticatedBlob } from '../../utils/apiClient';
 import {
   FileCheck,
   Upload,
@@ -23,12 +24,14 @@ interface DocumentsComplianceProps {
   documents: ProjectDocument[];
   onUpdateDocuments: (docs: ProjectDocument[]) => void;
   projectName?: string;
+  leadId?: string;
 }
 
 export const DocumentsCompliance: React.FC<DocumentsComplianceProps> = ({
   documents,
   onUpdateDocuments,
-  projectName = 'Greenfield Project'
+  projectName = 'Greenfield Project',
+  leadId
 }) => {
   const [selectedType, setSelectedType] = useState<ProjectDocument['type']>('Company KYC');
   const [isUploading, setIsUploading] = useState(false);
@@ -100,13 +103,23 @@ export const DocumentsCompliance: React.FC<DocumentsComplianceProps> = ({
       };
 
       const persist = async () => {
-        if (fileDataUrl && newDoc.storageKey) {
+        if (leadId) {
+          const uploaded = await api.documents.upload(leadId, docType, file);
+          newDoc.id = uploaded._id || newDoc.id;
+          newDoc.storageKey = uploaded.storageName;
+          newDoc.dataUrl = undefined;
+          newDoc.fileUrl = api.documents.downloadUrl(uploaded._id);
+        } else if (fileDataUrl && newDoc.storageKey) {
           await storeDocumentData(fileDataUrl, newDoc.storageKey);
         }
         onUpdateDocuments([newDoc, ...activeDocs]);
         setIsUploading(false);
       };
-      persist().catch(() => setIsUploading(false));
+      persist().catch((error) => {
+        console.error('Document upload failed:', error);
+        alert(error instanceof Error ? error.message : 'Unable to upload this document. Please try again.');
+        setIsUploading(false);
+      });
     };
 
     reader.onerror = () => {
@@ -162,27 +175,25 @@ export const DocumentsCompliance: React.FC<DocumentsComplianceProps> = ({
     });
   };
 
-  const handleDownload = (doc: ProjectDocument, e?: React.MouseEvent) => {
+  const handleDownload = async (doc: ProjectDocument, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    if (doc.dataUrl) {
+    try {
+      let href = doc.dataUrl;
+      let revoke = false;
+      if (!href && doc.fileUrl) {
+        href = URL.createObjectURL(await fetchAuthenticatedBlob(doc.fileUrl));
+        revoke = true;
+      }
+      if (!href) throw new Error('Document content unavailable');
       const a = document.createElement('a');
-      a.href = doc.dataUrl;
+      a.href = href;
       a.download = doc.name;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-    } else {
-      const blob = new Blob([
-        `Document Name: ${doc.name}\nType: ${doc.type}\nUploaded At: ${doc.uploadedAt}\nProject: ${projectName}\nStatus: Verified Inisio Lead File`
-      ], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${doc.name}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      if (revoke) setTimeout(() => URL.revokeObjectURL(href!), 1000);
+    } catch {
+      alert('Unable to download this document. Please try again.');
     }
   };
 
@@ -382,7 +393,10 @@ export const DocumentsCompliance: React.FC<DocumentsComplianceProps> = ({
                       <button
                         type="button"
                         id={`btn-open-${doc.id}`}
-                        onClick={(e) => handleOpenDoc(doc, e)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleOpenDoc(doc, e);
+                        }}
                         className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
                         title="Open & Preview Document"
                       >
@@ -393,7 +407,10 @@ export const DocumentsCompliance: React.FC<DocumentsComplianceProps> = ({
                       <button
                         type="button"
                         id={`btn-download-${doc.id}`}
-                        onClick={(e) => handleDownload(doc, e)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          void handleDownload(doc, e);
+                        }}
                         className="px-2.5 py-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1"
                         title="Download Document"
                       >

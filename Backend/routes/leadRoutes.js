@@ -6,6 +6,8 @@ import {
   updateLead,
   deleteLead,
   clearAllLeads,
+  assignLead,
+  updateLeadProgress,
 } from '../controllers/leadController.js';
 import { authenticateUser, authorizeRoles, optionalAuth } from '../middleware/authMiddleware.js';
 import { validateBody, validateIndianPhone } from '../middleware/validateMiddleware.js';
@@ -13,13 +15,15 @@ import { validateBody, validateIndianPhone } from '../middleware/validateMiddlew
 const router = express.Router();
 
 // Public submission
-router.post('/', validateBody(['fullName', 'mobile', 'email']), validateIndianPhone('mobile'), createLead);
+router.post('/', optionalAuth, validateBody(['fullName', 'mobile', 'email']), validateIndianPhone('mobile'), createLead);
 
 // Lead retrieval & management (Admins & CAs)
-router.get('/', optionalAuth, getLeads);
-router.get('/:id', optionalAuth, getLeadById);
-router.put('/:id', optionalAuth, validateIndianPhone('mobile'), updateLead);
-router.delete('/clear-all', authenticateUser, authorizeRoles('admin'), clearAllLeads);
-router.delete('/:id', authenticateUser, authorizeRoles('admin'), deleteLead);
+router.get('/', authenticateUser, getLeads);
+router.get('/:id', authenticateUser, getLeadById);
+router.put('/:id/assignment', authenticateUser, authorizeRoles('superadmin'), assignLead);
+router.put('/:id/progress', authenticateUser, updateLeadProgress);
+router.put('/:id', authenticateUser, validateIndianPhone('mobile'), updateLead);
+router.delete('/clear-all', authenticateUser, authorizeRoles('superadmin'), clearAllLeads);
+router.delete('/:id', authenticateUser, authorizeRoles('superadmin'), deleteLead);
 
 export default router;

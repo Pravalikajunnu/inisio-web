@@ -98,14 +98,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   const getDashboardTabForRole = (role: string) => {
-    if (role === 'admin' || role === 'admin1' || role === 'admin2' || role === 'admin3') return 'admin-dashboard';
+    if (role === 'superadmin' || role === 'admin' || role === 'admin1' || role === 'admin2' || role === 'admin3') return 'admin-dashboard';
     if (role === 'ca') return 'ca-dashboard';
-    if (role === 'prosync') return 'prosync-dashboard';
+    if (role === 'dpr_consultant') return 'dpr-dashboard';
+    if (role === 'prosync_admin' || role === 'prosync') return 'prosync-dashboard';
     return 'user-dashboard';
   };
 
   const getRoleBadge = (role: string) => {
-    if (role === 'admin' || role === 'admin1' || role === 'admin2' || role === 'admin3') {
+    if (role === 'superadmin' || role === 'admin' || role === 'admin1' || role === 'admin2' || role === 'admin3') {
       return {
         label: 'Admin Desk',
         bg: 'bg-emerald-100 text-emerald-800 border-emerald-300',
@@ -119,7 +120,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         icon: <Briefcase className="w-3.5 h-3.5 text-purple-700" />
       };
     }
-    if (role === 'prosync') {
+    if (role === 'prosync_admin' || role === 'prosync') {
       return {
         label: 'Prosync Desk',
         bg: 'bg-amber-100 text-amber-800 border-amber-300',

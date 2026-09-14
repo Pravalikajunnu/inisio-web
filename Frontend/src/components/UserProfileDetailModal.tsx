@@ -3,6 +3,7 @@ import { LeadRecord, updateLeadRecord } from '../utils/leadStore';
 import { generateProjectTeaserPDF } from '../utils/pdfGenerator';
 import { DocumentViewerModal, DocumentViewerTarget } from './DocumentViewerModal';
 import { ProjectDocument } from '../types';
+import { calculateSystemDscr } from '../utils/financialUtils';
 import {
   X,
   User,
@@ -99,7 +100,7 @@ export const UserProfileDetailModal: React.FC<UserProfileDetailModalProps> = ({
         feasibilityScore: lead.feasibilityScore || 82,
         bankabilityRating: typeof lead.bankabilityRating === 'string' ? lead.bankabilityRating : 'Investment Grade (A)',
         projectViabilityStatus: 'High Viability',
-        dscrRatio: 1.48,
+        dscrRatio: lead.dscrEstimate || calculateSystemDscr({ industry: lead.industry || '' }),
         interestRateRange: '8.65% - 9.15% p.a.',
         turnoverYear1: '₹ 14.50 Cr',
         patYear1: '₹ 2.85 Cr',

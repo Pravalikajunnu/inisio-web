@@ -7,7 +7,7 @@ import { validateIndianMobileNumber } from '../utils/validation';
 import { DetailedRiskProfileForm, DetailedRiskProfileData } from './DetailedRiskProfileForm';
 import { calculateComprehensiveRiskScore } from '../utils/underwritingScorer';
 import { updateLeadRecord, saveLeadRecord } from '../utils/leadStore';
-import { reconcileProjectFinancials } from '../utils/financialUtils';
+import { calculateSystemDscr, reconcileProjectFinancials } from '../utils/financialUtils';
 import { MembershipPlansModal } from './MembershipPlansModal';
 import { DPRRequestModal } from './DPRRequestModal';
 import { FundingRequestModal } from './FundingRequestModal';
@@ -195,7 +195,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       qualification: riskProfileData?.educationalBackground || 'Post Graduate / Professional',
       shareholdingPct: numPromoters > 1 ? Math.round(100 / numPromoters) : 100,
       role: 'Managing Director / Lead Promoter',
-      kycStatus: 'Verified'
+      kycStatus: 'Pending'
     };
 
     const extraPromoters: PromoterDetail[] = additionalPromoters.slice(0, Math.max(0, numPromoters - 1)).map((p, idx) => ({
@@ -579,8 +579,9 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
 
   // Map all inputs into the PDF payload (using fully reconciled and verified financial figures)
   const getPDFData = (): TeaserPDFData => {
-    // Dynamic indicative DSCR calculation
-    const calculatedDscr = results.debtPct > 75 ? 1.48 : results.debtPct > 65 ? 1.72 : 1.95;
+    const calculatedDscr = calculateSystemDscr({
+      industry: formData.industry
+    });
 
     const reconciled = reconcileProjectFinancials({
       totalCostCr: formData.totalCostCr,
@@ -710,6 +711,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
         // Link current project to user in leadStore
         const computed = computeResults();
         const activeBankability = riskProfileData ? String(comprehensiveRisk.scoreOutOf10) : String(computed.bankabilityRating);
+        const systemDscr = calculateSystemDscr({ industry: formData.industry });
         const activeId = editingProject?.id || createdProjectIdRef.current || createdProjectId;
         const payloadToSave = {
           projectName: formData.projectName || 'Greenfield Project',
@@ -727,6 +729,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
           email: loggedUser.email,
           feasibilityScore: computed.feasibilityScore,
           bankabilityRating: activeBankability,
+          dscrEstimate: systemDscr,
           riskProfileData: riskProfileData || undefined,
           financials: financials,
           promotersList: buildPromotersList()
@@ -789,7 +792,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
     }
   };
 
-  const handleSaveAndRedirectToOutputs = (e?: React.FormEvent) => {
+  const handleSaveAndRedirectToOutputs = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!formData.projectName.trim()) {
       alert('Please enter your Project Name before saving.');
@@ -832,6 +835,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
 
     const computed = computeResults();
     const activeBankability = riskProfileData ? String(comprehensiveRisk.scoreOutOf10) : String(computed.bankabilityRating);
+    const systemDscr = calculateSystemDscr({ industry: formData.industry });
     const updatedPayload = {
       projectName: formData.projectName || 'Greenfield Project',
       industry: formData.industry,
@@ -848,9 +852,11 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       email: formData.email,
       feasibilityScore: computed.feasibilityScore,
       bankabilityRating: activeBankability,
+      dscrEstimate: systemDscr,
       riskProfileData: riskProfileData || undefined,
       financials: updatedFinancials,
-      promotersList: buildPromotersList()
+      promotersList: buildPromotersList(),
+      assessmentCompleted: true
     };
 
     // Guarantee idempotent save: Only save once in the dashboard
@@ -859,16 +865,17 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       updateLeadRecord(activeId, updatedPayload, formData.fullName || 'Promoter');
     } else if (!isSavingRef.current) {
       isSavingRef.current = true;
-      saveLeadRecord({
-        ...updatedPayload,
-        source: 'Project Assessment Flow',
-        downloadedPDF: false
-      }).then(saved => {
+      try {
+        const saved = await saveLeadRecord({
+          ...updatedPayload,
+          source: 'Project Assessment Flow',
+          downloadedPDF: false
+        });
         setCreatedProjectId(saved.id);
         createdProjectIdRef.current = saved.id;
-      }).finally(() => {
+      } finally {
         isSavingRef.current = false;
-      });
+      }
     }
 
     setIsDataSaved(true);
@@ -885,6 +892,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
     }
     const computed = computeResults();
     const activeBankability = riskProfileData ? String(comprehensiveRisk.scoreOutOf10) : String(computed.bankabilityRating);
+    const systemDscr = calculateSystemDscr({ industry: formData.industry });
     const updatedPayload = {
       projectName: formData.projectName,
       industry: formData.industry,
@@ -901,6 +909,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       email: formData.email,
       feasibilityScore: computed.feasibilityScore,
       bankabilityRating: activeBankability,
+      dscrEstimate: systemDscr,
       riskProfileData: riskProfileData || undefined,
       financials: financials,
       promotersList: buildPromotersList()
@@ -940,6 +949,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
     // Save project if not already saved
     const computed = computeResults();
     const activeBankability = riskProfileData ? String(comprehensiveRisk.scoreOutOf10) : String(computed.bankabilityRating);
+    const systemDscr = calculateSystemDscr({ industry: formData.industry });
     const payload = {
       projectName: formData.projectName || 'Greenfield Project',
       industry: formData.industry,
@@ -956,6 +966,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       email: formData.email,
       feasibilityScore: computed.feasibilityScore,
       bankabilityRating: activeBankability,
+      dscrEstimate: systemDscr,
       riskProfileData: riskProfileData || undefined,
       financials: financials,
       promotersList: buildPromotersList()
@@ -2495,7 +2506,9 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
           
           const debtPctCalc = finResolved.debtPct.toString();
           const eqPctCalc = finResolved.eqPct.toString();
-          const dscrValue = (results.debtPct > 75 ? 1.48 : results.debtPct > 65 ? 1.72 : 1.95).toFixed(2);
+          const dscrValue = calculateSystemDscr({
+            industry: formData.industry
+          }).toFixed(2);
           const activeBankability = riskProfileData ? comprehensiveRisk.scoreOutOf10.toFixed(1) : results.bankabilityRating;
 
           return (
@@ -2998,14 +3011,14 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
               )}
 
               {/* Immediate Download & Next Actions Box */}
-              <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-slate-800 space-y-6">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-800">
+              <div className="bg-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-xl border border-slate-800 space-y-4">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-800">
                   <div>
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs font-bold mb-2">
                       <Sparkles className="w-3.5 h-3.5" />
                       <span>Executive Deliverables Ready</span>
                     </div>
-                    <h3 className="text-xl sm:text-2xl font-black font-manrope text-white">
+                    <h3 className="text-lg sm:text-xl font-black font-manrope text-white">
                       Download AI Project Teaser &amp; Underwriting Dossier
                     </h3>
                     <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
@@ -3021,7 +3034,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                       type="button"
                       onClick={() => handleDownloadTeaser('download')}
                       disabled={isDownloadingPdf}
-                      className={`px-6 py-3.5 font-black text-xs sm:text-sm rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer ${
+                        className={`px-4 py-2.5 font-black text-xs rounded-lg transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer ${
                         activeUser
                           ? 'bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white hover:shadow-rose-500/25'
                           : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
@@ -3045,7 +3058,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                       type="button"
                       onClick={() => handleDownloadDocxTeaser()}
                       disabled={isDownloadingDocx}
-                      className={`px-6 py-3.5 font-black text-xs sm:text-sm rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer ${
+                        className={`px-4 py-2.5 font-black text-xs rounded-lg transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer ${
                         activeUser
                           ? 'bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white hover:shadow-blue-500/25'
                           : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'

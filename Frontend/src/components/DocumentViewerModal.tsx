@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { loadDocumentData } from '../utils/documentStorage';
+import { fetchAuthenticatedBlob } from '../utils/apiClient';
 import {
   X,
   Download,
@@ -73,27 +74,28 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
     ? (documentItem.size < 1024 * 1024 ? `${(documentItem.size / 1024).toFixed(1)} KB` : `${(documentItem.size / (1024 * 1024)).toFixed(2)} MB`)
     : (documentItem.size || '1.5 MB');
 
-  const handleDownload = () => {
-    if (storedDataUrl || documentItem.fileUrl) {
-      const src = storedDataUrl || documentItem.fileUrl!;
+  const getDocumentSource = async () => {
+    if (storedDataUrl) return { url: storedDataUrl, revoke: false };
+    if (!documentItem.fileUrl) throw new Error('Document content unavailable');
+    const blob = await fetchAuthenticatedBlob(documentItem.fileUrl);
+    return { url: URL.createObjectURL(blob), revoke: true };
+  };
+
+  const handleDownload = async () => {
+    let source: { url: string; revoke: boolean } | undefined;
+    try {
+      source = await getDocumentSource();
       const a = document.createElement('a');
-      a.href = src;
+      a.href = source.url;
       a.download = fileName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-    } else {
-      const blob = new Blob([
-        `Document Name: ${fileName}\nType: ${documentItem.type || 'Project Document'}\nUploaded At: ${documentItem.uploadedAt || 'Recently'}\nProject: ${projectName}\nStatus: Verified DPDP Compliant`
-      ], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${fileName}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Document download failed:', error);
+      alert('Unable to download this document. Please try again.');
+    } finally {
+      if (source?.revoke) setTimeout(() => URL.revokeObjectURL(source!.url), 1000);
     }
   };
 
@@ -104,31 +106,15 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
       return;
     }
 
-    if (isPdf && (storedDataUrl || documentItem.fileUrl)) {
-      const pdfSrc = storedDataUrl || documentItem.fileUrl;
-      win.document.write(`
-        <!DOCTYPE html>
-        <html lang="en">
-          <head>
-            <meta charset="utf-8">
-            <title>${fileName} - PDF Preview</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-              html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #525659; }
-              iframe { width: 100%; height: 100%; border: none; }
-            </style>
-          </head>
-          <body>
-            <iframe src="${pdfSrc}#toolbar=1" width="100%" height="100%" title="${fileName}"></iframe>
-          </body>
-        </html>
-      `);
-      win.document.close();
-      return;
-    }
+    getDocumentSource().then(({ url: documentSrc, revoke }) => {
+      if (isPdf) {
+        win.location.href = `${documentSrc}#toolbar=1`;
+        if (revoke) setTimeout(() => URL.revokeObjectURL(documentSrc), 60000);
+        return;
+      }
 
-    if (isImage && (storedDataUrl || documentItem.fileUrl)) {
-      const imgSrc = storedDataUrl || documentItem.fileUrl;
+      if (isImage) {
+        const imgSrc = documentSrc;
       win.document.write(`
         <!DOCTYPE html>
         <html lang="en">
@@ -149,13 +135,14 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
         </html>
       `);
       win.document.close();
-      return;
-    }
+        if (revoke) setTimeout(() => URL.revokeObjectURL(documentSrc), 60000);
+        return;
+      }
 
     // For Word documents (.docx, .doc), Excel spreadsheets (.xlsx, .xls, .csv), and all other dossier formats:
     // Open a complete, high-fidelity Inisio Document Reader in the new tab
-    const downloadHref = storedDataUrl || documentItem.fileUrl || '#';
-    const hasData = !!(storedDataUrl || documentItem.fileUrl);
+    const downloadHref = documentSrc;
+    const hasData = true;
 
     win.document.write(`
       <!DOCTYPE html>
@@ -469,6 +456,12 @@ export const DocumentViewerModal: React.FC<DocumentViewerModalProps> = ({
       </html>
     `);
     win.document.close();
+      if (revoke) setTimeout(() => URL.revokeObjectURL(documentSrc), 60000);
+    }).catch((error) => {
+      console.error('Document preview failed:', error);
+      win.close();
+      alert('Unable to retrieve this document. Please try again.');
+    });
   };
 
   const handlePrint = () => {

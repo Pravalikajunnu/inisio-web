@@ -68,13 +68,15 @@ export function calculateUnderwritingMetrics(data) {
   else if (bankabilityGrade === 'B') estInterestRate = '10.50% - 12.00%';
   else estInterestRate = '12.00% - 14.50%';
 
-  // DSCR calculation estimate
-  let dscrEstimate = 1.45;
-  if (bankabilityGrade === 'A+') dscrEstimate = 1.85;
-  else if (bankabilityGrade === 'A') dscrEstimate = 1.62;
-  else if (bankabilityGrade === 'B+') dscrEstimate = 1.40;
-  else if (bankabilityGrade === 'B') dscrEstimate = 1.25;
-  else dscrEstimate = 1.10;
+  // Fixed system benchmark selected from the submitted industry.
+  const normalizedIndustry = industry.toLowerCase();
+  let dscrEstimate = 1.40;
+  if (/renewable|solar|wind|energy/.test(normalizedIndustry)) dscrEstimate = 1.35;
+  else if (/manufactur|engineering|chemical|textile/.test(normalizedIndustry)) dscrEstimate = 1.48;
+  else if (/food|rice|flour|spice|agri/.test(normalizedIndustry)) dscrEstimate = 1.45;
+  else if (/health|pharma/.test(normalizedIndustry)) dscrEstimate = 1.50;
+  else if (/logistic|warehouse|transport|hospital|hotel|tourism/.test(normalizedIndustry)) dscrEstimate = 1.35;
+  else if (/real estate|commercial/.test(normalizedIndustry)) dscrEstimate = 1.30;
 
   // Payback period
   let paybackYears = 4.5;

@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import { saveAs } from 'file-saver';
 import { getFeasibilityTerm } from '../types';
 import { DetailedRiskProfileData } from '../components/DetailedRiskProfileForm';
 import { reconcileProjectFinancials } from './financialUtils';
@@ -58,6 +59,27 @@ export interface TeaserPDFData {
   suppliersInfo?: string;
   buyersInfo?: string;
 }
+
+const triggerBlobDownload = (blobUrl: string, fileName: string) => {
+  const link = document.createElement('a');
+  link.href = blobUrl;
+  link.download = fileName;
+  link.rel = 'noopener noreferrer';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+const triggerBlobPreview = (blobUrl: string, fileName: string) => {
+  const previewWin = window.open('', '_blank');
+  if (previewWin) {
+    previewWin.opener = null;
+    previewWin.location.href = blobUrl;
+    return;
+  }
+
+  triggerBlobDownload(blobUrl, fileName);
+};
 
 export function generateProjectTeaserPDF(data: TeaserPDFData, action: 'download' | 'preview' = 'download') {
   const doc = new jsPDF({
@@ -163,7 +185,7 @@ export function generateProjectTeaserPDF(data: TeaserPDFData, action: 'download'
   };
 
   // ==================== PAGE 1 ====================
-  // Company Profile Header
+  // Branded header
   doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
@@ -520,62 +542,24 @@ export function generateProjectTeaserPDF(data: TeaserPDFData, action: 'download'
   const fileName = `Inisio_Teaser_${(data.projectName || data.fullName || 'Greenfield').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
   
   if (action === 'preview') {
-    const pdfBlob = doc.output('blob');
-    const pdfBlobUrl = URL.createObjectURL(pdfBlob);
-
-    const previewWin = window.open('', '_blank', 'noopener,noreferrer');
-    if (previewWin) {
-      previewWin.document.write(`<!DOCTYPE html>
-        <html lang="en">
-          <head>
-            <meta charset="utf-8">
-            <title>${data.projectName || 'Inisio Project'} - Executive Teaser Preview</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-              html, body {
-                margin: 0;
-                padding: 0;
-                width: 100%;
-                height: 100%;
-                overflow: hidden;
-                background: #f8fafc;
-              }
-              .pdf-frame {
-                width: 100%;
-                height: 100vh;
-                border: 0;
-                display: block;
-                background: white;
-              }
-            </style>
-          </head>
-          <body>
-            <embed class="pdf-frame" src="${pdfBlobUrl}" type="application/pdf" title="${fileName}">
-          </body>
-        </html>`);
-      previewWin.document.close();
-    } else {
-      const link = document.createElement('a');
-      link.href = pdfBlobUrl;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    const pdfBlobUrl = URL.createObjectURL(doc.output('blob'));
+    try {
+      triggerBlobPreview(pdfBlobUrl, fileName);
+    } catch (error) {
+      console.error('Teaser preview failed:', error);
+      triggerBlobDownload(pdfBlobUrl, fileName);
     }
+    setTimeout(() => URL.revokeObjectURL(pdfBlobUrl), 60000);
+    return;
+  }
 
-    setTimeout(() => URL.revokeObjectURL(pdfBlobUrl), 3000);
-  } else {
-    const pdfBlob = doc.output('blob');
-    const pdfBlobUrl = URL.createObjectURL(pdfBlob);
-    const link = document.createElement('a');
-    link.href = pdfBlobUrl;
-    link.download = fileName;
-    link.rel = 'noopener noreferrer';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setTimeout(() => URL.revokeObjectURL(pdfBlobUrl), 3000);
+  try {
+    saveAs(doc.output('blob'), fileName);
+  } catch (error) {
+    console.error('Native teaser download failed, using blob fallback:', error);
+    const pdfBlobUrl = URL.createObjectURL(doc.output('blob'));
+    triggerBlobDownload(pdfBlobUrl, fileName);
+    setTimeout(() => URL.revokeObjectURL(pdfBlobUrl), 60000);
   }
 }
 

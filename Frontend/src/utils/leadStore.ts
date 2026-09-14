@@ -2,6 +2,7 @@ import { createAdminNotification } from './notificationStore';
 import { DetailedRiskProfileData } from '../components/DetailedRiskProfileForm';
 import { CommercialSupplyFundingData } from '../components/CommercialSupplyFundingForm';
 import { PromoterDetail, CustomCostComponent, CustomFinanceComponent, ProjectDocument } from '../types';
+import { resolveApiUrl } from './apiClient';
 
 export interface EditAuditRecord {
   id: string;
@@ -23,8 +24,10 @@ export interface LeadRecord {
   loanRequiredCr: string | number;
   feasibilityScore?: number;
   bankabilityRating?: string | number;
+  dscrEstimate?: number;
   source: string;
   downloadedPDF: boolean;
+  assessmentCompleted?: boolean;
   notes?: string;
   promoterContribCr?: string | number;
   landStatus?: string;
@@ -73,6 +76,11 @@ export interface LeadRecord {
 
 const STORAGE_KEY = 'inisio_admin_leads_v1';
 const MAX_INLINE_DOC_BYTES = 900 * 1024;
+
+const getAuthHeaders = (): Record<string, string> => {
+  const token = localStorage.getItem('inisio_auth_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
 const sanitizeDocumentPayload = <T>(value: T): T => {
   if (!value || typeof value !== 'object') return value;
@@ -152,7 +160,7 @@ export async function fetchLeadsFromBackend(email?: string): Promise<LeadRecord[
   try {
     const localMatches = getStoredLeads(email);
     const url = email ? `/api/leads?email=${encodeURIComponent(email)}` : '/api/leads';
-    const response = await fetch(url);
+    const response = await fetch(url, { headers: getAuthHeaders() });
     if (response.ok) {
       const data = await response.json();
       if (data && data.data && Array.isArray(data.data)) {
@@ -170,8 +178,10 @@ export async function fetchLeadsFromBackend(email?: string): Promise<LeadRecord[
           promoterContribCr: item.promoterContribCr,
           feasibilityScore: item.feasibilityScore,
           bankabilityRating: item.bankabilityRating,
+          dscrEstimate: Number(item.dscrEstimate) || 0,
           source: item.source || 'Web Portal Submission',
           downloadedPDF: item.downloadedPDF || false,
+          assessmentCompleted: Boolean(item.assessmentCompleted),
           notes: item.notes,
           landStatus: item.landStatus,
           collateralStatus: item.collateralStatus,
@@ -193,7 +203,11 @@ export async function fetchLeadsFromBackend(email?: string): Promise<LeadRecord[
           promotersList: item.promotersList || [],
           customCostComponents: item.customCostComponents || [],
           customFinanceComponents: item.customFinanceComponents || [],
-          uploadedDocuments: item.uploadedDocuments || [],
+          uploadedDocuments: (item.uploadedDocuments || []).map((document: any) => ({
+            ...document,
+            id: document.id || document._id,
+            fileUrl: document.fileUrl || (document._id ? resolveApiUrl(`/documents/${document._id}/download`) : undefined)
+          })),
           successProbability: item.successProbability,
           isFunded: item.isFunded,
           dprAssignedTo: item.dprAssignedTo,
@@ -252,7 +266,7 @@ export async function fetchLeadsFromBackend(email?: string): Promise<LeadRecord[
   } catch (err) {
     console.warn('Backend sync deferred to local cache:', err);
   }
-  return getStoredLeads(email);
+  return [];
 }
 
 export async function saveLeadRecord(lead: Omit<LeadRecord, 'id' | 'timestamp'>): Promise<LeadRecord> {
@@ -263,7 +277,7 @@ export async function saveLeadRecord(lead: Omit<LeadRecord, 'id' | 'timestamp'>)
   try {
     const response = await fetch('/api/leads', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify(lead),
     });
     if (response.ok) {
@@ -392,7 +406,7 @@ export function updateLeadRecord(id: string, updates: Partial<LeadRecord>, edite
   if (id) {
     fetch(`/api/leads/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify(updates)
     }).then(async res => {
       if (res.ok) {
@@ -414,7 +428,7 @@ export function deleteLeadRecord(id: string): void {
   window.dispatchEvent(new CustomEvent('inisio_lead_added', { detail: { deletedId: id } }));
 
   if (id) {
-    fetch(`/api/leads/${id}`, { method: 'DELETE' }).then(() => {
+    fetch(`/api/leads/${id}`, { method: 'DELETE', headers: getAuthHeaders() }).then(() => {
       window.dispatchEvent(new CustomEvent('inisio_lead_added'));
     }).catch(() => {});
   }
@@ -424,7 +438,7 @@ export function clearAllLeads(): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
   window.dispatchEvent(new CustomEvent('inisio_lead_added'));
 
-  fetch('/api/leads/clear-all', { method: 'DELETE' }).then(() => {
+  fetch('/api/leads/clear-all', { method: 'DELETE', headers: getAuthHeaders() }).then(() => {
     window.dispatchEvent(new CustomEvent('inisio_lead_added'));
   }).catch(() => {});
 }
