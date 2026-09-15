@@ -1,33 +1,40 @@
 import User from '../models/User.js';
+import Lead from '../models/Lead.js';
+import Project from '../models/Project.js';
 import { sendSuccess, sendError } from '../utils/responseHandler.js';
 import { isDBConnected } from '../config/db.js';
-import { DEFAULT_USERS } from '../data/defaultData.js';
 
-// Memory users cache
-let memoryUsers = DEFAULT_USERS.map((u, i) => ({
-  _id: `usr_${i + 1}`,
-  name: u.name,
-  email: u.email,
-  role: u.role,
-  company: u.company,
-  phone: u.phone,
-  isVerified: u.isVerified ?? true,
-  status: 'active',
-  loginCount: 5 + i * 3,
-  lastLoginAt: new Date().toISOString(),
-  createdAt: new Date(Date.now() - (i + 1) * 7 * 24 * 3600 * 1000).toISOString(),
-}));
+// Clean dynamic memory users cache (only used for non-persisted test sessions if DB disconnected)
+let memoryUsers = [];
 
 export const getAllUsers = async (req, res, next) => {
   try {
     if (isDBConnected()) {
       try {
-        const users = await User.find({}).select('-password').sort({ createdAt: -1 });
+        const users = await User.find({}).select('-password').sort({ createdAt: -1 }).lean();
         if (users && users.length > 0) {
-          return sendSuccess(res, users, 'Users retrieved successfully');
+          // Dynamically compute the count of associated projects/leads for each user
+          const enrichedUsers = await Promise.all(
+            users.map(async (u) => {
+              const emailRegex = u.email ? new RegExp(`^${u.email.trim()}$`, 'i') : null;
+              const leadCount = emailRegex 
+                ? await Lead.countDocuments({ $or: [{ userId: u._id }, { email: emailRegex }] })
+                : await Lead.countDocuments({ userId: u._id });
+              const projectCount = emailRegex 
+                ? await Project.countDocuments({ $or: [{ userId: u._id }, { email: emailRegex }] })
+                : await Project.countDocuments({ userId: u._id });
+              const totalProjects = Math.max(leadCount, projectCount);
+              return {
+                ...u,
+                projectsCount: totalProjects
+              };
+            })
+          );
+          return sendSuccess(res, enrichedUsers, 'Users retrieved successfully');
         }
+        return sendSuccess(res, [], 'Users retrieved successfully');
       } catch (err) {
-        console.warn('DB error in getAllUsers, returning memory users:', err.message);
+        console.warn('DB error in getAllUsers:', err.message);
       }
     }
     return sendSuccess(res, memoryUsers, 'Users retrieved successfully');

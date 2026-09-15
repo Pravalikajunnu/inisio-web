@@ -89,10 +89,7 @@ export function getStoredVisitorLogs(): VisitorLog[] {
   try {
     const raw = localStorage.getItem(VISITOR_LOGS_KEY);
     if (!raw) {
-      // Seed initial organic baseline data if clean
-      const seedLogs = generateSeedLogs();
-      localStorage.setItem(VISITOR_LOGS_KEY, JSON.stringify(seedLogs));
-      return seedLogs;
+      return [];
     }
     return JSON.parse(raw);
   } catch (err) {
@@ -112,14 +109,14 @@ export function getVisitorSummary(): VisitorSummary {
   const recentSessions = new Set(
     logs.filter(l => new Date(l.timestamp).getTime() > fifteenMinsAgo).map(l => l.sessionId)
   );
-  const activeNow = Math.max(1, recentSessions.size);
+  const activeNow = recentSessions.size;
 
   const mobileCount = logs.filter(l => l.device === 'Mobile' || l.device === 'Tablet').length;
   const desktopCount = logs.filter(l => l.device === 'Desktop').length;
   const totalDevices = logs.length || 1;
 
-  const mobilePercent = Math.round((mobileCount / totalDevices) * 100);
-  const desktopPercent = 100 - mobilePercent;
+  const mobilePercent = totalVisits > 0 ? Math.round((mobileCount / totalDevices) * 100) : 0;
+  const desktopPercent = totalVisits > 0 ? 100 - mobilePercent : 0;
 
   // Page frequency
   const pageMap: Record<string, number> = {};
@@ -141,27 +138,4 @@ export function getVisitorSummary(): VisitorSummary {
     topPages,
     recentLogs: logs.slice(0, 20)
   };
-}
-
-function generateSeedLogs(): VisitorLog[] {
-  const pages = ['Home / Greenfield Landing', 'Free Project Assessment', 'Financial Model & Capex', 'Bank Readiness Checklist', 'Advisory Blogs', 'Credit Desk Consultation'];
-  const devices: ('Desktop' | 'Mobile' | 'Tablet')[] = ['Desktop', 'Desktop', 'Mobile', 'Desktop', 'Mobile'];
-  const browsers = ['Chrome', 'Safari', 'Edge', 'Firefox'];
-  const logs: VisitorLog[] = [];
-
-  const now = Date.now();
-  for (let i = 0; i < 48; i++) {
-    const timeAgo = (i * 18 + Math.floor(Math.random() * 15)) * 60 * 1000; // minutes
-    logs.push({
-      id: `vis_seed_${i}`,
-      sessionId: `sess_seed_${Math.floor(i / 3)}`,
-      timestamp: new Date(now - timeAgo).toISOString(),
-      page: pages[Math.floor(Math.random() * pages.length)],
-      device: devices[Math.floor(Math.random() * devices.length)],
-      browser: browsers[Math.floor(Math.random() * browsers.length)],
-      referrer: i % 3 === 0 ? 'Google Search' : (i % 4 === 0 ? 'LinkedIn / Debt Forum' : 'Direct Navigation')
-    });
-  }
-
-  return logs;
 }

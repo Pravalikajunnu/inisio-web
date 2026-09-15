@@ -227,7 +227,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         // Check if user requires email verification
         if (userData.requiresVerification || userData.isVerified === false) {
           setIsVerifyingOtp(true);
-          setOtpCode(''); // Must be entered manually by the user
+          if (userData.verificationOtp) {
+            setOtpCode(userData.verificationOtp);
+          }
           setSuccessMessage(userData.message || `Verification code sent to ${cleanEmail}. Please enter the 6-digit code below.`);
           return;
         }
@@ -331,9 +333,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             
             {/* Feedback Messages */}
             {error && (
-              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-semibold flex items-center gap-2 animate-in fade-in">
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
-                <span>{error}</span>
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-semibold space-y-1.5 animate-in fade-in">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                  <span>{error}</span>
+                </div>
+                {(error.toLowerCase().includes('create account') || error.toLowerCase().includes('register')) && mode === 'login' && (
+                  <div className="pt-1 pl-6">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('signup');
+                        setError('');
+                      }}
+                      className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold rounded-lg shadow-xs transition-colors cursor-pointer"
+                    >
+                      Click here to Create Account →
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 

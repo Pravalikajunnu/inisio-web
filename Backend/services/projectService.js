@@ -9,8 +9,13 @@ export const getProjects = async (filter = {}, userRole = 'admin', userId = null
     try {
       let query = {};
       
-      if (filter.email) {
-        query.email = { $regex: new RegExp(`^${filter.email}$`, 'i') };
+      if (filter.email && userId) {
+        query.$or = [
+          { userId: userId },
+          { email: { $regex: new RegExp(`^${filter.email.trim()}$`, 'i') } }
+        ];
+      } else if (filter.email) {
+        query.email = { $regex: new RegExp(`^${filter.email.trim()}$`, 'i') };
       } else if (userRole === 'user' && userId) {
         query.userId = userId;
       }

@@ -7,7 +7,10 @@ import { authenticateUser } from '../middleware/authMiddleware.js';
 import { uploadDocument, listDocuments, downloadDocument } from '../controllers/documentController.js';
 
 const router = express.Router();
-const storageRoot = path.resolve(process.env.DOCUMENT_STORAGE_DIR || './storage/private');
+const storageRoot = path.resolve(
+  process.env.DOCUMENT_STORAGE_DIR ||
+  (path.join(process.cwd(), 'Backend', 'storage', 'private'))
+);
 fs.mkdirSync(storageRoot, { recursive: true });
 
 const upload = multer({

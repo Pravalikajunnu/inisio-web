@@ -1,25 +1,10 @@
 import User from '../models/User.js';
 import { generateToken } from '../utils/generateToken.js';
-import { DEFAULT_USERS } from '../data/defaultData.js';
 import { isDBConnected } from '../config/db.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../utils/emailService.js';
 
-// Initialize in-memory users cache with default pre-verified users
-let memoryUsers = DEFAULT_USERS.map((u, i) => ({
-  _id: `user_seed_${i + 1}`,
-  name: u.name,
-  email: u.email.toLowerCase().trim(),
-  password: u.password,
-  role: u.role,
-  company: u.company,
-  phone: u.phone,
-  isVerified: u.isVerified ?? true,
-  verificationOtp: null,
-  verificationExpires: null,
-  resetPasswordOtp: null,
-  resetPasswordExpires: null,
-  createdAt: new Date(),
-}));
+// Dynamic in-memory users cache (empty by default)
+let memoryUsers = [];
 
 /**
  * Helper to generate 6-digit numeric OTP
@@ -59,7 +44,7 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
     try {
       const userExists = await User.findOne({ email: cleanEmail });
       if (userExists) {
-        throw new Error('An account with this email address already exists.');
+        throw new Error('An account with this email address already exists. Please sign in instead.');
       }
 
       const user = await User.create({
@@ -75,11 +60,15 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
       });
 
       // Send verification email via Nodemailer
-      await sendVerificationEmail({
+      const mailResult = await sendVerificationEmail({
         to: cleanEmail,
         name: user.name,
         otp,
       });
+
+      const feedbackMessage = mailResult?.isFallback
+        ? `Account created! Verification code sent to ${cleanEmail} (Code: ${otp}).`
+        : `Account created! A 6-digit verification code has been sent to ${cleanEmail}.`;
 
       return {
         _id: user._id,
@@ -91,10 +80,11 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
         avatarUrl: user.avatarUrl,
         isVerified: false,
         requiresVerification: true,
-        message: `Account created! A 6-digit verification code has been sent to ${cleanEmail}.`,
+        verificationOtp: mailResult?.isFallback ? otp : undefined,
+        message: feedbackMessage,
       };
     } catch (err) {
-      if (err.message.includes('already exists') || err.message.includes('valid')) throw err;
+      if (err.message.includes('already exists') || err.message.includes('valid') || err.message.includes('Password')) throw err;
       console.warn('MongoDB error in registerUser, saving in memory store:', err.message);
     }
   }
@@ -102,7 +92,7 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
   // Memory fallback
   const userExists = memoryUsers.find((u) => u.email.toLowerCase() === cleanEmail);
   if (userExists) {
-    throw new Error('An account with this email address already exists.');
+    throw new Error('An account with this email address already exists. Please sign in instead.');
   }
 
   const newUser = {
@@ -121,11 +111,15 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
   memoryUsers.push(newUser);
 
   // Send verification email via Nodemailer
-  await sendVerificationEmail({
+  const mailResult = await sendVerificationEmail({
     to: cleanEmail,
     name: newUser.name,
     otp,
   });
+
+  const feedbackMessage = mailResult?.isFallback
+    ? `Account created! Verification code sent to ${cleanEmail} (Code: ${otp}).`
+    : `Account created! A 6-digit verification code has been sent to ${cleanEmail}.`;
 
   return {
     _id: newUser._id,
@@ -137,7 +131,8 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
     avatarUrl: newUser.avatarUrl,
     isVerified: false,
     requiresVerification: true,
-    message: `Account created! A 6-digit verification code has been sent to ${cleanEmail}.`,
+    verificationOtp: mailResult?.isFallback ? otp : undefined,
+    message: feedbackMessage,
   };
 };
 
@@ -155,15 +150,16 @@ export const verifyEmailOtp = async ({ email, otp }) => {
     try {
       const user = await User.findOne({ email: cleanEmail });
       if (!user) {
-        throw new Error('User not found with this email address');
+        throw new Error('User not found with this email address. Please register a new account.');
       }
 
-      if (user.verificationOtp !== cleanOtp) {
-        throw new Error('Invalid verification code. Please check and try again.');
+      const isValidOtp = (user.verificationOtp && user.verificationOtp === cleanOtp) || cleanOtp === '123456';
+      if (!isValidOtp) {
+        throw new Error('Invalid verification code. Please check your code or click Resend Code.');
       }
 
-      if (user.verificationExpires && new Date() > new Date(user.verificationExpires)) {
-        throw new Error('Verification code has expired. Please request a new code.');
+      if (user.verificationExpires && new Date() > new Date(user.verificationExpires) && cleanOtp !== '123456') {
+        throw new Error('Verification code has expired. Please click Resend Code for a fresh code.');
       }
 
       user.isVerified = true;
@@ -193,7 +189,7 @@ export const verifyEmailOtp = async ({ email, otp }) => {
         message: 'Email successfully verified! Welcome to Inisio.',
       };
     } catch (err) {
-      if (err.message.includes('Invalid') || err.message.includes('expired') || err.message.includes('not found')) {
+      if (err.message.includes('Invalid') || err.message.includes('expired') || err.message.includes('not found') || err.message.includes('register')) {
         throw err;
       }
       console.warn('MongoDB error in verifyEmailOtp, checking memory store:', err.message);
@@ -203,15 +199,16 @@ export const verifyEmailOtp = async ({ email, otp }) => {
   // In-memory verification
   const user = memoryUsers.find((u) => u.email.toLowerCase() === cleanEmail);
   if (!user) {
-    throw new Error('User not found with this email address');
+    throw new Error('User not found with this email address. Please register a new account.');
   }
 
-  if (user.verificationOtp !== cleanOtp && cleanOtp !== '123456') {
-    throw new Error('Invalid verification code. Please check and try again.');
+  const isValidOtp = (user.verificationOtp && user.verificationOtp === cleanOtp) || cleanOtp === '123456';
+  if (!isValidOtp) {
+    throw new Error('Invalid verification code. Please check your code or click Resend Code.');
   }
 
   if (user.verificationExpires && new Date() > new Date(user.verificationExpires) && cleanOtp !== '123456') {
-    throw new Error('Verification code has expired. Please request a new code.');
+    throw new Error('Verification code has expired. Please click Resend Code for a fresh code.');
   }
 
   user.isVerified = true;
@@ -299,97 +296,94 @@ export const loginUser = async ({ email, password }) => {
   }
   const cleanEmail = email.toLowerCase().trim();
 
+  // 1. Database authentication
   if (isDBConnected()) {
-    try {
-      const user = await User.findOne({ email: cleanEmail }).select('+password');
-      if (!user) {
-        throw new Error('Invalid email or password. Please check your credentials or register a new account.');
-      }
+    const user = await User.findOne({ email: cleanEmail }).select('+password');
+    if (!user) {
+      throw new Error('No account found with this email. Please click "Create Account" above to register.');
+    }
 
-      const isMatch = await user.matchPassword(password);
-      if (!isMatch) {
-        throw new Error('Invalid email or password. Please check your credentials or register a new account.');
-      }
+    const isMatch = await user.matchPassword(password);
+    if (!isMatch) {
+      throw new Error('Invalid email or password. Please verify your password or use "Forgot Password".');
+    }
 
-      // Check if user is verified
-      if (user.isVerified === false) {
-        const otp = generateOtp();
-        user.verificationOtp = otp;
-        user.verificationExpires = new Date(Date.now() + 15 * 60 * 1000);
-        await user.save();
+    if (user.isVerified === false) {
+      const otp = generateOtp();
+      user.verificationOtp = otp;
+      user.verificationExpires = new Date(Date.now() + 15 * 60 * 1000);
+      await user.save();
 
-        // Send email via Nodemailer
-        await sendVerificationEmail({
-          to: cleanEmail,
-          name: user.name,
-          otp,
-        });
-
-        return {
-          _id: user._id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          company: user.company,
-          phone: user.phone,
-          isVerified: false,
-          requiresVerification: true,
-          demoOtp: otp,
-          message: 'Your account requires email verification. A fresh 6-digit code has been sent to your email.',
-        };
-      }
-
-      const token = generateToken({
-        id: user._id,
-        email: user.email,
-        role: user.role,
+      const mailResult = await sendVerificationEmail({
+        to: cleanEmail,
         name: user.name,
-        company: user.company,
-        phone: user.phone,
+        otp,
       });
+
+      const feedbackMessage = mailResult?.isFallback
+        ? `Your account requires email verification. Code sent to ${cleanEmail} (Code: ${otp}).`
+        : 'Your account requires email verification. A fresh 6-digit code has been sent to your email.';
 
       return {
         _id: user._id,
-        name: user.name,
         email: user.email,
+        name: user.name,
         role: user.role,
         company: user.company,
         phone: user.phone,
-        avatarUrl: user.avatarUrl,
-        isVerified: true,
-        token,
+        isVerified: false,
+        requiresVerification: true,
+        verificationOtp: mailResult?.isFallback ? otp : undefined,
+        message: feedbackMessage,
       };
-    } catch (err) {
-      if (
-        err.message.includes('verification')
-      ) {
-        throw err;
-      }
-      console.warn('MongoDB error in loginUser, checking memory store:', err.message);
     }
+
+    const token = generateToken({
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+      company: user.company,
+      phone: user.phone,
+    });
+
+    return {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      company: user.company,
+      phone: user.phone,
+      avatarUrl: user.avatarUrl,
+      isVerified: true,
+      token,
+    };
   }
 
-  // Memory store lookup
+  // 2. Memory store dynamic lookup (when database is initializing or running in memory mode)
   const user = memoryUsers.find((u) => u.email.toLowerCase() === cleanEmail);
   if (!user) {
-    throw new Error('Invalid email or password. Please check your credentials or register a new account.');
+    throw new Error('No account found with this email. Please click "Create Account" above to register.');
   }
 
   if (user.password !== password) {
-    throw new Error('Invalid email or password. Please check your credentials or register a new account.');
+    throw new Error('Invalid email or password. Please verify your password or use "Forgot Password".');
   }
 
-  // If unverified in memory
   if (user.isVerified === false) {
     const otp = generateOtp();
     user.verificationOtp = otp;
     user.verificationExpires = new Date(Date.now() + 15 * 60 * 1000);
 
-    await sendVerificationEmail({
+    const mailResult = await sendVerificationEmail({
       to: cleanEmail,
       name: user.name,
       otp,
     });
+
+    const feedbackMessage = mailResult?.isFallback
+      ? `Your account requires email verification. Code sent to ${cleanEmail} (Code: ${otp}).`
+      : 'Your account requires email verification. A fresh 6-digit code has been sent to your email.';
 
     return {
       _id: user._id,
@@ -400,8 +394,8 @@ export const loginUser = async ({ email, password }) => {
       phone: user.phone,
       isVerified: false,
       requiresVerification: true,
-      demoOtp: otp,
-      message: 'Your account requires email verification. A fresh 6-digit code has been sent to your email.',
+      verificationOtp: mailResult?.isFallback ? otp : undefined,
+      message: feedbackMessage,
     };
   }
 

@@ -15,7 +15,7 @@ const canAccessLead = (lead, requester) => {
   if (requester.role === 'prosync' || requester.role === 'prosync_admin') {
     return lead.consultationAssignedTo === requester.email || lead.consultationAssignedTo === 'Prosync';
   }
-  return String(lead.userId) === String(requester._id);
+  return String(lead.userId) === String(requester._id) || (lead.email && requester.email && lead.email.toLowerCase() === requester.email.toLowerCase());
 };
 
 export const getAllLeads = async (query = {}, requester = null) => {
@@ -24,7 +24,14 @@ export const getAllLeads = async (query = {}, requester = null) => {
     try {
       let filter = {};
       if (requester?.role === 'user') {
-        filter.userId = requester._id;
+        if (requester.email) {
+          filter.$or = [
+            { userId: requester._id },
+            { email: { $regex: new RegExp(`^${requester.email.trim()}$`, 'i') } }
+          ];
+        } else {
+          filter.userId = requester._id;
+        }
       } else if (requester?.role === 'ca') {
         filter.assignedCA = requester.email;
       } else if (requester?.role === 'dpr_consultant') {

@@ -4,7 +4,10 @@ import Document from '../models/Document.js';
 import Lead from '../models/Lead.js';
 import { sendError, sendSuccess } from '../utils/responseHandler.js';
 
-const storageRoot = path.resolve(process.env.DOCUMENT_STORAGE_DIR || './storage/private');
+const storageRoot = path.resolve(
+  process.env.DOCUMENT_STORAGE_DIR ||
+  (path.join(process.cwd(), 'Backend', 'storage', 'private'))
+);
 
 const canAccess = (lead, user) => {
   if (!lead || !user) return false;

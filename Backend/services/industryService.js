@@ -8,9 +8,7 @@ export const getAllIndustries = async () => {
   if (isDBConnected()) {
     try {
       const list = await Industry.find({}).sort({ category: 1, name: 1 });
-      if (list && list.length > 0) return list;
-      await Industry.insertMany(DEFAULT_INDUSTRIES).catch(() => {});
-      return await Industry.find({}).sort({ category: 1, name: 1 });
+      return list || [];
     } catch (err) {
       console.warn('MongoDB query failed in getAllIndustries, using memory fallback:', err.message);
     }

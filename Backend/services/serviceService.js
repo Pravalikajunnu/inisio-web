@@ -8,9 +8,7 @@ export const getAllServices = async () => {
   if (isDBConnected()) {
     try {
       const list = await Service.find({ active: true });
-      if (list && list.length > 0) return list;
-      await Service.insertMany(DEFAULT_SERVICES).catch(() => {});
-      return await Service.find({ active: true });
+      return list || [];
     } catch (err) {
       console.warn('MongoDB query failed in getAllServices, using memory fallback:', err.message);
     }

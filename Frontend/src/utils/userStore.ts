@@ -22,13 +22,11 @@ export function getAllRegisteredUsers(): RegisteredUserRecord[] {
   try {
     const raw = localStorage.getItem(REGISTERED_USERS_KEY);
     if (!raw) {
-      const defaultUsers = getInitialSeedUsers();
-      localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(defaultUsers));
-      return defaultUsers;
+      return [];
     }
     return JSON.parse(raw);
   } catch (err) {
-    return getInitialSeedUsers();
+    return [];
   }
 }
 
@@ -51,11 +49,12 @@ export async function fetchUsersFromBackend(): Promise<RegisteredUserRecord[]> {
           name: u.name || u.email?.split('@')[0],
           email: u.email,
           phone: u.phone || '',
-          company: u.company || 'Enterprise Promoter',
+          company: u.company || '',
           role: u.role || 'user',
           createdAt: u.createdAt || new Date().toISOString(),
           lastLoginAt: u.lastLoginAt || new Date().toISOString(),
           loginCount: u.loginCount || 1,
+          projectsCount: u.projectsCount !== undefined ? u.projectsCount : 0,
           status: u.status || 'active',
         }));
 
@@ -90,11 +89,11 @@ export function recordUserLogin(user: AuthUser): void {
     };
   } else {
     const newUser: RegisteredUserRecord = {
-      id: 'usr_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      id: user._id || 'usr_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
       name: user.name || user.email.split('@')[0],
       email: user.email.toLowerCase(),
       phone: user.phone || '',
-      company: user.company || 'Greenfield Enterprise',
+      company: user.company || '',
       role: user.role || 'user',
       createdAt: now,
       lastLoginAt: now,
@@ -131,59 +130,4 @@ export function updateUserStatus(userId: string, newStatus: 'active' | 'suspende
     },
     body: JSON.stringify({ status: newStatus }),
   }).catch(() => {});
-}
-
-function getInitialSeedUsers(): RegisteredUserRecord[] {
-  return [
-    {
-      id: 'usr_admin3',
-      name: 'Super Admin',
-      email: 'admin@inisio.com',
-      phone: '+91 63020 26462',
-      company: 'Inisio Capital Advisory Group',
-      role: 'admin3',
-      createdAt: '2026-06-01T09:00:00.000Z',
-      lastLoginAt: new Date().toISOString(),
-      loginCount: 38,
-      status: 'active'
-    },
-    {
-      id: 'usr_promoter1',
-      name: 'K. S. Rao',
-      email: 'pravalikajunnu14@gmail.com',
-      phone: '+91 98490 11223',
-      company: 'Sri Venkateswara Agro Foods & Bio-Ethanol Ltd',
-      role: 'user',
-      createdAt: '2026-08-15T10:30:00.000Z',
-      lastLoginAt: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
-      loginCount: 12,
-      projectsCount: 2,
-      status: 'active'
-    },
-    {
-      id: 'usr_ca1',
-      name: 'CA Rajesh Agarwal',
-      email: 'rajesh.agarwal@auditpartners.in',
-      phone: '+91 98110 55443',
-      company: 'Agarwal & Co. Chartered Accountants',
-      role: 'ca',
-      createdAt: '2026-07-20T14:15:00.000Z',
-      lastLoginAt: new Date(Date.now() - 4 * 3600 * 1000).toISOString(),
-      loginCount: 19,
-      status: 'active'
-    },
-    {
-      id: 'usr_promoter2',
-      name: 'Ananya Deshmukh',
-      email: 'ananya@greenenergyfab.com',
-      phone: '+91 98220 77889',
-      company: 'Deccan Solar & Ingot Tech Pvt Ltd',
-      role: 'user',
-      createdAt: '2026-08-01T11:00:00.000Z',
-      lastLoginAt: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString(),
-      loginCount: 5,
-      projectsCount: 1,
-      status: 'active'
-    }
-  ];
 }
