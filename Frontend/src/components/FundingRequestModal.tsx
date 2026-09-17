@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthUser } from '../types';
 import { validateIndianMobileNumber } from '../utils/validation';
 import {
@@ -33,11 +33,17 @@ export const FundingRequestModal: React.FC<FundingRequestModalProps> = ({
   projectName = 'Greenfield Industrial Unit',
   industry = 'Manufacturing',
   totalCostCr = '10.00',
-  loanRequiredCr = '7.50',
+  loanRequiredCr,
   user,
   onSubmitSuccess
 }) => {
-  const [desiredLoanAmount, setDesiredLoanAmount] = useState<string>(String(loanRequiredCr || '7.50'));
+  const [desiredLoanAmount, setDesiredLoanAmount] = useState<string>(() => {
+    if (loanRequiredCr !== undefined && loanRequiredCr !== null && loanRequiredCr !== '') {
+      return String(loanRequiredCr);
+    }
+    const cost = parseFloat(String(totalCostCr)) || 0;
+    return cost > 0 ? (cost * 0.75).toFixed(2) : '7.50';
+  });
   const [timeline, setTimeline] = useState<string>('1_to_3_months');
   const [facilityType, setFacilityType] = useState<string>('Term Loan (Greenfield Capex)');
   const [collateralAvailable, setCollateralAvailable] = useState<string>('Primary Project Assets + Partial Collateral (30-50%)');
@@ -50,6 +56,27 @@ export const FundingRequestModal: React.FC<FundingRequestModalProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  // Synchronize desired loan amount whenever loanRequiredCr, totalCostCr, or modal visibility updates
+  useEffect(() => {
+    if (loanRequiredCr !== undefined && loanRequiredCr !== null && String(loanRequiredCr).trim() !== '') {
+      setDesiredLoanAmount(String(loanRequiredCr));
+    } else if (totalCostCr !== undefined && totalCostCr !== null && String(totalCostCr).trim() !== '') {
+      const parsedCost = parseFloat(String(totalCostCr)) || 0;
+      if (parsedCost > 0) {
+        setDesiredLoanAmount((parsedCost * 0.75).toFixed(2));
+      }
+    }
+  }, [loanRequiredCr, totalCostCr, isOpen]);
+
+  // Synchronize user contact details
+  useEffect(() => {
+    if (user) {
+      if (user.name) setFullName(user.name);
+      if (user.email) setEmail(user.email);
+      if (user.phone) setPhone(user.phone);
+    }
+  }, [user, isOpen]);
 
   if (!isOpen) return null;
 

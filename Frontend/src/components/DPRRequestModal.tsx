@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthUser } from '../types';
 import { validateIndianMobileNumber } from '../utils/validation';
 import {
@@ -51,6 +51,14 @@ export const DPRRequestModal: React.FC<DPRRequestModalProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      if (user.name) setFullName(user.name);
+      if (user.email) setEmail(user.email);
+      if (user.phone) setPhone(user.phone);
+    }
+  }, [user, isOpen]);
 
   if (!isOpen) return null;
 

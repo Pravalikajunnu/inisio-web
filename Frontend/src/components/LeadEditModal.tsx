@@ -32,6 +32,7 @@ interface LeadEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSaved: () => void;
+  readOnly?: boolean;
 }
 
 export const LeadEditModal: React.FC<LeadEditModalProps> = ({
@@ -39,8 +40,10 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
   user,
   isOpen,
   onClose,
-  onSaved
+  onSaved,
+  readOnly
 }) => {
+  const isReadOnly = readOnly || user.role === 'superadmin' || user.role === 'admin1';
   const [activeTab, setActiveTab] = useState<'overview' | 'financials' | 'promoters' | 'land' | 'documents' | 'status'>('overview');
   const [formData, setFormData] = useState<Partial<LeadRecord>>({});
   const [promoters, setPromoters] = useState<PromoterDetail[]>([]);
@@ -220,6 +223,10 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isReadOnly) {
+      onClose();
+      return;
+    }
     const phoneValidation = validateIndianMobileNumber(String(formData.mobile || ''));
     if (!phoneValidation.isValid) {
       alert(phoneValidation.error);
@@ -263,18 +270,26 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
         {/* Header */}
         <div className="p-4 sm:p-5 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/70">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 flex items-center justify-center font-bold">
-              <Edit3 className="w-5 h-5" />
+            <div className={`w-9 h-9 rounded-xl border flex items-center justify-center font-bold ${
+              isReadOnly
+                ? 'bg-purple-500/10 border-purple-500/30 text-purple-700'
+                : 'bg-amber-500/10 border-amber-500/30 text-amber-700'
+            }`}>
+              {isReadOnly ? <Eye className="w-5 h-5" /> : <Edit3 className="w-5 h-5" />}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-zinc-900 text-base">Admin Project Editor</h3>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
-                  Full Authority
+                <h3 className="font-bold text-zinc-900 text-base">
+                  {isReadOnly ? 'Project Specifications (View Only)' : 'Admin Project Editor'}
+                </h3>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                  isReadOnly ? 'bg-purple-100 text-purple-800' : 'bg-amber-100 text-amber-800'
+                }`}>
+                  {isReadOnly ? 'Super Admin (Viewer)' : 'Admin (Full Authority)'}
                 </span>
               </div>
               <p className="text-xs text-zinc-500 font-medium">
-                Editing: <strong className="text-zinc-800">{lead.projectName || 'Greenfield Project'}</strong> ({lead.fullName})
+                {isReadOnly ? 'Inspecting:' : 'Editing:'} <strong className="text-zinc-800">{lead.projectName || 'Greenfield Project'}</strong> ({lead.fullName})
               </p>
             </div>
           </div>
@@ -286,6 +301,14 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Super Admin Notice Banner */}
+        {isReadOnly && (
+          <div className="px-5 py-2.5 bg-purple-50 border-b border-purple-100 flex items-center gap-2 text-xs text-purple-800 font-medium shrink-0">
+            <ShieldCheck className="w-4 h-4 text-purple-600 shrink-0" />
+            <span><strong>Super Admin View-Only Mode:</strong> Full specifications, financial ratios, and uploaded files are accessible for audit. Modifying and saving data requires an Admin account.</span>
+          </div>
+        )}
 
         {/* Tab Navigation */}
         <div className="px-5 border-b border-zinc-200 bg-white flex items-center gap-1 overflow-x-auto scrollbar-none shrink-0">
@@ -892,7 +915,7 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
           {/* Footer Actions */}
           <div className="pt-4 flex items-center justify-between border-t border-zinc-100 mt-4">
             <span className="text-[11px] text-zinc-400">
-              Changes will be recorded in audit history and synced instantly.
+              {isReadOnly ? 'Viewing in Super Admin read-only audit mode.' : 'Changes will be recorded in audit history and synced instantly.'}
             </span>
 
             <div className="flex items-center gap-2">
@@ -901,15 +924,17 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
                 onClick={onClose}
                 className="px-4 py-2 bg-white border border-zinc-200 text-zinc-700 font-semibold text-xs rounded-lg hover:bg-zinc-50 transition-colors cursor-pointer"
               >
-                Cancel
+                {isReadOnly ? 'Close' : 'Cancel'}
               </button>
-              <button
-                type="submit"
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
-              >
-                <Save className="w-3.5 h-3.5" />
-                <span>Save Project Updates</span>
-              </button>
+              {!isReadOnly && (
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Save Project Updates</span>
+                </button>
+              )}
             </div>
           </div>
         </form>

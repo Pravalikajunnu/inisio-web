@@ -45,13 +45,15 @@ interface UserProfileDetailModalProps {
   onClose: () => void;
   onEdit?: (lead: LeadRecord) => void;
   onDelete?: (id: string) => void;
+  readOnly?: boolean;
 }
 
 export const UserProfileDetailModal: React.FC<UserProfileDetailModalProps> = ({
   lead,
   onClose,
   onEdit,
-  onDelete
+  onDelete,
+  readOnly = false
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'promoters' | 'financials' | 'documents' | 'lifecycle' | 'audit'>('overview');
   const [viewingDoc, setViewingDoc] = useState<DocumentViewerTarget | null>(null);
@@ -698,26 +700,28 @@ export const UserProfileDetailModal: React.FC<UserProfileDetailModalProps> = ({
                 </div>
 
                 {/* Upload Action for Admin */}
-                <div className="flex items-center gap-2">
-                  <select
-                    value={uploadCategory}
-                    onChange={(e) => setUploadCategory(e.target.value)}
-                    className="px-2.5 py-1.5 text-xs bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none"
-                  >
-                    <option value="Detailed Project Report (DPR)">DPR Document</option>
-                    <option value="Financial Model / CMA">CMA Data</option>
-                    <option value="Company KYC">Company KYC</option>
-                    <option value="Promoter KYC">Promoter KYC</option>
-                    <option value="Audited Balance Sheet">Audited Balance Sheet</option>
-                    <option value="Land Title Document">Land Title Deed</option>
-                  </select>
+                {!readOnly && (
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={uploadCategory}
+                      onChange={(e) => setUploadCategory(e.target.value)}
+                      className="px-2.5 py-1.5 text-xs bg-zinc-50 border border-zinc-200 rounded-lg focus:outline-none"
+                    >
+                      <option value="Detailed Project Report (DPR)">DPR Document</option>
+                      <option value="Financial Model / CMA">CMA Data</option>
+                      <option value="Company KYC">Company KYC</option>
+                      <option value="Promoter KYC">Promoter KYC</option>
+                      <option value="Audited Balance Sheet">Audited Balance Sheet</option>
+                      <option value="Land Title Document">Land Title Deed</option>
+                    </select>
 
-                  <label className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>{isUploading ? 'Uploading...' : 'Attach File'}</span>
-                    <input type="file" onChange={handleAdminFileUpload} className="hidden" />
-                  </label>
-                </div>
+                    <label className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{isUploading ? 'Uploading...' : 'Attach File'}</span>
+                      <input type="file" onChange={handleAdminFileUpload} className="hidden" />
+                    </label>
+                  </div>
+                )}
               </div>
 
               {allDocuments.length === 0 ? (
@@ -911,10 +915,23 @@ export const UserProfileDetailModal: React.FC<UserProfileDetailModalProps> = ({
             {onEdit && (
               <button
                 onClick={() => onEdit(lead)}
-                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-zinc-950 font-bold text-xs rounded-lg transition-colors cursor-pointer shadow-xs flex items-center gap-1.5"
+                className={`px-4 py-2 font-bold text-xs rounded-lg transition-colors cursor-pointer shadow-xs flex items-center gap-1.5 ${
+                  readOnly
+                    ? 'bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200'
+                    : 'bg-amber-500 hover:bg-amber-600 text-zinc-950'
+                }`}
               >
-                <Edit3 className="w-3.5 h-3.5" />
-                <span>Edit Project</span>
+                {readOnly ? (
+                  <>
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>View Specifications</span>
+                  </>
+                ) : (
+                  <>
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Edit Project</span>
+                  </>
+                )}
               </button>
             )}
 

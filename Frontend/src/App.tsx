@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { AuthUser } from './types';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
@@ -8,26 +8,31 @@ import { Testimonials } from './components/Testimonials';
 import { ProjectActionCards } from './components/ProjectActionCards';
 import { IndustriesSection } from './components/IndustriesSection';
 import { ContactSection } from './components/ContactSection';
-import { ProjectAssessmentPage } from './components/ProjectAssessmentPage';
 import { WhyChooseInisio } from './components/WhyChooseInisio';
 import { HowItWorks } from './components/HowItWorks';
 import { FAQSection } from './components/FAQSection';
 import { Footer } from './components/Footer';
-import { ConsultationModal } from './components/ConsultationModal';
-import { AdminLeadsModal } from './components/AdminLeadsModal';
 import { FloatingContactButtons } from './components/FloatingContactButtons';
-import { AuthModal } from './components/AuthModal';
-import { UserDashboard } from './components/UserDashboard';
-import { CADashboard } from './components/CADashboard';
-import { AdminDashboardView } from './components/AdminDashboardView';
-import { ProsyncDashboard } from './components/ProsyncDashboard';
-import { DPRConsultantDashboard } from './components/DPRConsultantDashboard';
-import { LatestBlogs } from './components/LatestBlogs';
-import { MembershipPlansModal } from './components/MembershipPlansModal';
-import { canUserStartAssessment, getUserMembership } from './utils/membershipStore';
+import { DashboardSkeleton, LoadingSpinner } from './components/common';
+import { canUserStartAssessment } from './utils/membershipStore';
 import { getStoredLeads } from './utils/leadStore';
 import { recordPageView } from './utils/visitorStore';
 import { recordUserLogin } from './utils/userStore';
+
+// Code-split / Lazy-loaded heavy modules and dashboards
+const UserDashboard = lazy(() => import('./components/UserDashboard').then(m => ({ default: m.UserDashboard })));
+const CADashboard = lazy(() => import('./components/CADashboard').then(m => ({ default: m.CADashboard })));
+const AdminDashboardView = lazy(() => import('./components/AdminDashboardView').then(m => ({ default: m.AdminDashboardView })));
+const ProsyncDashboard = lazy(() => import('./components/ProsyncDashboard').then(m => ({ default: m.ProsyncDashboard })));
+const DPRConsultantDashboard = lazy(() => import('./components/DPRConsultantDashboard').then(m => ({ default: m.DPRConsultantDashboard })));
+const ProjectAssessmentPage = lazy(() => import('./components/ProjectAssessmentPage').then(m => ({ default: m.ProjectAssessmentPage })));
+const LatestBlogs = lazy(() => import('./components/LatestBlogs').then(m => ({ default: m.LatestBlogs })));
+
+// Code-split modals
+const AuthModal = lazy(() => import('./components/AuthModal').then(m => ({ default: m.AuthModal })));
+const ConsultationModal = lazy(() => import('./components/ConsultationModal').then(m => ({ default: m.ConsultationModal })));
+const AdminLeadsModal = lazy(() => import('./components/AdminLeadsModal').then(m => ({ default: m.AdminLeadsModal })));
+const MembershipPlansModal = lazy(() => import('./components/MembershipPlansModal').then(m => ({ default: m.MembershipPlansModal })));
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<string>('home');
@@ -37,7 +42,9 @@ export default function App() {
   const [membershipModalOpen, setMembershipModalOpen] = useState(false);
   const [membershipModalReason, setMembershipModalReason] = useState('');
   const [authInitialMode, setAuthInitialMode] = useState<'login' | 'signup' | 'forgot-password'>('login');
+  
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
+    if (typeof window === 'undefined') return null;
     const saved = localStorage.getItem('inisio_active_user');
     if (saved) {
       try {
@@ -90,7 +97,7 @@ export default function App() {
       window.removeEventListener('hashchange', checkAdminHash);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [currentUser?.email]);
 
   // Track page transitions
   useEffect(() => {
@@ -100,7 +107,13 @@ export default function App() {
       'user-dashboard': 'Promoter Project Dashboard',
       'admin-dashboard': 'Executive Admin Control Desk',
       'ca-dashboard': 'Chartered Accountant Audit Desk',
-      'prosync-dashboard': 'Prosync Operations Hub'
+      'prosync-dashboard': 'Prosync Operations Hub',
+      'dpr-dashboard': 'DPR Consultant Desk',
+      'about': 'Why Choose Inisio',
+      'industries': 'Sector Directory',
+      'contact': 'Contact Advisory',
+      'how-it-works': 'How It Works Process',
+      'faq': 'Frequently Asked Questions',
     };
     recordPageView(tabLabels[activeTab] || activeTab, currentUser?.email);
   }, [activeTab, currentUser?.email]);
@@ -116,7 +129,14 @@ export default function App() {
     }
 
     // Redirect to corresponding dashboard based on exact email/role request
-    if (user.role === 'superadmin' || user.role === 'admin' || user.role === 'admin1' || user.role === 'admin2' || user.role === 'admin3' || user.email === 'admin@gmail.com') {
+    if (
+      user.role === 'superadmin' ||
+      user.role === 'admin' ||
+      user.role === 'admin1' ||
+      user.role === 'admin2' ||
+      user.role === 'admin3' ||
+      user.email === 'admin@gmail.com'
+    ) {
       setActiveTab('admin-dashboard');
     } else if (user.role === 'ca' || user.email === 'ca@gmail.com') {
       setActiveTab('ca-dashboard');
@@ -134,6 +154,7 @@ export default function App() {
   const handleLogout = () => {
     setCurrentUser(null);
     localStorage.removeItem('inisio_active_user');
+    localStorage.removeItem('inisio_auth_token');
     setActiveTab('home');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -150,7 +171,7 @@ export default function App() {
 
     // Check if user has already completed one free assessment
     const storedLeads = currentUser?.email ? getStoredLeads(currentUser.email) : getStoredLeads();
-    const submittedAssessmentCount = storedLeads.filter(lead => lead.assessmentCompleted === true).length;
+    const submittedAssessmentCount = storedLeads.filter((lead) => lead.assessmentCompleted === true).length;
     const eligibility = canUserStartAssessment(currentUser?.email, submittedAssessmentCount);
 
     if (!eligibility.allowed) {
@@ -182,8 +203,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 font-sans antialiased selection:bg-blue-100 selection:text-blue-800 flex flex-col justify-between">
-      
+    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased selection:bg-blue-100 selection:text-blue-800 flex flex-col justify-between">
       <div>
         {/* Navbar */}
         <Navbar
@@ -213,73 +233,85 @@ export default function App() {
                 onNavigateToContact={() => handleSelectTab('contact')}
               />
               <Testimonials />
-              <FAQSection
-                onOpenConsultation={() => setConsultationModalOpen(true)}
-              />
-              <LatestBlogs
-                onOpenAssessment={() => handleOpenAssessment()}
-                onOpenConsultation={() => setConsultationModalOpen(true)}
-              />
+              <FAQSection onOpenConsultation={() => setConsultationModalOpen(true)} />
+              <Suspense fallback={<div className="py-12 flex justify-center"><LoadingSpinner size="lg" /></div>}>
+                <LatestBlogs
+                  onOpenAssessment={() => handleOpenAssessment()}
+                  onOpenConsultation={() => setConsultationModalOpen(true)}
+                />
+              </Suspense>
             </div>
           )}
 
           {activeTab === 'user-dashboard' && currentUser && (
-            <div className="animate-in fade-in duration-300">
-              <UserDashboard
-                user={currentUser}
-                onOpenAssessment={(projectToEdit) => handleOpenAssessment('', projectToEdit)}
-                onOpenConsultation={() => setConsultationModalOpen(true)}
-                onOpenMembership={() => {
-                  setMembershipModalReason('');
-                  setMembershipModalOpen(true);
-                }}
-              />
-            </div>
+            <Suspense fallback={<DashboardSkeleton />}>
+              <div className="animate-in fade-in duration-300">
+                <UserDashboard
+                  user={currentUser}
+                  onOpenAssessment={(projectToEdit) => handleOpenAssessment('', projectToEdit)}
+                  onOpenConsultation={() => setConsultationModalOpen(true)}
+                  onOpenMembership={() => {
+                    setMembershipModalReason('');
+                    setMembershipModalOpen(true);
+                  }}
+                />
+              </div>
+            </Suspense>
           )}
 
           {activeTab === 'ca-dashboard' && currentUser && (
-            <div className="animate-in fade-in duration-300">
-              <CADashboard user={currentUser} />
-            </div>
+            <Suspense fallback={<DashboardSkeleton />}>
+              <div className="animate-in fade-in duration-300">
+                <CADashboard user={currentUser} />
+              </div>
+            </Suspense>
           )}
 
           {activeTab === 'dpr-dashboard' && currentUser && (
-            <DPRConsultantDashboard user={currentUser} onLogout={handleLogout} />
+            <Suspense fallback={<DashboardSkeleton />}>
+              <DPRConsultantDashboard user={currentUser} onLogout={handleLogout} />
+            </Suspense>
           )}
 
           {activeTab === 'admin-dashboard' && currentUser && (
-            <div className="animate-in fade-in duration-300">
-              <AdminDashboardView user={currentUser} />
-            </div>
+            <Suspense fallback={<DashboardSkeleton />}>
+              <div className="animate-in fade-in duration-300">
+                <AdminDashboardView user={currentUser} />
+              </div>
+            </Suspense>
           )}
 
           {activeTab === 'prosync-dashboard' && currentUser && (
-            <div className="animate-in fade-in duration-300">
-              <ProsyncDashboard user={currentUser} onLogout={handleLogout} />
-            </div>
+            <Suspense fallback={<DashboardSkeleton />}>
+              <div className="animate-in fade-in duration-300">
+                <ProsyncDashboard user={currentUser} onLogout={handleLogout} />
+              </div>
+            </Suspense>
           )}
 
           {activeTab === 'assessment' && (
-            <div className="animate-in fade-in duration-300">
-              <ProjectAssessmentPage
-                currentUser={currentUser}
-                onOpenAuth={handleOpenAuth}
-                onLoginSuccess={handleLoginSuccess}
-                onOpenConsultation={() => setConsultationModalOpen(true)}
-                defaultIndustry={selectedIndustryForAssessment}
-                editingProject={editingProjectForAssessment}
-                onFinishEditing={() => {
-                  setEditingProjectForAssessment(null);
-                  setActiveTab('user-dashboard');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                onNavigateToDashboard={() => {
-                  setEditingProjectForAssessment(null);
-                  setActiveTab('user-dashboard');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-              />
-            </div>
+            <Suspense fallback={<DashboardSkeleton />}>
+              <div className="animate-in fade-in duration-300">
+                <ProjectAssessmentPage
+                  currentUser={currentUser}
+                  onOpenAuth={handleOpenAuth}
+                  onLoginSuccess={handleLoginSuccess}
+                  onOpenConsultation={() => setConsultationModalOpen(true)}
+                  defaultIndustry={selectedIndustryForAssessment}
+                  editingProject={editingProjectForAssessment}
+                  onFinishEditing={() => {
+                    setEditingProjectForAssessment(null);
+                    setActiveTab('user-dashboard');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  onNavigateToDashboard={() => {
+                    setEditingProjectForAssessment(null);
+                    setActiveTab('user-dashboard');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                />
+              </div>
+            </Suspense>
           )}
 
           {activeTab === 'how-it-works' && (
@@ -320,9 +352,7 @@ export default function App() {
 
           {activeTab === 'faq' && (
             <div className="animate-in fade-in duration-300">
-              <FAQSection
-                onOpenConsultation={() => setConsultationModalOpen(true)}
-              />
+              <FAQSection onOpenConsultation={() => setConsultationModalOpen(true)} />
             </div>
           )}
         </main>
@@ -335,7 +365,12 @@ export default function App() {
           onOpenAssessment={() => handleOpenAssessment()}
           onOpenConsultation={() => setConsultationModalOpen(true)}
           onOpenAdmin={() => {
-            if (currentUser?.role === 'admin' || currentUser?.role === 'admin1' || currentUser?.role === 'admin2' || currentUser?.role === 'admin3') {
+            if (
+              currentUser?.role === 'admin' ||
+              currentUser?.role === 'admin1' ||
+              currentUser?.role === 'admin2' ||
+              currentUser?.role === 'admin3'
+            ) {
               setActiveTab('admin-dashboard');
             } else {
               setAdminModalOpen(true);
@@ -344,39 +379,54 @@ export default function App() {
         />
       </div>
 
-      {/* Interactive Modals */}
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        onLoginSuccess={handleLoginSuccess}
-        initialMode={authInitialMode}
-        prefilledEmail={authPrefill.email}
-        prefilledName={authPrefill.name}
-        prefilledPhone={authPrefill.phone}
-      />
+      {/* Interactive Modals (Code-Split / Suspense Loaded) */}
+      {authModalOpen && (
+        <Suspense fallback={null}>
+          <AuthModal
+            isOpen={authModalOpen}
+            onClose={() => setAuthModalOpen(false)}
+            onLoginSuccess={handleLoginSuccess}
+            initialMode={authInitialMode}
+            prefilledEmail={authPrefill.email}
+            prefilledName={authPrefill.name}
+            prefilledPhone={authPrefill.phone}
+          />
+        </Suspense>
+      )}
 
-      <ConsultationModal
-        isOpen={consultationModalOpen}
-        onClose={() => setConsultationModalOpen(false)}
-      />
+      {consultationModalOpen && (
+        <Suspense fallback={null}>
+          <ConsultationModal
+            isOpen={consultationModalOpen}
+            onClose={() => setConsultationModalOpen(false)}
+          />
+        </Suspense>
+      )}
 
-      <AdminLeadsModal
-        isOpen={adminModalOpen}
-        onClose={() => setAdminModalOpen(false)}
-      />
+      {adminModalOpen && (
+        <Suspense fallback={null}>
+          <AdminLeadsModal
+            isOpen={adminModalOpen}
+            onClose={() => setAdminModalOpen(false)}
+          />
+        </Suspense>
+      )}
 
-      <MembershipPlansModal
-        isOpen={membershipModalOpen}
-        onClose={() => setMembershipModalOpen(false)}
-        currentUser={currentUser}
-        onOpenAuth={handleOpenAuth}
-        onOpenConsultation={() => setConsultationModalOpen(true)}
-        initialReason={membershipModalReason}
-      />
+      {membershipModalOpen && (
+        <Suspense fallback={null}>
+          <MembershipPlansModal
+            isOpen={membershipModalOpen}
+            onClose={() => setMembershipModalOpen(false)}
+            currentUser={currentUser}
+            onOpenAuth={handleOpenAuth}
+            onOpenConsultation={() => setConsultationModalOpen(true)}
+            initialReason={membershipModalReason}
+          />
+        </Suspense>
+      )}
 
       {/* Floating Call & WhatsApp Buttons */}
       <FloatingContactButtons />
-
     </div>
   );
 }

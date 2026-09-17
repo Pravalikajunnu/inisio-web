@@ -9,7 +9,7 @@ import {
   assignLead,
   updateLeadProgress,
 } from '../controllers/leadController.js';
-import { authenticateUser, authorizeRoles, optionalAuth } from '../middleware/authMiddleware.js';
+import { authenticateUser, authorizeRoles, restrictSuperAdminViewer, optionalAuth } from '../middleware/authMiddleware.js';
 import { validateBody, validateIndianPhone } from '../middleware/validateMiddleware.js';
 
 const router = express.Router();
@@ -17,13 +17,13 @@ const router = express.Router();
 // Public submission
 router.post('/', optionalAuth, validateBody(['fullName', 'mobile', 'email']), validateIndianPhone('mobile'), createLead);
 
-// Lead retrieval & management (Admins & CAs)
+// Lead retrieval & management (Admins & CAs & Super Admin viewer)
 router.get('/', authenticateUser, getLeads);
 router.get('/:id', authenticateUser, getLeadById);
-router.put('/:id/assignment', authenticateUser, authorizeRoles('superadmin'), assignLead);
-router.put('/:id/progress', authenticateUser, updateLeadProgress);
-router.put('/:id', authenticateUser, validateIndianPhone('mobile'), updateLead);
-router.delete('/clear-all', authenticateUser, authorizeRoles('superadmin'), clearAllLeads);
-router.delete('/:id', authenticateUser, authorizeRoles('superadmin'), deleteLead);
+router.put('/:id/assignment', authenticateUser, restrictSuperAdminViewer, authorizeRoles('admin', 'admin1', 'admin2', 'admin3'), assignLead);
+router.put('/:id/progress', authenticateUser, restrictSuperAdminViewer, updateLeadProgress);
+router.put('/:id', authenticateUser, restrictSuperAdminViewer, validateIndianPhone('mobile'), updateLead);
+router.delete('/clear-all', authenticateUser, restrictSuperAdminViewer, authorizeRoles('admin', 'admin1', 'admin2', 'admin3'), clearAllLeads);
+router.delete('/:id', authenticateUser, restrictSuperAdminViewer, authorizeRoles('admin', 'admin1', 'admin2', 'admin3'), deleteLead);
 
 export default router;

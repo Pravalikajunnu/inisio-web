@@ -39,7 +39,7 @@ export const updateLead = async (req, res, next) => {
 
 export const deleteLead = async (req, res, next) => {
   try {
-    await leadService.deleteLead(req.params.id);
+    await leadService.deleteLead(req.params.id, req.user);
     return sendSuccess(res, null, 'Lead deleted successfully');
   } catch (error) {
     next(error);
@@ -48,7 +48,7 @@ export const deleteLead = async (req, res, next) => {
 
 export const clearAllLeads = async (req, res, next) => {
   try {
-    const result = await leadService.clearAllLeads();
+    const result = await leadService.clearAllLeads(req.user);
     return sendSuccess(res, result, 'All leads cleared');
   } catch (error) {
     next(error);

@@ -89,7 +89,7 @@ export const optionalAuth = async (req, res, next) => {
 
 /**
  * Middleware to authorize specific user roles
- * @param  {...string} roles - e.g. 'admin', 'ca', 'prosync', 'user'
+ * @param  {...string} roles - e.g. 'admin', 'superadmin', 'ca', 'prosync', 'user'
  */
 export const authorizeRoles = (...roles) => {
   return (req, res, next) => {
@@ -99,16 +99,22 @@ export const authorizeRoles = (...roles) => {
 
     const userRole = req.user.role || 'user';
 
-    // Allow admin aliases if 'admin' is authorized
-    const normalizedRole = userRole === 'admin' || userRole === 'admin1' || userRole === 'admin2' || userRole === 'admin3'
-      ? 'superadmin'
+    // Normalize admin aliases
+    const normalizedRole = userRole === 'admin1' || userRole === 'admin2' || userRole === 'admin3'
+      ? 'admin'
       : userRole === 'prosync'
         ? 'prosync_admin'
         : userRole;
+
+    // Super Admin has view-only authorization for any admin or general resource
+    const isSuperAdminViewer = userRole === 'superadmin' && req.method === 'GET' && (roles.includes('admin') || roles.includes('superadmin'));
+
     const isAuthorized =
       roles.includes(userRole) ||
       roles.includes(normalizedRole) ||
-      (roles.includes('superadmin') && (userRole.startsWith('admin') || req.user.email === 'admin@gmail.com'));
+      isSuperAdminViewer ||
+      (roles.includes('admin') && (userRole.startsWith('admin') || req.user.email === 'admin@gmail.com' || req.user.email === 'inisioadmin@gmail.com')) ||
+      (roles.includes('superadmin') && (userRole === 'superadmin' || req.user.email === 'inisiosuperadmin@gmail.com'));
 
     if (!isAuthorized) {
       return sendError(
@@ -122,8 +128,26 @@ export const authorizeRoles = (...roles) => {
   };
 };
 
+/**
+ * Middleware that strictly enforces View-Only restriction for Super Admin
+ * Super Admin can read/view everything, but cannot create, update, or delete data.
+ */
+export const restrictSuperAdminViewer = (req, res, next) => {
+  if (req.user && req.user.role === 'superadmin') {
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+      return sendError(
+        res,
+        'Super Admin account has View-Only access. Data modifications, updates, and deletions require an Admin account.',
+        403
+      );
+    }
+  }
+  next();
+};
+
 export default {
   authenticateUser,
   optionalAuth,
   authorizeRoles,
+  restrictSuperAdminViewer,
 };

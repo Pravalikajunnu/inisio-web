@@ -425,14 +425,15 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
       <UserProfileDetailModal
         lead={selectedLead}
         onClose={() => setSelectedLead(null)}
+        readOnly={adminUser.role === 'superadmin' || adminUser.role === 'admin1'}
         onEdit={(leadToEdit) => {
           setSelectedLead(null);
           setEditingLead(leadToEdit);
         }}
-        onDelete={(id) => {
+        onDelete={(adminUser.role === 'admin' || adminUser.role === 'admin3') ? (id) => {
           deleteLeadRecord(id);
           loadData();
-        }}
+        } : undefined}
       />
 
       {/* Admin Project Editor */}

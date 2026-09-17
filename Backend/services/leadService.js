@@ -5,11 +5,11 @@ import { isDBConnected } from '../config/db.js';
 
 let memoryLeads = [];
 
-const isSuperAdmin = (role = '') => ['superadmin', 'admin', 'admin1', 'admin2', 'admin3'].includes(role);
+const isSuperAdminOrAdmin = (role = '') => ['superadmin', 'admin', 'admin1', 'admin2', 'admin3'].includes(role);
 
 const canAccessLead = (lead, requester) => {
   if (!requester) return false;
-  if (isSuperAdmin(requester.role)) return true;
+  if (isSuperAdminOrAdmin(requester.role)) return true;
   if (requester.role === 'ca') return lead.assignedCA === requester.email;
   if (requester.role === 'dpr_consultant') return lead.dprAssignedTo === requester.email;
   if (requester.role === 'prosync' || requester.role === 'prosync_admin') {
@@ -199,6 +199,9 @@ export const getLeadById = async (id, requester = null) => {
 };
 
 export const updateLead = async (id, updates, requester = null) => {
+  if (requester?.role === 'superadmin') {
+    throw new Error('Super Admin has view-only permissions. Modifying data requires an Admin account.');
+  }
   const normEmail = (updates.email || '').trim().toLowerCase();
   const normProject = (updates.projectName || '').trim().toLowerCase();
 
@@ -264,7 +267,8 @@ export const updateLead = async (id, updates, requester = null) => {
 };
 
 export const assignLead = async (id, { dprAssignedTo, consultationAssignedTo }, requester) => {
-  if (!isSuperAdmin(requester?.role)) throw new Error('Only a Super Admin can assign project work');
+  if (requester?.role === 'superadmin') throw new Error('Super Admin has view-only permissions. Team assignment requires an Admin account.');
+  if (!['admin', 'admin1', 'admin2', 'admin3'].includes(requester?.role)) throw new Error('Only an Admin can assign project work');
   if (!isDBConnected()) throw new Error('Database unavailable; assignments require MongoDB');
 
   const lead = await Lead.findById(id);
@@ -279,6 +283,7 @@ export const assignLead = async (id, { dprAssignedTo, consultationAssignedTo }, 
 };
 
 export const updateLeadProgress = async (id, progress, requester) => {
+  if (requester?.role === 'superadmin') throw new Error('Super Admin has view-only permissions. Modifying progress requires an Admin account.');
   if (!isDBConnected()) throw new Error('Database unavailable; project progress requires MongoDB');
   const lead = await Lead.findById(id);
   if (!lead || !canAccessLead(lead, requester)) throw new Error('Project not found or access denied');
@@ -295,7 +300,8 @@ export const updateLeadProgress = async (id, progress, requester) => {
   return lead.save();
 };
 
-export const deleteLead = async (id) => {
+export const deleteLead = async (id, requester) => {
+  if (requester?.role === 'superadmin') throw new Error('Super Admin has view-only permissions. Deletion requires an Admin account.');
   if (isDBConnected()) {
     try {
       const lead = await Lead.findByIdAndDelete(id);
@@ -308,7 +314,8 @@ export const deleteLead = async (id) => {
   return removed;
 };
 
-export const clearAllLeads = async () => {
+export const clearAllLeads = async (requester) => {
+  if (requester?.role === 'superadmin') throw new Error('Super Admin has view-only permissions. Clearing leads requires an Admin account.');
   if (isDBConnected()) {
     try {
       await Lead.deleteMany({});

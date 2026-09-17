@@ -579,6 +579,58 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   )}
                 </button>
 
+                {mode === 'login' && (
+                  <div className="pt-2">
+                    <p className="text-[11px] font-medium text-slate-500 mb-1.5 text-center">Quick Access Pre-Sets:</p>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmail('promoter@inisio.com');
+                          setPassword('promoter123');
+                          setError('');
+                        }}
+                        className="py-1 px-2 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 rounded-lg text-[11px] font-medium border border-slate-200 transition-colors text-center truncate cursor-pointer"
+                      >
+                        Promoter / Borrower
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmail('ca@gmail.com');
+                          setPassword('ca123456');
+                          setError('');
+                        }}
+                        className="py-1 px-2 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 rounded-lg text-[11px] font-medium border border-slate-200 transition-colors text-center truncate cursor-pointer"
+                      >
+                        CA Audit Desk
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmail('prosync@gmail.com');
+                          setPassword('prosync123');
+                          setError('');
+                        }}
+                        className="py-1 px-2 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 rounded-lg text-[11px] font-medium border border-slate-200 transition-colors text-center truncate cursor-pointer"
+                      >
+                        Prosync Operations
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmail('admin@gmail.com');
+                          setPassword('admin123');
+                          setError('');
+                        }}
+                        className="py-1 px-2 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 rounded-lg text-[11px] font-medium border border-slate-200 transition-colors text-center truncate cursor-pointer"
+                      >
+                        Admin Control
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {mode === 'forgot-password' && (
                   <div className="text-center pt-2">
                     <button

@@ -194,12 +194,14 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
       <div className="bg-slate-50 border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-6 py-2.5 flex items-center gap-2 text-xs">
           <ShieldCheck className="w-4 h-4 text-slate-500 shrink-0" />
-          {user.role === 'admin3' ? (
-            <span className="text-slate-700"><strong>Admin 3 (Super Admin):</strong> You have unrestricted control across Project Pipelines, Registered Users, and Live Traffic Analytics.</span>
+          {user.role === 'superadmin' ? (
+            <span className="text-slate-700"><strong>Super Admin (Viewer Only):</strong> You have comprehensive read-only access across all Project Pipelines, User Profiles, and Live Traffic Analytics. Editing and modifications are restricted to Admin accounts.</span>
+          ) : user.role === 'admin' || user.role === 'admin3' ? (
+            <span className="text-slate-700"><strong>Admin Desk (Full Authority):</strong> You have full administrative control to edit projects, assign advisory teams, update KYC statuses, and manage records.</span>
           ) : user.role === 'admin2' ? (
-            <span className="text-slate-700"><strong>Admin 2 (Editor):</strong> You can view and edit project details, manage lead assignments, and inspect user activity.</span>
+            <span className="text-slate-700"><strong>Admin (Editor):</strong> You can view and edit project details, manage lead assignments, and inspect user activity.</span>
           ) : (
-            <span className="text-slate-700"><strong>Admin 1 (Read-Only):</strong> You can view all project submissions, user profiles, and visitor analytics without modification rights.</span>
+            <span className="text-slate-700"><strong>Admin (Viewer):</strong> You can view all project submissions, user profiles, and visitor analytics without modification rights.</span>
           )}
         </div>
       </div>
@@ -734,11 +736,24 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
 
                               <button
                                 onClick={() => setEditingLead(lead)}
-                                className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer border border-amber-200/50"
-                                title="Edit Project Details"
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer border ${
+                                  user.role === 'superadmin' || user.role === 'admin1'
+                                    ? 'bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200/60'
+                                    : 'bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200/50'
+                                }`}
+                                title={user.role === 'superadmin' || user.role === 'admin1' ? 'View Project Details' : 'Edit Project Details'}
                               >
-                                <Edit3 className="w-3 h-3" />
-                                <span>Edit</span>
+                                {user.role === 'superadmin' || user.role === 'admin1' ? (
+                                  <>
+                                    <Eye className="w-3 h-3" />
+                                    <span>Specs</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Edit3 className="w-3 h-3" />
+                                    <span>Edit</span>
+                                  </>
+                                )}
                               </button>
 
                               <a
@@ -752,7 +767,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
                                 <span>WA</span>
                               </a>
 
-                              {user.role === 'admin3' && (
+                              {(user.role === 'admin' || user.role === 'admin3') && (
                                 <button
                                   onClick={() => {
                                     if (confirm(`Delete lead entry for ${lead.fullName}?`)) {
@@ -780,7 +795,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
             {/* Table Footer */}
             <div className="flex items-center justify-between text-xs text-zinc-400 pt-2 border-t border-zinc-100">
               <span>Showing {filteredLeads.length} of {leads.length} records</span>
-              {user.role === 'admin3' && (
+              {(user.role === 'admin' || user.role === 'admin3') && (
                 <button
                   onClick={() => {
                     if (confirm('Clear all leads data? This cannot be undone.')) {
@@ -806,11 +821,12 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
       <UserProfileDetailModal
         lead={selectedLead}
         onClose={() => setSelectedLead(null)}
+        readOnly={user.role === 'superadmin' || user.role === 'admin1'}
         onEdit={(leadToEdit) => {
           setSelectedLead(null);
           setEditingLead(leadToEdit);
         }}
-        onDelete={user.role === 'admin3' ? (id) => {
+        onDelete={(user.role === 'admin' || user.role === 'admin3') ? (id) => {
           deleteLeadRecord(id);
           loadData();
           triggerToast('Deleted lead record.');

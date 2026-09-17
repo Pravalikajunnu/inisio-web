@@ -3267,8 +3267,12 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
         onClose={() => setIsDPRModalOpen(false)}
         projectName={formData.projectName || formData.industry || 'Greenfield Project'}
         industry={formData.industry || 'Manufacturing'}
-        totalCostCr={formData.totalCostCr || '10.00'}
-        loanRequiredCr={formData.loanRequiredCr || '7.50'}
+        totalCostCr={cost > 0 ? cost.toFixed(2) : (formData.totalCostCr || '10.00')}
+        loanRequiredCr={
+          (cost > 0 && contrib >= 0)
+            ? Math.max(0, cost - contrib).toFixed(2)
+            : (formData.loanRequiredCr || financials.termLoanCr || '7.50')
+        }
         user={activeUser}
         onSubmitSuccess={(msg) => {
           setActionToast(msg);
@@ -3282,8 +3286,12 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
         onClose={() => setIsFundingModalOpen(false)}
         projectName={formData.projectName || formData.industry || 'Greenfield Project'}
         industry={formData.industry || 'Manufacturing'}
-        totalCostCr={formData.totalCostCr || '10.00'}
-        loanRequiredCr={formData.loanRequiredCr || '7.50'}
+        totalCostCr={cost > 0 ? cost.toFixed(2) : (formData.totalCostCr || '10.00')}
+        loanRequiredCr={
+          (cost > 0 && contrib >= 0)
+            ? Math.max(0, cost - contrib).toFixed(2)
+            : (formData.loanRequiredCr || financials.termLoanCr || '7.50')
+        }
         user={activeUser}
         onSubmitSuccess={(msg) => {
           setActionToast(msg);
