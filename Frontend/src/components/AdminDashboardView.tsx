@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { getStoredLeads, fetchLeadsFromBackend, deleteLeadRecord, clearAllLeads, exportLeadsToCSV, LeadRecord } from '../utils/leadStore';
 import { getAdminNotifications, AdminNotification, getUnreadNotificationCount } from '../utils/notificationStore';
-import { getAllRegisteredUsers, RegisteredUserRecord, updateUserStatus } from '../utils/userStore';
-import { getVisitorSummary, VisitorSummary, getStoredVisitorLogs, VisitorLog } from '../utils/visitorStore';
+import { getAllRegisteredUsers, RegisteredUserRecord, updateUserStatus, exportUsersToCSV } from '../utils/userStore';
+import { getVisitorSummary, VisitorSummary, getStoredVisitorLogs, VisitorLog, exportVisitorsToCSV } from '../utils/visitorStore';
 import { UserProfileDetailModal } from './UserProfileDetailModal';
 import { LeadEditModal } from './LeadEditModal';
 import { AdminNotificationModal } from './AdminNotificationModal';
@@ -58,7 +58,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
     recentLogs: []
   });
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'all' | 'users' | 'visitors' | 'edits' | 'assignments' | 'teasers'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'users' | 'visitors' | 'edits' | 'assignments' | 'teasers' | 'promoter_funds'>('all');
   const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null);
   const [editingLead, setEditingLead] = useState<LeadRecord | null>(null);
   const [showToast, setShowToast] = useState<string | null>(null);
@@ -179,6 +179,20 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
     return acc + (isNaN(val) ? 0 : val);
   }, 0);
 
+  const promoterFundLeads = leads.filter(l => 
+    (l.promoterFundAssistanceStatus && l.promoterFundAssistanceStatus !== 'Not Requested') ||
+    l.promoterContributionAvailable === 'No' ||
+    Boolean(l.promoterFundAssistanceRequest)
+  );
+
+  const handleUpdateFundStatus = (leadId: string, newStatus: any) => {
+    updateLeadRecord(leadId, {
+      promoterFundAssistanceStatus: newStatus
+    }, user.name || user.email || 'Admin');
+    triggerToast(`Updated fund assistance status to "${newStatus}"`);
+    loadData();
+  };
+
   return (
     <div className="min-h-screen bg-white text-zinc-900 pb-20 font-inter antialiased">
       
@@ -245,13 +259,29 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
               {user.role !== 'admin1' && (
                 <button
                   onClick={() => {
-                    exportLeadsToCSV();
-                    triggerToast('Exported all leads to CSV!');
+                    if (activeTab === 'users') {
+                      const list = filteredUsers.length > 0 ? filteredUsers : usersList;
+                      exportUsersToCSV(list, leads);
+                      triggerToast(`Exported ${list.length} user records to CSV!`);
+                    } else if (activeTab === 'visitors') {
+                      const logs = visitorSummary.recentLogs && visitorSummary.recentLogs.length > 0
+                        ? visitorSummary.recentLogs
+                        : getStoredVisitorLogs();
+                      exportVisitorsToCSV(logs);
+                      triggerToast(`Exported ${logs.length} visitor traffic records to CSV!`);
+                    } else {
+                      const list = filteredLeads.length > 0 ? filteredLeads : leads;
+                      exportLeadsToCSV(list);
+                      triggerToast(`Exported ${list.length} project pipelines to CSV!`);
+                    }
                   }}
                   className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                  title={`Export ${activeTab === 'users' ? 'Users' : activeTab === 'visitors' ? 'Visitors' : 'Projects'} to CSV`}
                 >
                   <FileSpreadsheet className="w-3.5 h-3.5" />
-                  <span>Export CSV</span>
+                  <span>
+                    {activeTab === 'users' ? 'Export Users CSV' : activeTab === 'visitors' ? 'Export Visitors CSV' : 'Export CSV'}
+                  </span>
                 </button>
               )}
             </div>
@@ -317,6 +347,21 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
               <span>Assignments</span>
               {unassignedCount > 0 && (
                 <span className={`px-1.5 py-0.5 rounded-md text-[10px] ${activeTab === 'assignments' ? 'bg-amber-500 text-amber-950' : 'bg-amber-100 text-amber-700'}`}>{unassignedCount}</span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('promoter_funds')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                activeTab === 'promoter_funds' ? 'bg-zinc-900 text-white shadow-xs' : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'
+              }`}
+            >
+              <IndianRupee className="w-3.5 h-3.5" />
+              <span>Promoter Fund Requests</span>
+              {promoterFundLeads.length > 0 && (
+                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${activeTab === 'promoter_funds' ? 'bg-emerald-500 text-emerald-950' : 'bg-emerald-100 text-emerald-800'}`}>
+                  {promoterFundLeads.length}
+                </span>
               )}
             </button>
 
@@ -595,8 +640,220 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
           </div>
         )}
 
-        {/* VIEW C: PROMOTER PROJECTS & LEADS TABLE (When on 'all', 'edits', 'assignments', 'teasers') */}
-        {activeTab !== 'users' && activeTab !== 'visitors' && (
+        {/* VIEW C: PROMOTER FUND ASSISTANCE DESK VIEW */}
+        {activeTab === 'promoter_funds' && (
+          <div className="space-y-5">
+            {/* Quick Metrics */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-4 bg-white rounded-xl border border-zinc-200 shadow-2xs">
+                <span className="text-[10px] uppercase font-bold text-zinc-400 block tracking-wider">Total Fund Requests</span>
+                <div className="text-2xl font-bold text-zinc-900 mt-1">{promoterFundLeads.length}</div>
+                <span className="text-[11px] text-zinc-500">Promoter equity assistance</span>
+              </div>
+
+              <div className="p-4 bg-amber-50/60 rounded-xl border border-amber-200 shadow-2xs">
+                <span className="text-[10px] uppercase font-bold text-amber-700 block tracking-wider">Under Review / New</span>
+                <div className="text-2xl font-bold text-amber-900 mt-1">
+                  {promoterFundLeads.filter(l => !l.promoterFundAssistanceStatus || l.promoterFundAssistanceStatus === 'Requested' || l.promoterFundAssistanceStatus === 'Request Submitted' || l.promoterFundAssistanceStatus === 'Under Review').length}
+                </div>
+                <span className="text-[11px] text-amber-700">Awaiting advisory connection</span>
+              </div>
+
+              <div className="p-4 bg-indigo-50/60 rounded-xl border border-indigo-200 shadow-2xs">
+                <span className="text-[10px] uppercase font-bold text-indigo-700 block tracking-wider">Connected / In Progress</span>
+                <div className="text-2xl font-bold text-indigo-900 mt-1">
+                  {promoterFundLeads.filter(l => l.promoterFundAssistanceStatus === 'Connected with Investor/Lender' || l.promoterFundAssistanceStatus === 'Contacted').length}
+                </div>
+                <span className="text-[11px] text-indigo-700">Investor / co-promoter talks</span>
+              </div>
+
+              <div className="p-4 bg-emerald-50/60 rounded-xl border border-emerald-200 shadow-2xs">
+                <span className="text-[10px] uppercase font-bold text-emerald-700 block tracking-wider">Completed / Arranged</span>
+                <div className="text-2xl font-bold text-emerald-900 mt-1">
+                  {promoterFundLeads.filter(l => l.promoterFundAssistanceStatus === 'Completed' || l.promoterFundAssistanceStatus === 'Assistance Provided').length}
+                </div>
+                <span className="text-[11px] text-emerald-700">Equity bridge structured</span>
+              </div>
+            </div>
+
+            {/* Promoter Fund Table Container */}
+            <div className="border border-zinc-200 rounded-2xl p-5 bg-white space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <IndianRupee className="w-4 h-4 text-blue-600" />
+                  <h2 className="text-sm font-bold text-zinc-900">Promoter Fund Assistance Requests</h2>
+                  <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold">
+                    {promoterFundLeads.length} Requests
+                  </span>
+                </div>
+
+                <div className="relative w-full sm:w-60">
+                  <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2.5" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Search promoter, project, notes..."
+                    className="w-full pl-8 pr-3 py-1.5 bg-zinc-50 border border-zinc-200 text-xs text-zinc-900 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[850px] text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-zinc-200 text-zinc-400 font-semibold uppercase text-[10px]">
+                      <th className="py-2.5 px-3">Date &amp; Status</th>
+                      <th className="py-2.5 px-3">Promoter &amp; Contact</th>
+                      <th className="py-2.5 px-3">Project &amp; Sector</th>
+                      <th className="py-2.5 px-3">Total Capex / Debt</th>
+                      <th className="py-2.5 px-3">Required Promoter Fund</th>
+                      <th className="py-2.5 px-3">Update Status</th>
+                      <th className="py-2.5 px-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-100 text-zinc-700">
+                    {promoterFundLeads.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="text-center py-12 text-zinc-400">
+                          <IndianRupee className="w-8 h-8 mx-auto mb-2 text-zinc-300" />
+                          <p className="font-medium text-sm">No promoter fund assistance requests yet</p>
+                          <p className="text-xs text-zinc-400 mt-0.5">Requests submitted by promoters in project assessment will appear here.</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      promoterFundLeads
+                        .filter(l => {
+                          if (!searchQuery) return true;
+                          const q = searchQuery.toLowerCase();
+                          return (
+                            (l.fullName && l.fullName.toLowerCase().includes(q)) ||
+                            (l.projectName && l.projectName.toLowerCase().includes(q)) ||
+                            (l.mobile && l.mobile.includes(q)) ||
+                            (l.promoterFundAssistanceRequest?.notes && l.promoterFundAssistanceRequest.notes.toLowerCase().includes(q))
+                          );
+                        })
+                        .map((lead) => {
+                          const req = lead.promoterFundAssistanceRequest;
+                          const reqAmount = req?.requiredAmountCr || lead.promoterContribCr || '0';
+                          const status = lead.promoterFundAssistanceStatus || 'Requested';
+
+                          return (
+                            <tr key={lead.id} className="hover:bg-zinc-50 transition-colors">
+                              <td className="py-3 px-3 whitespace-nowrap">
+                                <div className="font-semibold text-zinc-800">
+                                  {new Date(req?.requestedAt || lead.timestamp).toLocaleDateString('en-IN', {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric'
+                                  })}
+                                </div>
+                                <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                  status === 'Completed' || status === 'Assistance Provided'
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                    : status === 'Connected with Investor/Lender' || status === 'Contacted'
+                                    ? 'bg-indigo-100 text-indigo-800 border border-indigo-200'
+                                    : status === 'Under Review'
+                                    ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                    : 'bg-blue-100 text-blue-800 border border-blue-200'
+                                }`}>
+                                  {status}
+                                </span>
+                              </td>
+
+                              <td className="py-3 px-3">
+                                <div className="font-bold text-zinc-900">{lead.fullName || 'Lead Promoter'}</div>
+                                <div className="text-[11px] text-zinc-500">{lead.mobile || '—'}</div>
+                                <div className="text-[10px] text-zinc-400 truncate max-w-[150px]">{lead.email || '—'}</div>
+                                {req?.preferredContactMethod && (
+                                  <span className="text-[10px] text-blue-600 font-semibold block mt-0.5">
+                                    Pref: {req.preferredContactMethod}
+                                  </span>
+                                )}
+                              </td>
+
+                              <td className="py-3 px-3">
+                                <div className="font-bold text-zinc-900 max-w-[180px] truncate">{lead.projectName || 'Greenfield Unit'}</div>
+                                <div className="text-[11px] text-blue-600 font-medium">{lead.industry || 'Manufacturing'}</div>
+                                <div className="text-[10px] text-zinc-400">{lead.location || 'India'}</div>
+                              </td>
+
+                              <td className="py-3 px-3 whitespace-nowrap">
+                                <div className="font-semibold text-zinc-900">₹ {lead.totalCostCr} Cr <span className="text-zinc-400 font-normal">Capex</span></div>
+                                <div className="text-[11px] text-blue-600 font-medium">₹ {lead.loanRequiredCr} Cr <span className="text-zinc-400 font-normal">Loan</span></div>
+                              </td>
+
+                              <td className="py-3 px-3">
+                                <div className="font-bold text-emerald-700 text-sm">₹ {reqAmount} Cr</div>
+                                {req?.notes && (
+                                  <div className="text-[10px] text-zinc-500 mt-1 italic max-w-[200px] line-clamp-2" title={req.notes}>
+                                    "{req.notes}"
+                                  </div>
+                                )}
+                              </td>
+
+                              <td className="py-3 px-3 whitespace-nowrap">
+                                {(user.role === 'admin' || user.role === 'admin3') ? (
+                                  <select
+                                    value={status}
+                                    onChange={(e) => handleUpdateFundStatus(lead.id, e.target.value)}
+                                    className="px-2 py-1 bg-white border border-zinc-300 rounded text-[11px] font-semibold text-zinc-800 focus:outline-none focus:border-blue-500 cursor-pointer shadow-2xs"
+                                  >
+                                    <option value="Requested">Requested</option>
+                                    <option value="Under Review">Under Review</option>
+                                    <option value="Connected with Investor/Lender">Connected with Investor/Lender</option>
+                                    <option value="Completed">Completed</option>
+                                  </select>
+                                ) : (
+                                  <span className="text-zinc-500 text-[11px]">{status}</span>
+                                )}
+                              </td>
+
+                              <td className="py-3 px-3 text-right whitespace-nowrap">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    onClick={() => setSelectedLead(lead)}
+                                    className="px-2 py-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded text-[11px] font-semibold transition-colors cursor-pointer"
+                                  >
+                                    Dossier
+                                  </button>
+
+                                  {(user.role === 'admin' || user.role === 'admin3') && (
+                                    <button
+                                      onClick={() => setEditingLead(lead)}
+                                      className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded text-[11px] font-semibold transition-colors cursor-pointer"
+                                    >
+                                      Edit
+                                    </button>
+                                  )}
+
+                                  {lead.mobile && (
+                                    <a
+                                      href={`https://wa.me/91${lead.mobile.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${lead.fullName || 'Promoter'},\n\nWe have received your Promoter Fund Assistance request for ${lead.projectName || 'your project'} (₹${reqAmount} Cr requirement). Inisio Advisory Desk is reviewing co-funding options.`)}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
+                                      title="Chat on WhatsApp"
+                                    >
+                                      <MessageSquare className="w-3 h-3 fill-current" />
+                                      <span>WA</span>
+                                    </a>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW D: PROMOTER PROJECTS & LEADS TABLE (When on 'all', 'edits', 'assignments', 'teasers') */}
+        {activeTab !== 'users' && activeTab !== 'visitors' && activeTab !== 'promoter_funds' && (
           <div className="border border-zinc-200 rounded-2xl p-5 bg-white space-y-4">
             
             {/* Header with Search and Filters */}

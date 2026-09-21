@@ -241,7 +241,7 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
               {/* Action Buttons */}
               <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end">
                 <button
-                  onClick={exportLeadsToCSV}
+                  onClick={() => exportLeadsToCSV(filteredLeads.length > 0 ? filteredLeads : leads)}
                   className="px-3.5 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <FileSpreadsheet className="w-4 h-4" />
@@ -379,17 +379,20 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
                                 <Phone className="w-3.5 h-3.5" />
                               </a>
 
-                              <button
-                                onClick={() => {
-                                  if (confirm(`Delete lead entry for ${lead.fullName}?`)) {
-                                    deleteLeadRecord(lead.id);
-                                  }
-                                }}
-                                className="p-1.5 bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded-lg transition-colors cursor-pointer"
-                                title="Delete record"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              {(adminUser.role === 'admin' || adminUser.role === 'admin3') && (
+                                <button
+                                  onClick={() => {
+                                    if (confirm(`Delete lead entry for ${lead.fullName}?`)) {
+                                      deleteLeadRecord(lead.id);
+                                      loadData();
+                                    }
+                                  }}
+                                  className="p-1.5 bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded-lg transition-colors cursor-pointer"
+                                  title="Delete record"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -403,17 +406,20 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
             {/* Bottom Actions */}
             <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-800">
               <p>Showing {filteredLeads.length} of {leads.length} leads</p>
-              <button
-                onClick={() => {
-                  if (confirm('Are you sure you want to clear all leads data? This cannot be undone.')) {
-                    clearAllLeads();
-                  }
-                }}
-                className="text-red-400 hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Clear All Leads</span>
-              </button>
+              {(adminUser.role === 'admin' || adminUser.role === 'admin3') && (
+                <button
+                  onClick={() => {
+                    if (confirm('Are you sure you want to clear all leads data? This cannot be undone.')) {
+                      clearAllLeads();
+                      loadData();
+                    }
+                  }}
+                  className="text-red-400 hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Clear All Leads</span>
+                </button>
+              )}
             </div>
 
           </div>
@@ -441,6 +447,7 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({ isOpen, onClos
         lead={editingLead}
         user={adminUser}
         isOpen={!!editingLead}
+        readOnly={adminUser.role === 'superadmin' || adminUser.role === 'admin1'}
         onClose={() => setEditingLead(null)}
         onSaved={() => {
           loadData();

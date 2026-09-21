@@ -30,6 +30,13 @@ export interface TeaserPDFData {
   keyRisks?: string[];
   directors?: Array<{ name: string; title: string }>;
 
+  // Banking & Syndication Details
+  bankName?: string;
+  assignedBank?: string;
+  branchLocation?: string;
+  bankIfscCode?: string;
+  bankAppRefNumber?: string;
+
   // Step 2 Bankability Underwriting Inputs
   riskProfileData?: DetailedRiskProfileData;
   riskScoreOutOf10?: number;
@@ -446,7 +453,10 @@ export function generateProjectTeaserPDF(data: TeaserPDFData, action: 'download'
   // Present Requirement
   drawSectionBanner('Present Requirement', 25);
 
-  const reqText = `The Company proposes to avail a Term Loan of Rs ${loanCrFormatted} crore to meet its capital expenditure requirements. The proposed facility will be utilised for the establishment of a ${data.industry} facility, including the procurement and installation of plant & machinery, development of civil infrastructure, and other project-related assets required for the successful implementation and commissioning of the project.`;
+  const bankMention = data.bankName 
+    ? ` targeted for credit syndication through ${data.bankName}${data.branchLocation ? ` (${data.branchLocation})` : ''}` 
+    : '';
+  const reqText = `The Company proposes to avail a Term Loan of Rs ${loanCrFormatted} crore${bankMention} to meet its capital expenditure requirements. The proposed facility will be utilised for the establishment of a ${data.industry} facility, including the procurement and installation of plant & machinery, development of civil infrastructure, and other project-related assets required for the successful implementation and commissioning of the project.`;
   const splitReq = doc.splitTextToSize(reqText, contentWidth);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
@@ -510,6 +520,10 @@ export function generateProjectTeaserPDF(data: TeaserPDFData, action: 'download'
     ...(data.panNumber ? [{ label: 'PAN Number', val: data.panNumber }] : []),
     { label: 'Registered Location', val: `${data.location || 'India'}` },
     { label: 'Proposed Plant Site', val: `${data.location || 'India'} (${data.landStatus})` },
+    { label: 'Preferred Target Bank', val: data.bankName || 'Under Selection' },
+    { label: 'Preferred Bank Branch', val: data.branchLocation || 'Under Selection' },
+    ...(data.bankIfscCode ? [{ label: 'Branch IFSC Code', val: data.bankIfscCode }] : []),
+    ...(data.bankAppRefNumber ? [{ label: 'Proposal / Tracking Ref', val: data.bankAppRefNumber }] : []),
     { label: 'Feasibility Score', val: `${getFeasibilityTerm(data.feasibilityScore)} (${data.feasibilityScore}/100)` },
     { label: 'Bankability Grade', val: `${data.bankabilityRating} / 10 (Tier-1 Bankable Grade)` }
   ];
@@ -579,7 +593,9 @@ export function sendLeadToWhatsApp(data: TeaserPDFData, adminPhone = '9163020264
     `*Financial Breakdown:*\n` +
     `• Total Capex: ₹ ${data.totalCostCr} Cr\n` +
     `• Promoter Equity: ₹ ${data.promoterContribCr} Cr (${data.eqPct}%)\n` +
-    `• Required Debt: ₹ ${data.loanRequiredCr} Cr (${data.debtPct}%)\n\n` +
+    `• Required Debt: ₹ ${data.loanRequiredCr} Cr (${data.debtPct}%)\n` +
+    `• Preferred Bank: ${data.bankName || 'Under Selection'}\n` +
+    `• Preferred Branch: ${data.branchLocation || 'Under Selection'}\n\n` +
     `*Suppliers & Buyers:*\n` +
     `• Raw Material Source: ${data.rawMaterialSource || 'N/A'}\n` +
     `• Buyers Segment: ${data.primaryBuyersType || 'N/A'}\n\n` +

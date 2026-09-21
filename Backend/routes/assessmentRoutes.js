@@ -17,7 +17,7 @@ router.post('/quick-calc', calculateQuickMetrics);
 // User's own assessments
 router.get('/my-assessments', authenticateUser, getUserAssessments);
 
-// Admin review
-router.get('/all', authenticateUser, authorizeRoles('admin', 'ca'), getAllAssessments);
+// Admin & Super Admin review
+router.get('/all', authenticateUser, authorizeRoles('admin', 'superadmin', 'ca'), getAllAssessments);
 
 export default router;

@@ -13,7 +13,7 @@ export const notFound = (req, res, next) => {
  * Centralized Error Handling Middleware
  */
 export const errorHandler = (err, req, res, next) => {
-  let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+  let statusCode = err.statusCode || (res.statusCode === 200 ? 500 : res.statusCode);
   let message = err.message || 'Internal Server Error';
 
   // Handle Mongoose bad ObjectId (CastError)
@@ -52,9 +52,13 @@ export const errorHandler = (err, req, res, next) => {
     statusCode = 401;
   }
 
-  console.error(`[Error] ${req.method} ${req.originalUrl} - ${message}`);
-  if (process.env.NODE_ENV === 'development' && err.stack) {
-    console.error(err.stack);
+  if (statusCode >= 500) {
+    console.error(`[Server Error] ${req.method} ${req.originalUrl} (${statusCode}) - ${message}`);
+    if (process.env.NODE_ENV === 'development' && err.stack) {
+      console.error(err.stack);
+    }
+  } else {
+    console.warn(`[Client Info] ${req.method} ${req.originalUrl} (${statusCode}) - ${message}`);
   }
 
   return sendError(res, message, statusCode, process.env.NODE_ENV === 'development' ? err.stack : undefined);

@@ -55,6 +55,7 @@ export const ProjectEditModal: React.FC<ProjectEditModalProps> = ({
     location: project.location || '',
     totalCostCr: project.totalCostCr || 0,
     equityPercent: project.equityPercent || 25,
+    promoterContributionAvailable: project.promoterContributionAvailable || 'Yes',
     landStatus: project.landStatus || '',
     collateralStatus: project.collateralStatus || '',
     promoterExp: project.promoterExp || '',
@@ -250,6 +251,7 @@ export const ProjectEditModal: React.FC<ProjectEditModalProps> = ({
       loanRequiredCr: loanCr,
       equityPercent: eqPct,
       debtPercent: 100 - eqPct,
+      promoterContributionAvailable: formData.promoterContributionAvailable as 'Yes' | 'No',
       landStatus: formData.landStatus,
       collateralStatus: formData.collateralStatus,
       promoterExp: formData.promoterExp,
@@ -410,6 +412,41 @@ export const ProjectEditModal: React.FC<ProjectEditModalProps> = ({
                   <div className="flex justify-between text-[11px] text-slate-500">
                     <span>₹ {((formData.totalCostCr * formData.equityPercent) / 100).toFixed(2)} Cr (Equity)</span>
                     <span>₹ {((formData.totalCostCr * (100 - formData.equityPercent)) / 100).toFixed(2)} Cr (Loan)</span>
+                  </div>
+                </div>
+
+                <div className="sm:col-span-2 p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800">
+                      Promoter Contribution Available in Hand?
+                    </label>
+                    <p className="text-[11px] text-slate-500">
+                      Select whether equity funds are already arranged or if assistance is needed.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, promoterContributionAvailable: 'Yes' }))}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        formData.promoterContributionAvailable === 'Yes'
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      Yes, In Hand
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, promoterContributionAvailable: 'No' }))}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        formData.promoterContributionAvailable === 'No'
+                          ? 'bg-amber-600 text-white shadow-xs'
+                          : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      No, Need Assistance
+                    </button>
                   </div>
                 </div>
               </div>

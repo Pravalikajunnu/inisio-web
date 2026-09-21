@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { LeadRecord, updateLeadRecord } from '../utils/leadStore';
 import { validateIndianMobileNumber } from '../utils/validation';
-import { AuthUser, PromoterDetail, ProjectDocument } from '../types';
+import { AuthUser, PromoterDetail, ProjectDocument, ProjectTimelineStage } from '../types';
 import { DocumentViewerModal, DocumentViewerTarget } from './DocumentViewerModal';
+import { ProjectTimeline } from './ProjectTimeline';
 import {
   X,
   Save,
@@ -72,6 +73,17 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
         notes: lead.notes || '',
         feasibilityScore: lead.feasibilityScore || 82,
         bankabilityRating: lead.bankabilityRating || 'Investment Grade (A)',
+        bankName: lead.bankName || '',
+        branchLocation: lead.branchLocation || '',
+        bankIfscCode: lead.bankIfscCode || '',
+        bankAppRefNumber: lead.bankAppRefNumber || '',
+        bankApplicationStatus: lead.bankApplicationStatus || 'Draft Filing / Pre-Sanction Review',
+        dprTimelineRollbackReason: lead.dprTimelineRollbackReason || '',
+        dprTargetDate: lead.dprTargetDate || '',
+        dprStageRollback: lead.dprStageRollback || false,
+        promoterContributionAvailable: lead.promoterContributionAvailable || 'Yes',
+        promoterFundAssistanceStatus: lead.promoterFundAssistanceStatus || 'Not Requested',
+        promoterFundAssistanceRequest: lead.promoterFundAssistanceRequest,
         financials: lead.financials ? { ...lead.financials } : {
           machineryCostCr: '',
           civilCostCr: '',
@@ -863,6 +875,25 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
           {/* TAB 6: STATUS & ADVISORY DESK */}
           {activeTab === 'status' && (
             <div className="space-y-4">
+              {/* Interactive Timeline & Stage Rollback */}
+              {lead && (
+                <div className="p-4 bg-white rounded-xl border border-zinc-200 shadow-xs">
+                  <ProjectTimeline
+                    project={{ ...lead, ...formData }}
+                    user={user}
+                    onTimelineUpdated={(updatedStages, updatedRecord) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        ...updatedRecord,
+                        timelineStages: updatedStages,
+                        status: updatedRecord.status || prev.status
+                      }));
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Stage & Team Assignment */}
               <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-200 space-y-3">
                 <h4 className="font-bold text-zinc-900 text-xs">Advisory Workflow &amp; Assignment</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -871,7 +902,7 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
                     <select
                       value={formData.status || 'In Appraisal'}
                       onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                      className="w-full px-3 py-2 text-xs bg-white border border-zinc-200 rounded-lg focus:outline-none focus:border-blue-500"
+                      className="w-full px-3 py-2 text-xs bg-white border border-zinc-200 rounded-lg focus:outline-none focus:border-blue-500 font-semibold"
                     >
                       <option value="New">New Inquiry</option>
                       <option value="Contacted">Promoter Contacted</option>
@@ -900,7 +931,7 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
                   <div className="sm:col-span-2">
                     <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Internal Advisory Notes &amp; Next Steps</label>
                     <textarea
-                      rows={3}
+                      rows={2}
                       value={formData.notes || ''}
                       onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                       className="w-full px-3 py-2 text-xs bg-white border border-zinc-200 rounded-lg focus:outline-none focus:border-blue-500"
@@ -908,6 +939,181 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Requirement 7: Time for DPR Stage Rollback */}
+              <div className="p-4 bg-amber-50/70 rounded-xl border border-amber-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-amber-700 shrink-0" />
+                    <h4 className="font-bold text-amber-950 text-xs">Timeline Management &amp; DPR Stage Rollback</h4>
+                  </div>
+                  <label className="flex items-center gap-2 text-xs font-semibold text-amber-900 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(formData.dprStageRollback)}
+                      onChange={(e) => setFormData({ ...formData, dprStageRollback: e.target.checked })}
+                      className="rounded text-amber-600 focus:ring-amber-500"
+                    />
+                    <span>Enable "Time for DPR" Rollback</span>
+                  </label>
+                </div>
+
+                <p className="text-[11px] text-amber-800 leading-relaxed">
+                  Allows administrators to revert stages to <strong>"Time for DPR"</strong> if promoter financial model or CMA requires revision before bank committee filing.
+                </p>
+
+                {formData.dprStageRollback && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-amber-200/80">
+                    <div>
+                      <label className="block text-[11px] font-bold text-amber-950 mb-1">
+                        DPR Rollback Reason *
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.dprTimelineRollbackReason || ''}
+                        onChange={(e) => setFormData({ ...formData, dprTimelineRollbackReason: e.target.value })}
+                        placeholder="e.g. Revised machinery quotes needed; CMA debt restructuring"
+                        className="w-full px-3 py-2 text-xs bg-white border border-amber-300 rounded-lg focus:outline-none focus:border-amber-600 font-medium"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-amber-950 mb-1">
+                        Revised DPR Target Date
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.dprTargetDate || ''}
+                        onChange={(e) => setFormData({ ...formData, dprTargetDate: e.target.value })}
+                        className="w-full px-3 py-2 text-xs bg-white border border-amber-300 rounded-lg focus:outline-none focus:border-amber-600"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Requirement 4: Bank Application Tracking Details */}
+              <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-200 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Building className="w-4 h-4 text-blue-600 shrink-0" />
+                  <h4 className="font-bold text-zinc-900 text-xs">Bank Application &amp; Syndication Profile</h4>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Target Bank Name</label>
+                    <input
+                      type="text"
+                      value={formData.bankName || ''}
+                      onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
+                      placeholder="e.g. State Bank of India (SBI)"
+                      className="w-full px-3 py-2 text-xs bg-white border border-zinc-200 rounded-lg focus:outline-none focus:border-blue-500 font-semibold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Specific Branch Location</label>
+                    <input
+                      type="text"
+                      value={formData.branchLocation || ''}
+                      onChange={(e) => setFormData({ ...formData, branchLocation: e.target.value })}
+                      placeholder="e.g. Industrial Finance Branch (IFB), Mumbai"
+                      className="w-full px-3 py-2 text-xs bg-white border border-zinc-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Branch IFSC Code</label>
+                    <input
+                      type="text"
+                      value={formData.bankIfscCode || ''}
+                      onChange={(e) => setFormData({ ...formData, bankIfscCode: e.target.value })}
+                      placeholder="e.g. SBIN0004562"
+                      className="w-full px-3 py-2 text-xs bg-white border border-zinc-200 rounded-lg focus:outline-none focus:border-blue-500 font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Bank Application Ref Number</label>
+                    <input
+                      type="text"
+                      value={formData.bankAppRefNumber || ''}
+                      onChange={(e) => setFormData({ ...formData, bankAppRefNumber: e.target.value })}
+                      placeholder="e.g. SBI-SME-2026-89421"
+                      className="w-full px-3 py-2 text-xs bg-white border border-zinc-200 rounded-lg focus:outline-none focus:border-blue-500 font-mono"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Requirement: Promoter Fund Assistance Desk Management */}
+              <div className="p-4 bg-blue-50/60 rounded-xl border border-blue-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <IndianRupee className="w-4 h-4 text-blue-600 shrink-0" />
+                    <h4 className="font-bold text-zinc-900 text-xs">Promoter Fund Assistance Desk</h4>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    formData.promoterFundAssistanceStatus === 'Completed' || formData.promoterFundAssistanceStatus === 'Connected with Investor/Lender'
+                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                      : formData.promoterFundAssistanceStatus === 'Under Review' || formData.promoterFundAssistanceStatus === 'Requested'
+                      ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                      : 'bg-zinc-100 text-zinc-600'
+                  }`}>
+                    {formData.promoterFundAssistanceStatus || 'Not Requested'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">
+                      Promoter Contribution In Hand Available?
+                    </label>
+                    <select
+                      value={formData.promoterContributionAvailable || 'Yes'}
+                      onChange={(e) => setFormData({ ...formData, promoterContributionAvailable: e.target.value as 'Yes' | 'No' })}
+                      className="w-full px-3 py-2 text-xs bg-white border border-zinc-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="Yes">Yes (Promoter has required funds)</option>
+                      <option value="No">No (Needs support for promoter contribution)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">
+                      Promoter Fund Assistance Status
+                    </label>
+                    <select
+                      value={formData.promoterFundAssistanceStatus || 'Not Requested'}
+                      onChange={(e) => setFormData({ ...formData, promoterFundAssistanceStatus: e.target.value as any })}
+                      className="w-full px-3 py-2 text-xs bg-white border border-zinc-200 rounded-lg focus:outline-none focus:border-blue-500 font-semibold"
+                    >
+                      <option value="Not Requested">Not Requested</option>
+                      <option value="Requested">Requested</option>
+                      <option value="Under Review">Under Review</option>
+                      <option value="Connected with Investor/Lender">Connected with Investor/Lender</option>
+                      <option value="Completed">Completed</option>
+                    </select>
+                  </div>
+                </div>
+
+                {formData.promoterFundAssistanceRequest && (
+                  <div className="p-3 bg-white rounded-lg border border-blue-100 space-y-1.5 text-[11px]">
+                    <span className="font-bold text-blue-900 block">Submitted Request Details:</span>
+                    <div className="grid grid-cols-2 gap-2 text-zinc-600">
+                      <div>Required Contribution: <strong className="text-zinc-900">₹ {formData.promoterFundAssistanceRequest.requiredAmountCr} Cr</strong></div>
+                      <div>Total Cost: <strong className="text-zinc-900">₹ {formData.promoterFundAssistanceRequest.totalCostCr} Cr</strong></div>
+                      <div>Preferred Contact: <strong className="text-zinc-900">{formData.promoterFundAssistanceRequest.preferredContactMethod}</strong></div>
+                      <div>Contact Mobile: <strong className="text-zinc-900">{formData.promoterFundAssistanceRequest.customerMobile || formData.mobile}</strong></div>
+                    </div>
+                    {formData.promoterFundAssistanceRequest.notes && (
+                      <div className="pt-1 text-zinc-600">
+                        <span className="font-medium text-zinc-700">Promoter Notes:</span> {formData.promoterFundAssistanceRequest.notes}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}

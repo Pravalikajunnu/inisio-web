@@ -204,6 +204,42 @@ const leadSchema = new mongoose.Schema(
       type: String,
       default: 'Standard',
     },
+    bankName: {
+      type: String,
+      default: '',
+    },
+    branchLocation: {
+      type: String,
+      default: '',
+    },
+    bankIfscCode: {
+      type: String,
+      default: '',
+    },
+    bankAppRefNumber: {
+      type: String,
+      default: '',
+    },
+    bankApplicationStatus: {
+      type: String,
+      default: 'Draft',
+    },
+    dprTimelineRollbackReason: {
+      type: String,
+      default: '',
+    },
+    dprTargetDate: {
+      type: String,
+      default: '',
+    },
+    dprStageRollback: {
+      type: Boolean,
+      default: false,
+    },
+    adminVisibilityConfirmed: {
+      type: Boolean,
+      default: false,
+    },
     bankAppliedAt: {
       type: String,
       default: '',

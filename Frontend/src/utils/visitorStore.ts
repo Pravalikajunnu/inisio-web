@@ -1,4 +1,5 @@
 // Inisio Visitor & Website Traffic Analytics Store
+import { escapeCSV, downloadCSV } from './leadStore';
 
 export interface VisitorLog {
   id: string;
@@ -139,3 +140,55 @@ export function getVisitorSummary(): VisitorSummary {
     recentLogs: logs.slice(0, 20)
   };
 }
+
+export function exportVisitorsToCSV(logsToExport?: VisitorLog[]): void {
+  const logs = (logsToExport && logsToExport.length > 0) ? logsToExport : getStoredVisitorLogs();
+  if (logs.length === 0) {
+    alert('No visitor traffic logs to export.');
+    return;
+  }
+
+  const headers = [
+    'Log ID',
+    'Session ID',
+    'Visit Date & Time',
+    'Page Visited',
+    'Device Type',
+    'Browser',
+    'Referrer / Traffic Channel',
+    'Authenticated User Email'
+  ];
+
+  const rows = logs.map(l => {
+    let dateStr = l.timestamp || '';
+    if (l.timestamp) {
+      const d = new Date(l.timestamp);
+      if (!isNaN(d.getTime())) {
+        dateStr = d.toLocaleString('en-IN', {
+          year: 'numeric',
+          month: 'short',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+      }
+    }
+
+    return [
+      escapeCSV(l.id || ''),
+      escapeCSV(l.sessionId || ''),
+      escapeCSV(dateStr),
+      escapeCSV(l.page || ''),
+      escapeCSV(l.device || 'Desktop'),
+      escapeCSV(l.browser || 'Browser'),
+      escapeCSV(l.referrer || 'Direct'),
+      escapeCSV(l.userEmail || 'Anonymous')
+    ];
+  });
+
+  const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+  const filename = `Inisio_Website_Visitors_${new Date().toISOString().slice(0, 10)}.csv`;
+  downloadCSV(csvContent, filename);
+}
+

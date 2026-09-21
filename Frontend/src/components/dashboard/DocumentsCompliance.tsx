@@ -17,7 +17,10 @@ import {
   Eye,
   Plus,
   Filter,
-  Check
+  Check,
+  AlertCircle,
+  Send,
+  EyeOff
 } from 'lucide-react';
 
 interface DocumentsComplianceProps {
@@ -39,6 +42,7 @@ export const DocumentsCompliance: React.FC<DocumentsComplianceProps> = ({
   const [filterCategory, setFilterCategory] = useState<string>('All');
   const [isDragging, setIsDragging] = useState(false);
   const [viewingDoc, setViewingDoc] = useState<DocumentViewerTarget | null>(null);
+  const [submissionSuccess, setSubmissionSuccess] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -55,6 +59,35 @@ export const DocumentsCompliance: React.FC<DocumentsComplianceProps> = ({
   const filteredDocs = filterCategory === 'All'
     ? activeDocs
     : activeDocs.filter(d => d.type === filterCategory);
+
+  const submittedCount = activeDocs.filter(d => d.isSubmittedToAdmin).length;
+  const draftCount = activeDocs.length - submittedCount;
+
+  const handleToggleSubmitToAdmin = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = activeDocs.map(d => {
+      if (d.id === id) {
+        return {
+          ...d,
+          isSubmittedToAdmin: !d.isSubmittedToAdmin,
+          status: !d.isSubmittedToAdmin ? 'Under Review' : 'Uploaded'
+        };
+      }
+      return d;
+    });
+    onUpdateDocuments(updated);
+  };
+
+  const handleConfirmSubmitAll = () => {
+    const updated = activeDocs.map(d => ({
+      ...d,
+      isSubmittedToAdmin: true,
+      status: 'Under Review' as const
+    }));
+    onUpdateDocuments(updated);
+    setSubmissionSuccess(true);
+    setTimeout(() => setSubmissionSuccess(false), 3500);
+  };
 
   const processFile = (file: File) => {
     setIsUploading(true);
@@ -99,7 +132,8 @@ export const DocumentsCompliance: React.FC<DocumentsComplianceProps> = ({
         status: 'Uploaded',
         dpdpConsent: dpdpAgreed,
         dataUrl: fileDataUrl,
-        storageKey: `project-${projectName}-${Date.now()}`
+        storageKey: `project-${projectName}-${Date.now()}`,
+        isSubmittedToAdmin: false // Defaults to private draft until user confirms
       };
 
       const persist = async () => {
@@ -227,15 +261,52 @@ export const DocumentsCompliance: React.FC<DocumentsComplianceProps> = ({
         </div>
       </div>
 
-      {/* Mandatory DPDP Act Privacy Notice */}
-      <div className="p-3.5 bg-blue-50/80 border border-blue-200 rounded-xl space-y-1.5 text-xs text-blue-950">
-        <div className="flex items-center gap-2 font-bold text-blue-900">
-          <Lock className="w-4 h-4 text-blue-600 shrink-0" />
-          <span>DPDP Act (2023) Compliant Privacy Notice</span>
+      {/* Mandatory DPDP Act Privacy Notice & Admin Visibility Checklist */}
+      <div className="space-y-3">
+        <div className="p-3.5 bg-blue-50/80 border border-blue-200 rounded-xl space-y-1.5 text-xs text-blue-950">
+          <div className="flex items-center gap-2 font-bold text-blue-900">
+            <Lock className="w-4 h-4 text-blue-600 shrink-0" />
+            <span>DPDP Act (2023) Compliant Privacy Notice</span>
+          </div>
+          <p className="text-xs text-blue-900 font-medium leading-relaxed">
+            All uploads are end-to-end encrypted. We do not share your data with anyone except authorized partners in compliance with the DPDP Act, 2023. You can open and view your files at any time.
+          </p>
         </div>
-        <p className="text-xs text-blue-900 font-medium leading-relaxed">
-          All uploads are end-to-end encrypted. We do not share your data with anyone except authorized partners in compliance with the DPDP Act, 2023. You can open and view your files at any time.
-        </p>
+
+        {/* Sensitive Document Verification Checklist & Admin Visibility Box */}
+        {activeDocs.length > 0 && (
+          <div className="p-4 bg-gradient-to-br from-slate-50 to-indigo-50/50 border border-indigo-100 rounded-2xl space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0" />
+                  <span className="text-xs font-bold text-slate-900">Admin Visibility Verification Checklist</span>
+                </div>
+                <p className="text-[11px] text-slate-600">
+                  Sensitive documents (DPR, Aadhaar, PAN, Bank Statements) remain <strong>private drafts</strong> until you explicitly confirm and submit them to the Inisio Admin / CA appraisal desk.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleConfirmSubmitAll}
+                  className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 transition-colors"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Confirm &amp; Submit All to Admin ({draftCount} Drafts)</span>
+                </button>
+              </div>
+            </div>
+
+            {submissionSuccess && (
+              <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2 text-xs text-emerald-800 font-semibold animate-in fade-in">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>All uploaded project documents have been verified and submitted for Admin &amp; CA appraisal.</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Upload Drop Zone */}
@@ -381,10 +452,30 @@ export const DocumentsCompliance: React.FC<DocumentsComplianceProps> = ({
                       </div>
                     </div>
 
-                    <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 flex items-center gap-1 shrink-0">
-                      <CheckCircle2 className="w-3 h-3 text-blue-600" />
-                      <span>{doc.status || 'Uploaded'}</span>
-                    </span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={(e) => handleToggleSubmitToAdmin(doc.id, e)}
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 cursor-pointer transition-all ${
+                          doc.isSubmittedToAdmin
+                            ? 'text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100'
+                            : 'text-amber-800 bg-amber-50 border-amber-200 hover:bg-amber-100'
+                        }`}
+                        title={doc.isSubmittedToAdmin ? 'Visible to Admin & CA' : 'Private to you - Click to submit to Admin'}
+                      >
+                        {doc.isSubmittedToAdmin ? (
+                          <>
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <span>Submitted to Admin</span>
+                          </>
+                        ) : (
+                          <>
+                            <EyeOff className="w-3 h-3 text-amber-600" />
+                            <span>Draft (Private)</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Actions Bar */}

@@ -106,6 +106,33 @@ export function getFeasibilityTerm(score: number | string): 'Good' | 'Average' |
 
 export type UserRole = 'user' | 'ca' | 'superadmin' | 'dpr_consultant' | 'prosync_admin' | 'admin' | 'admin1' | 'admin2' | 'admin3' | 'prosync';
 
+export type TimelineStageStatus = 'Completed' | 'In Progress' | 'Pending';
+
+export interface ProjectTimelineStage {
+  id: number;
+  key: string;
+  name: string;
+  description: string;
+  iconName?: string;
+  status: TimelineStageStatus;
+  completedAt?: string | null;
+  updatedAt?: string | null;
+  updatedBy?: string | null;
+  notes?: string | null;
+}
+
+export interface TimelineAuditLog {
+  id: string;
+  projectId: string;
+  stageId: number;
+  stageName: string;
+  previousStatus?: TimelineStageStatus | string;
+  status: TimelineStageStatus;
+  updatedBy: string;
+  updatedAt: string;
+  reason?: string;
+}
+
 export interface AuthUser {
   email: string;
   role: UserRole;
@@ -156,7 +183,23 @@ export interface ProjectDocument {
   storageKey?: string;
   status: 'Uploaded' | 'Under Review' | 'Verified';
   dpdpConsent: boolean;
+  isSubmittedToAdmin?: boolean;
 }
+
+export interface CASubscription {
+  caEmail: string;
+  caName: string;
+  plan: '3_MONTH_TRIAL' | 'ANNUAL_PRO' | 'EXPIRED_TRIAL';
+  trialStartDate: string;
+  trialEndDate: string;
+  subscriptionEndDate?: string;
+  isPaidActive: boolean;
+  pricePerAnnum: number;
+  dailyAssessmentsUsed: number;
+  lastAssessmentDate: string;
+  maxDailyAssessmentsFree: number;
+}
+
 
 export interface ConsultationAssignment {
   id: string;
@@ -199,3 +242,34 @@ export interface ConsultationFormData {
   preferredSlot: string;
   additionalNotes: string;
 }
+
+export type PromoterFundAssistanceStatus =
+  | 'Not Requested'
+  | 'Requested'
+  | 'Request Submitted'
+  | 'Under Review'
+  | 'Connected with Investor/Lender'
+  | 'Completed'
+  | 'Contacted'
+  | 'Assistance Provided';
+
+export interface PromoterFundAssistanceRequest {
+  id?: string;
+  projectId?: string;
+  projectName: string;
+  requiredAmountCr: number | string;
+  totalCostCr?: number | string;
+  fundingReqCr?: number | string;
+  preferredContactMethod: 'Phone' | 'WhatsApp' | 'Email' | 'In-Person Consultation' | string;
+  notes?: string;
+  status: PromoterFundAssistanceStatus;
+  requestedAt: string;
+  requestedBy?: string;
+  customerName?: string;
+  customerMobile?: string;
+  customerEmail?: string;
+  updatedBy?: string;
+  updatedAt?: string;
+  adminNotes?: string;
+}
+

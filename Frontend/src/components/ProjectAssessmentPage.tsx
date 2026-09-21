@@ -11,6 +11,7 @@ import { calculateSystemDscr, reconcileProjectFinancials } from '../utils/financ
 import { MembershipPlansModal } from './MembershipPlansModal';
 import { DPRRequestModal } from './DPRRequestModal';
 import { FundingRequestModal } from './FundingRequestModal';
+import { PromoterFundAssistanceModal } from './PromoterFundAssistanceModal';
 import { recordAssessmentCompletion } from '../utils/membershipStore';
 import {
   Calculator,
@@ -103,6 +104,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
   const [isMembershipModalOpen, setIsMembershipModalOpen] = useState(false);
   const [isDPRModalOpen, setIsDPRModalOpen] = useState(false);
   const [isFundingModalOpen, setIsFundingModalOpen] = useState(false);
+  const [isPromoterFundAssistanceModalOpen, setIsPromoterFundAssistanceModalOpen] = useState(false);
   const [actionToast, setActionToast] = useState<string | null>(null);
 
   // Authentication State
@@ -173,7 +175,13 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
     fullName: '',
     mobile: '',
     email: '',
-    numPromoters: 1
+    numPromoters: 1,
+    bankName: '',
+    branchLocation: '',
+    bankIfscCode: '',
+    bankAppRefNumber: '',
+    promoterContributionAvailable: 'Yes' as 'Yes' | 'No',
+    promoterFundAssistanceRequest: undefined as any
   });
 
   const [numPromoters, setNumPromoters] = useState<number>(1);
@@ -311,7 +319,13 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
         fullName: contactFullName,
         mobile: contactMobile,
         email: contactEmail,
-        numPromoters: editingProject.promotersList?.length ? editingProject.promotersList.length : 1
+        numPromoters: editingProject.promotersList?.length ? editingProject.promotersList.length : 1,
+        bankName: editingProject.bankName || editingProject.assignedBank || '',
+        branchLocation: editingProject.branchLocation || '',
+        bankIfscCode: editingProject.bankIfscCode || '',
+        bankAppRefNumber: editingProject.bankAppRefNumber || '',
+        promoterContributionAvailable: editingProject.promoterContributionAvailable || 'Yes',
+        promoterFundAssistanceRequest: editingProject.promoterFundAssistanceRequest
       });
 
       if (editingProject.promotersList && editingProject.promotersList.length > 1) {
@@ -506,6 +520,14 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
         alert('Please enter your full name, mobile number, and email address.');
         return;
       }
+      if (!formData.bankName || !formData.bankName.trim()) {
+        alert('Please select your Preferred Bank for the Term Loan proposal.');
+        return;
+      }
+      if (!formData.branchLocation || !formData.branchLocation.trim()) {
+        alert('Please enter your Preferred Bank Branch Location / City.');
+        return;
+      }
       if (!mobileValidation.isValid) {
         setMobileTouched(true);
         return;
@@ -619,6 +641,10 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       collateralStatus: formData.collateralStatus,
       promoterExp: formData.promoterExp,
       description: formData.description,
+      bankName: formData.bankName,
+      branchLocation: formData.branchLocation,
+      bankIfscCode: formData.bankIfscCode,
+      bankAppRefNumber: formData.bankAppRefNumber,
       feasibilityScore: results.feasibilityScore,
       bankabilityRating: riskProfileData ? String(comprehensiveRisk.scoreOutOf10) : results.bankabilityRating,
       estimatedLoan: results.estimatedLoan,
@@ -727,6 +753,11 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
           fullName: loggedUser.name,
           mobile: loggedUser.phone || formData.mobile,
           email: loggedUser.email,
+          bankName: formData.bankName,
+          assignedBank: formData.bankName,
+          branchLocation: formData.branchLocation,
+          bankIfscCode: formData.bankIfscCode,
+          bankAppRefNumber: formData.bankAppRefNumber,
           feasibilityScore: computed.feasibilityScore,
           bankabilityRating: activeBankability,
           dscrEstimate: systemDscr,
@@ -850,9 +881,17 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       fullName: formData.fullName,
       mobile: formData.mobile,
       email: formData.email,
+      bankName: formData.bankName,
+      assignedBank: formData.bankName,
+      branchLocation: formData.branchLocation,
+      bankIfscCode: formData.bankIfscCode,
+      bankAppRefNumber: formData.bankAppRefNumber,
       feasibilityScore: computed.feasibilityScore,
       bankabilityRating: activeBankability,
       dscrEstimate: systemDscr,
+      promoterContributionAvailable: formData.promoterContributionAvailable || 'Yes',
+      promoterFundAssistanceStatus: formData.promoterFundAssistanceRequest ? 'Request Submitted' : (editingProject?.promoterFundAssistanceStatus || 'Not Requested'),
+      promoterFundAssistanceRequest: formData.promoterFundAssistanceRequest || editingProject?.promoterFundAssistanceRequest,
       riskProfileData: riskProfileData || undefined,
       financials: updatedFinancials,
       promotersList: buildPromotersList(),
@@ -907,9 +946,17 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       fullName: formData.fullName,
       mobile: formData.mobile,
       email: formData.email,
+      bankName: formData.bankName,
+      assignedBank: formData.bankName,
+      branchLocation: formData.branchLocation,
+      bankIfscCode: formData.bankIfscCode,
+      bankAppRefNumber: formData.bankAppRefNumber,
       feasibilityScore: computed.feasibilityScore,
       bankabilityRating: activeBankability,
       dscrEstimate: systemDscr,
+      promoterContributionAvailable: formData.promoterContributionAvailable || 'Yes',
+      promoterFundAssistanceStatus: formData.promoterFundAssistanceRequest ? 'Request Submitted' : (editingProject?.promoterFundAssistanceStatus || 'Not Requested'),
+      promoterFundAssistanceRequest: formData.promoterFundAssistanceRequest || editingProject?.promoterFundAssistanceRequest,
       riskProfileData: riskProfileData || undefined,
       financials: financials,
       promotersList: buildPromotersList()
@@ -967,6 +1014,9 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
       feasibilityScore: computed.feasibilityScore,
       bankabilityRating: activeBankability,
       dscrEstimate: systemDscr,
+      promoterContributionAvailable: formData.promoterContributionAvailable || 'Yes',
+      promoterFundAssistanceStatus: formData.promoterFundAssistanceRequest ? 'Request Submitted' : (editingProject?.promoterFundAssistanceStatus || 'Not Requested'),
+      promoterFundAssistanceRequest: formData.promoterFundAssistanceRequest || editingProject?.promoterFundAssistanceRequest,
       riskProfileData: riskProfileData || undefined,
       financials: financials,
       promotersList: buildPromotersList()
@@ -1404,6 +1454,81 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                         />
                       </div>
                     </div>
+                  </div>
+
+                  {/* Promoter Contribution Available Selector (Required Field) */}
+                  <div className="p-4 bg-gray-50/80 border border-gray-200 rounded-2xl space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-900 mb-0.5">
+                          Promoter Contribution Available <span className="text-red-500">*</span>
+                        </label>
+                        <p className="text-[11px] text-gray-500">
+                          Do you currently have the required promoter contribution / equity in hand?
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, promoterContributionAvailable: 'Yes' }))}
+                          className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                            formData.promoterContributionAvailable === 'Yes'
+                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                              : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'
+                          }`}
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Yes</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, promoterContributionAvailable: 'No' }))}
+                          className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                            formData.promoterContributionAvailable === 'No'
+                              ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                              : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-100'
+                          }`}
+                        >
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          <span>No</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Assistance Card shown when user selects "No" */}
+                    {formData.promoterContributionAvailable === 'No' && (
+                      <div className="p-4 sm:p-5 bg-gradient-to-br from-amber-50 via-white to-blue-50/60 border border-amber-200 rounded-xl space-y-3.5 animate-in fade-in duration-200">
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shrink-0 shadow-2xs">
+                            <Coins className="w-5 h-5" />
+                          </div>
+                          <div className="space-y-1">
+                            <h4 className="text-sm font-bold text-gray-900">
+                              Need Support for Promoter Contribution?
+                            </h4>
+                            <p className="text-xs text-gray-600 leading-relaxed">
+                              Promoter contribution is an important part of project funding. If you need support in arranging your promoter fund, Inisio can help connect you with suitable funding assistance options.
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-amber-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                          <span className="text-[10px] text-gray-500 italic">
+                            * Facilitation service subject to eligibility, investor/lender requirements &amp; terms.
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setIsPromoterFundAssistanceModalOpen(true)}
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                          >
+                            <span>Request Promoter Fund Assistance</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Equity Banner with Dynamic Color & Validation Check */}
@@ -1911,6 +2036,98 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                         ))}
                       </div>
                     )}
+                  </div>
+
+                  {/* Preferred Bank & Branch for Debt Financing (Required) */}
+                  <div className="p-4 bg-slate-50 rounded-xl border border-gray-200 space-y-3">
+                    <div className="flex items-center justify-between border-b border-gray-200/80 pb-2.5">
+                      <h3 className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Preferred Bank &amp; Branch for Term Loan</span>
+                        <span className="text-red-500 font-bold">*</span>
+                      </h3>
+                      <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+                        Required for Appraisal
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1 flex items-center gap-1">
+                          <span>Preferred Target Bank</span>
+                          <span className="text-red-500 font-bold">*</span>
+                        </label>
+                        <select
+                          name="bankName"
+                          value={formData.bankName}
+                          onChange={handleInputChange}
+                          required
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                        >
+                          <option value="">Select your preferred bank (Required)...</option>
+                          <option value="State Bank of India (SBI)">State Bank of India (SBI)</option>
+                          <option value="Punjab National Bank (PNB)">Punjab National Bank (PNB)</option>
+                          <option value="Canara Bank">Canara Bank</option>
+                          <option value="Bank of Baroda (BOB)">Bank of Baroda (BOB)</option>
+                          <option value="Union Bank of India">Union Bank of India</option>
+                          <option value="Indian Bank">Indian Bank</option>
+                          <option value="Bank of India">Bank of India</option>
+                          <option value="Central Bank of India">Central Bank of India</option>
+                          <option value="HDFC Bank (Commercial Banking)">HDFC Bank (Commercial Banking)</option>
+                          <option value="ICICI Bank (Corporate & SME)">ICICI Bank (Corporate & SME)</option>
+                          <option value="Axis Bank">Axis Bank</option>
+                          <option value="Kotak Mahindra Bank">Kotak Mahindra Bank</option>
+                          <option value="Federal Bank">Federal Bank</option>
+                          <option value="SIDBI (Small Industries Development Bank of India)">SIDBI</option>
+                          <option value="NABARD / State Financial Corporation (SFC)">NABARD / SFC</option>
+                          <option value="Other Commercial / Private Bank">Other Commercial / Private Bank</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1 flex items-center gap-1">
+                          <span>Preferred Branch Name / City</span>
+                          <span className="text-red-500 font-bold">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          name="branchLocation"
+                          value={formData.branchLocation}
+                          onChange={handleInputChange}
+                          required
+                          placeholder="e.g. Industrial Finance Branch, Bengaluru"
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                          Branch IFSC Code (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          name="bankIfscCode"
+                          value={formData.bankIfscCode}
+                          onChange={(e) => setFormData(prev => ({ ...prev, bankIfscCode: e.target.value.toUpperCase() }))}
+                          placeholder="e.g. SBIN0004562"
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-mono uppercase outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-600 mb-1">
+                          Application / Proposal Ref # (If initiated)
+                        </label>
+                        <input
+                          type="text"
+                          name="bankAppRefNumber"
+                          value={formData.bankAppRefNumber}
+                          onChange={handleInputChange}
+                          placeholder="e.g. SBI-SME-2026-081"
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-mono outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   <div className="pt-2 flex items-center justify-between">
@@ -2537,6 +2754,15 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                       <span>{formData.industry}</span>
                       <span>•</span>
                       <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5 text-slate-400" /> {formData.location}</span>
+                      {formData.bankName && (
+                        <>
+                          <span>•</span>
+                          <span className="flex items-center gap-1 text-blue-700 font-medium">
+                            <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                            <span>{formData.bankName}</span>
+                          </span>
+                        </>
+                      )}
                     </p>
                   </div>
 
@@ -2729,7 +2955,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                 </div>
 
                 {/* Breakdown Summary Tables */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pt-2">
                   {/* CAPEX Breakdown */}
                   <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 space-y-3">
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 font-manrope">
@@ -2786,6 +3012,40 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
                       <div className="flex justify-between pt-1 font-bold text-slate-900 text-sm">
                         <span>Total Means of Finance</span>
                         <span className="text-emerald-700">₹ {totalFin.toFixed(2)} Cr</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Nominated Lending Bank & Branch */}
+                  <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 space-y-3">
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 font-manrope">
+                      <Building2 className="w-4 h-4 text-indigo-600" />
+                      <span>Nominated Bank &amp; Branch</span>
+                    </h3>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between py-1.5 border-b border-slate-200">
+                        <span className="text-slate-600">Target Bank</span>
+                        <span className="font-bold text-indigo-900 text-right">{formData.bankName || 'Under Selection'}</span>
+                      </div>
+                      <div className="flex justify-between py-1.5 border-b border-slate-200">
+                        <span className="text-slate-600">Underwriting Branch</span>
+                        <span className="font-bold text-slate-900 text-right">{formData.branchLocation || 'Under Selection'}</span>
+                      </div>
+                      {formData.bankIfscCode ? (
+                        <div className="flex justify-between py-1.5 border-b border-slate-200">
+                          <span className="text-slate-600">Branch IFSC Code</span>
+                          <span className="font-mono font-bold text-slate-800">{formData.bankIfscCode}</span>
+                        </div>
+                      ) : null}
+                      {formData.bankAppRefNumber ? (
+                        <div className="flex justify-between py-1.5 border-b border-slate-200">
+                          <span className="text-slate-600">Proposal Tracking #</span>
+                          <span className="font-mono font-bold text-slate-800">{formData.bankAppRefNumber}</span>
+                        </div>
+                      ) : null}
+                      <div className="flex justify-between pt-1 font-bold text-slate-900 text-sm">
+                        <span>Appraisal Channel</span>
+                        <span className="text-indigo-700">Direct Term Loan Syndication</span>
                       </div>
                     </div>
                   </div>
@@ -3295,6 +3555,34 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
         user={activeUser}
         onSubmitSuccess={(msg) => {
           setActionToast(msg);
+          setTimeout(() => setActionToast(null), 6000);
+        }}
+      />
+
+      {/* Promoter Fund Assistance Modal */}
+      <PromoterFundAssistanceModal
+        isOpen={isPromoterFundAssistanceModalOpen}
+        onClose={() => setIsPromoterFundAssistanceModalOpen(false)}
+        project={{
+          id: editingProject?.id || createdProjectIdRef.current || createdProjectId || undefined,
+          projectName: formData.projectName || formData.industry || 'Greenfield Project',
+          totalCostCr: cost > 0 ? cost : (parseFloat(formData.totalCostCr) || 10),
+          loanRequiredCr: (cost > 0 && contrib >= 0) ? Math.max(0, cost - contrib) : (parseFloat(formData.loanRequiredCr) || 7.5),
+          promoterContribCr: contrib > 0 ? contrib : (parseFloat(formData.promoterContribCr) || 2.5),
+          fullName: formData.fullName,
+          mobile: formData.mobile,
+          email: formData.email,
+          promoterFundAssistanceStatus: formData.promoterFundAssistanceRequest ? 'Request Submitted' : (editingProject?.promoterFundAssistanceStatus || 'Not Requested'),
+          promoterFundAssistanceRequest: formData.promoterFundAssistanceRequest || editingProject?.promoterFundAssistanceRequest
+        }}
+        user={activeUser}
+        onRequestSubmitted={(req) => {
+          setFormData(prev => ({
+            ...prev,
+            promoterContributionAvailable: 'No',
+            promoterFundAssistanceRequest: req
+          }));
+          setActionToast(`Promoter fund assistance request for ₹${req.requiredAmountCr} Cr submitted successfully!`);
           setTimeout(() => setActionToast(null), 6000);
         }}
       />

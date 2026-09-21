@@ -1,7 +1,7 @@
 import { createAdminNotification } from './notificationStore';
 import { DetailedRiskProfileData } from '../components/DetailedRiskProfileForm';
 import { CommercialSupplyFundingData } from '../components/CommercialSupplyFundingForm';
-import { PromoterDetail, CustomCostComponent, CustomFinanceComponent, ProjectDocument } from '../types';
+import { PromoterDetail, CustomCostComponent, CustomFinanceComponent, ProjectDocument, ProjectTimelineStage, TimelineAuditLog, PromoterFundAssistanceStatus, PromoterFundAssistanceRequest } from '../types';
 import { resolveApiUrl } from './apiClient';
 
 export interface EditAuditRecord {
@@ -58,6 +58,25 @@ export interface LeadRecord {
   consultationStatus?: 'In Progress' | 'Customer Declined' | 'Completed' | 'Pending';
   consultationNotes?: string;
   membershipTier?: string;
+  bankName?: string;
+  branchLocation?: string;
+  bankIfscCode?: string;
+  bankAppRefNumber?: string;
+  bankApplicationStatus?: string;
+  dprTimelineRollbackReason?: string;
+  dprTargetDate?: string;
+  dprStageRollback?: boolean;
+  adminVisibilityConfirmed?: boolean;
+  promoterContributionAvailable?: 'Yes' | 'No';
+  promoterFundAssistanceStatus?: PromoterFundAssistanceStatus;
+  promoterFundAssistanceRequest?: PromoterFundAssistanceRequest;
+  promoterFundAssistanceLogs?: Array<{
+    id: string;
+    status: PromoterFundAssistanceStatus;
+    updatedBy: string;
+    updatedAt: string;
+    notes?: string;
+  }>;
   financials?: {
     machineryCostCr?: string | number;
     civilCostCr?: string | number;
@@ -72,6 +91,8 @@ export interface LeadRecord {
   bankAppliedAt?: string;
   loanApprovedAt?: string;
   fundingDisbursedAt?: string;
+  timelineStages?: ProjectTimelineStage[];
+  timelineAuditLogs?: TimelineAuditLog[];
 }
 
 const STORAGE_KEY = 'inisio_admin_leads_v1';
@@ -132,7 +153,13 @@ const normalizeLead = (lead: Partial<LeadRecord>): LeadRecord => ({
   promotersList: Array.isArray(lead.promotersList) ? lead.promotersList : [],
   customCostComponents: Array.isArray(lead.customCostComponents) ? lead.customCostComponents : [],
   customFinanceComponents: Array.isArray(lead.customFinanceComponents) ? lead.customFinanceComponents : [],
-    uploadedDocuments: Array.isArray(lead.uploadedDocuments) ? sanitizeDocumentPayload(lead.uploadedDocuments) : [],
+  uploadedDocuments: Array.isArray(lead.uploadedDocuments) ? sanitizeDocumentPayload(lead.uploadedDocuments) : [],
+  timelineStages: Array.isArray(lead.timelineStages) ? lead.timelineStages : undefined,
+  timelineAuditLogs: Array.isArray(lead.timelineAuditLogs) ? lead.timelineAuditLogs : [],
+  promoterContributionAvailable: lead.promoterContributionAvailable || 'Yes',
+  promoterFundAssistanceStatus: lead.promoterFundAssistanceStatus || 'Not Requested',
+  promoterFundAssistanceRequest: lead.promoterFundAssistanceRequest || undefined,
+  promoterFundAssistanceLogs: Array.isArray(lead.promoterFundAssistanceLogs) ? lead.promoterFundAssistanceLogs : [],
 });
 
 export function getStoredLeads(userEmail?: string): LeadRecord[] {
@@ -443,36 +470,150 @@ export function clearAllLeads(): void {
   }).catch(() => {});
 }
 
-export function exportLeadsToCSV(): void {
-  const leads = getStoredLeads();
-  if (leads.length === 0) {
-    alert('No lead records to export.');
-    return;
-  }
+export const escapeCSV = (val: any): string => {
+  if (val === null || val === undefined) return '""';
+  const str = String(val).replace(/\r\n/g, ' ').replace(/\n/g, ' ').replace(/\r/g, ' ').trim();
+  return `"${str.replace(/"/g, '""')}"`;
+};
 
-  const headers = ['Date & Time', 'Promoter Name', 'Mobile', 'Email', 'Project Name', 'Industry Sector', 'Location', 'Total Capex (Cr)', 'Loan Required (Cr)', 'Feasibility %', 'Bankability Rating', 'Downloaded PDF', 'Source'];
-  const rows = leads.map(l => [
-    new Date(l.timestamp).toLocaleString('en-IN'),
-    `"${l.fullName || ''}"`,
-    `"${l.mobile || ''}"`,
-    `"${l.email || ''}"`,
-    `"${l.projectName || ''}"`,
-    `"${l.industry || ''}"`,
-    `"${l.location || ''}"`,
-    `"${l.totalCostCr || ''}"`,
-    `"${l.loanRequiredCr || ''}"`,
-    `"${l.feasibilityScore || ''}"`,
-    `"${l.bankabilityRating || ''}"`,
-    l.downloadedPDF ? 'Yes' : 'No',
-    `"${l.source || ''}"`
-  ]);
-
-  const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-  const encodedUri = encodeURI(csvContent);
+export const downloadCSV = (csvContent: string, filename: string): void => {
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
-  link.setAttribute('href', encodedUri);
-  link.setAttribute('download', `Inisio_Admin_Leads_${new Date().toISOString().slice(0, 10)}.csv`);
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+};
+
+export function exportLeadsToCSV(leadsToExport?: LeadRecord[]): void {
+  const leads = (leadsToExport && leadsToExport.length > 0) ? leadsToExport : getStoredLeads();
+  if (leads.length === 0) {
+    alert('No project lead records to export.');
+    return;
+  }
+
+  const headers = [
+    'Lead ID',
+    'Submission Date & Time',
+    'Promoter Name',
+    'Mobile Number',
+    'Email Address',
+    'Project Name',
+    'Industry / Sector',
+    'Location',
+    'Total Capex (₹ Cr)',
+    'Loan Required (₹ Cr)',
+    'Promoter Equity (₹ Cr)',
+    'Feasibility Score (%)',
+    'Bankability Rating',
+    'Estimated DSCR',
+    'Project Stage / Status',
+    'Land Status',
+    'Collateral Status',
+    'Promoter Experience',
+    'Assigned Advisory Team',
+    'Assigned Role / Desk',
+    'DPR Consultant Assigned',
+    'Consultation Status',
+    'Consultation Assigned To',
+    'Teaser PDF Downloaded',
+    'Assessment Completed',
+    'Lead Source',
+    'Last Edited By',
+    'Last Edited At',
+    'Notes / Objectives'
+  ];
+
+  const rows = leads.map(l => {
+    // Robust date formatting
+    let dateStr = l.timestamp || '';
+    if (l.timestamp) {
+      const d = new Date(l.timestamp);
+      if (!isNaN(d.getTime())) {
+        dateStr = d.toLocaleString('en-IN', {
+          year: 'numeric',
+          month: 'short',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+    }
+
+    // Capex & Loan resolution
+    const capex = (l.totalCostCr !== undefined && l.totalCostCr !== '' && l.totalCostCr !== null)
+      ? l.totalCostCr
+      : (l.financials?.totalProjectCost ?? (l as any).capexCr ?? '0');
+
+    const loan = (l.loanRequiredCr !== undefined && l.loanRequiredCr !== '' && l.loanRequiredCr !== null)
+      ? l.loanRequiredCr
+      : (l.financials?.termLoanCr ?? (l as any).loanCr ?? '0');
+
+    const equity = (l.promoterContribCr !== undefined && l.promoterContribCr !== '' && l.promoterContribCr !== null)
+      ? l.promoterContribCr
+      : (l.financials?.promoterContributionCr ?? '');
+
+    // Feasibility Score formatting
+    const feasibility = (l.feasibilityScore !== undefined && l.feasibilityScore !== null && l.feasibilityScore !== '')
+      ? `${l.feasibilityScore}%`
+      : '';
+
+    // DSCR
+    const dscr = (l.dscrEstimate !== undefined && l.dscrEstimate !== null && !isNaN(Number(l.dscrEstimate)))
+      ? String(l.dscrEstimate)
+      : '';
+
+    // Last edited date
+    let editDateStr = '';
+    if (l.lastEditedAt) {
+      const ed = new Date(l.lastEditedAt);
+      if (!isNaN(ed.getTime())) {
+        editDateStr = ed.toLocaleString('en-IN');
+      } else {
+        editDateStr = String(l.lastEditedAt);
+      }
+    }
+
+    const notesContent = l.notes || l.consultationNotes || '';
+
+    return [
+      escapeCSV(l.id || ''),
+      escapeCSV(dateStr),
+      escapeCSV(l.fullName || ''),
+      escapeCSV(l.mobile || ''),
+      escapeCSV(l.email || ''),
+      escapeCSV(l.projectName || ''),
+      escapeCSV(l.industry || ''),
+      escapeCSV(l.location || ''),
+      escapeCSV(capex),
+      escapeCSV(loan),
+      escapeCSV(equity),
+      escapeCSV(feasibility),
+      escapeCSV(l.bankabilityRating || ''),
+      escapeCSV(dscr),
+      escapeCSV(l.status || 'New Lead'),
+      escapeCSV(l.landStatus || 'N/A'),
+      escapeCSV(l.collateralStatus || 'N/A'),
+      escapeCSV(l.promoterExp || 'N/A'),
+      escapeCSV(l.assignedTeam || 'Unassigned'),
+      escapeCSV(l.assignedRole || 'N/A'),
+      escapeCSV(l.dprAssignedTo || 'Unassigned'),
+      escapeCSV(l.consultationStatus || 'Pending'),
+      escapeCSV(l.consultationAssignedTo || 'Unassigned'),
+      escapeCSV(l.downloadedPDF ? 'Yes' : 'No'),
+      escapeCSV(l.assessmentCompleted ? 'Yes' : 'No'),
+      escapeCSV(l.source || 'Web Portal Submission'),
+      escapeCSV(l.lastEditedBy || 'None'),
+      escapeCSV(editDateStr),
+      escapeCSV(notesContent)
+    ];
+  });
+
+  const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\r\n');
+  const filename = `Inisio_Project_Pipelines_${new Date().toISOString().slice(0, 10)}.csv`;
+  downloadCSV(csvContent, filename);
 }
+

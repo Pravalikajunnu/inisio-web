@@ -14,6 +14,7 @@ import { FAQSection } from './components/FAQSection';
 import { Footer } from './components/Footer';
 import { FloatingContactButtons } from './components/FloatingContactButtons';
 import { DashboardSkeleton, LoadingSpinner } from './components/common';
+import { Shield } from 'lucide-react';
 import { canUserStartAssessment } from './utils/membershipStore';
 import { getStoredLeads } from './utils/leadStore';
 import { recordPageView } from './utils/visitorStore';
@@ -27,6 +28,7 @@ const ProsyncDashboard = lazy(() => import('./components/ProsyncDashboard').then
 const DPRConsultantDashboard = lazy(() => import('./components/DPRConsultantDashboard').then(m => ({ default: m.DPRConsultantDashboard })));
 const ProjectAssessmentPage = lazy(() => import('./components/ProjectAssessmentPage').then(m => ({ default: m.ProjectAssessmentPage })));
 const LatestBlogs = lazy(() => import('./components/LatestBlogs').then(m => ({ default: m.LatestBlogs })));
+const BlogsPage = lazy(() => import('./components/BlogsPage').then(m => ({ default: m.BlogsPage })));
 
 // Code-split modals
 const AuthModal = lazy(() => import('./components/AuthModal').then(m => ({ default: m.AuthModal })));
@@ -35,7 +37,34 @@ const AdminLeadsModal = lazy(() => import('./components/AdminLeadsModal').then(m
 const MembershipPlansModal = lazy(() => import('./components/MembershipPlansModal').then(m => ({ default: m.MembershipPlansModal })));
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<string>('home');
+  const [activeBlogSlug, setActiveBlogSlug] = useState<string>(() => {
+    if (typeof window === 'undefined') return '';
+    const path = window.location.pathname;
+    if (path.startsWith('/blogs/')) return path.replace('/blogs/', '');
+    if (path.startsWith('/blog/')) return path.replace('/blog/', '');
+    return '';
+  });
+
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    if (typeof window === 'undefined') return 'home';
+    const path = window.location.pathname;
+    if (path === '/blogs' || path.startsWith('/blogs/') || path === '/blog' || path.startsWith('/blog/')) {
+      return 'blogs';
+    }
+    if (path === '/assessment') return 'assessment';
+    if (path === '/how-it-works') return 'how-it-works';
+    if (path === '/about') return 'about';
+    if (path === '/industries') return 'industries';
+    if (path === '/contact') return 'contact';
+    if (path === '/faq') return 'faq';
+    if (path === '/user-dashboard') return 'user-dashboard';
+    if (path === '/admin-dashboard') return 'admin-dashboard';
+    if (path === '/ca-dashboard') return 'ca-dashboard';
+    if (path === '/prosync-dashboard') return 'prosync-dashboard';
+    if (path === '/dpr-dashboard') return 'dpr-dashboard';
+    return 'home';
+  });
+
   const [consultationModalOpen, setConsultationModalOpen] = useState(false);
   const [adminModalOpen, setAdminModalOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -61,6 +90,41 @@ export default function App() {
 
   const [authPrefill, setAuthPrefill] = useState<{ email?: string; name?: string; phone?: string }>({});
 
+  // Dynamically verify active user token and session with the backend API
+  useEffect(() => {
+    const token = localStorage.getItem('inisio_auth_token');
+    if (token) {
+      fetch('/api/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.success && data.data) {
+            const user: AuthUser = {
+              email: data.data.email,
+              role: data.data.role,
+              name: data.data.name,
+              company: data.data.company,
+              phone: data.data.phone,
+              token: token,
+            };
+            setCurrentUser(user);
+            localStorage.setItem('inisio_active_user', JSON.stringify(user));
+          } else {
+            // Token is expired or invalid on the backend
+            localStorage.removeItem('inisio_auth_token');
+            localStorage.removeItem('inisio_active_user');
+            setCurrentUser(null);
+          }
+        })
+        .catch(() => {
+          // Keep active state if network is temporarily offline
+        });
+    }
+  }, []);
+
   const handleOpenAuth = (
     mode: 'login' | 'signup' | 'forgot-password' = 'login',
     prefill?: { email?: string; name?: string; phone?: string }
@@ -79,7 +143,36 @@ export default function App() {
     };
     checkAdminHash();
 
+    const handlePopState = () => {
+      const path = window.location.pathname;
+      if (path === '/blogs' || path.startsWith('/blogs/') || path === '/blog' || path.startsWith('/blog/')) {
+        setActiveTab('blogs');
+        if (path.startsWith('/blogs/')) {
+          setActiveBlogSlug(path.replace('/blogs/', ''));
+        } else if (path.startsWith('/blog/')) {
+          setActiveBlogSlug(path.replace('/blog/', ''));
+        } else {
+          setActiveBlogSlug('');
+        }
+      } else if (path === '/assessment') {
+        setActiveTab('assessment');
+      } else if (path === '/how-it-works') {
+        setActiveTab('how-it-works');
+      } else if (path === '/about') {
+        setActiveTab('about');
+      } else if (path === '/industries') {
+        setActiveTab('industries');
+      } else if (path === '/contact') {
+        setActiveTab('contact');
+      } else if (path === '/faq') {
+        setActiveTab('faq');
+      } else if (path === '/' || path === '') {
+        setActiveTab('home');
+      }
+    };
+
     window.addEventListener('hashchange', checkAdminHash);
+    window.addEventListener('popstate', handlePopState);
 
     // Track initial page view
     recordPageView('Home / Greenfield Landing', currentUser?.email);
@@ -95,6 +188,7 @@ export default function App() {
 
     return () => {
       window.removeEventListener('hashchange', checkAdminHash);
+      window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [currentUser?.email]);
@@ -103,6 +197,7 @@ export default function App() {
   useEffect(() => {
     const tabLabels: Record<string, string> = {
       'home': 'Home / Greenfield Landing',
+      'blogs': 'Advisory Blogs & Research Hub',
       'assessment': 'Greenfield Project Assessment',
       'user-dashboard': 'Promoter Project Dashboard',
       'admin-dashboard': 'Executive Admin Control Desk',
@@ -186,19 +281,44 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSelectTab = (tab: string) => {
+  const handleSelectTab = (tab: string, blogSlug?: string) => {
     if (tab === 'assessment') {
       handleOpenAssessment();
       return;
     }
+
+    const protectedTabs = ['user-dashboard', 'admin-dashboard', 'ca-dashboard', 'prosync-dashboard', 'dpr-dashboard'];
+    if (protectedTabs.includes(tab) && !currentUser) {
+      handleOpenAuth('login');
+      return;
+    }
+
     setEditingProjectForAssessment(null);
     setActiveTab(tab);
+
+    if (tab === 'blogs') {
+      if (blogSlug) {
+        setActiveBlogSlug(blogSlug);
+        window.history.pushState({}, '', `/blogs/${blogSlug}`);
+      } else {
+        setActiveBlogSlug('');
+        window.history.pushState({}, '', '/blogs');
+      }
+    } else if (tab === 'home') {
+      setActiveBlogSlug('');
+      window.history.pushState({}, '', '/');
+    } else {
+      setActiveBlogSlug('');
+      window.history.pushState({}, '', `/${tab}`);
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSelectIndustryFromNav = (industryName: string) => {
     setSelectedIndustryForAssessment(industryName);
     setActiveTab('industries');
+    window.history.pushState({}, '', '/industries');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -238,6 +358,7 @@ export default function App() {
                 <LatestBlogs
                   onOpenAssessment={() => handleOpenAssessment()}
                   onOpenConsultation={() => setConsultationModalOpen(true)}
+                  onNavigateToBlogs={(slug) => handleSelectTab('blogs', slug)}
                 />
               </Suspense>
             </div>
@@ -287,6 +408,27 @@ export default function App() {
                 <ProsyncDashboard user={currentUser} onLogout={handleLogout} />
               </div>
             </Suspense>
+          )}
+
+          {['user-dashboard', 'admin-dashboard', 'ca-dashboard', 'prosync-dashboard', 'dpr-dashboard'].includes(activeTab) && !currentUser && (
+            <div className="max-w-xl mx-auto my-16 p-8 bg-white border border-slate-200 rounded-2xl shadow-sm text-center space-y-4">
+              <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto">
+                <Shield className="w-6 h-6" />
+              </div>
+              <h2 className="text-xl font-black text-slate-900 font-manrope">Authentication Required</h2>
+              <p className="text-sm text-slate-600 font-inter">
+                Please sign in with your verified account credentials to access this dashboard.
+              </p>
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => handleOpenAuth('login')}
+                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-xs transition-colors cursor-pointer"
+                >
+                  Sign In to Continue
+                </button>
+              </div>
+            </div>
           )}
 
           {activeTab === 'assessment' && (
@@ -342,6 +484,29 @@ export default function App() {
                 selectedIndustryName={selectedIndustryForAssessment}
               />
             </div>
+          )}
+
+          {activeTab === 'blogs' && (
+            <Suspense fallback={<DashboardSkeleton />}>
+              <div className="animate-in fade-in duration-300 min-h-[85vh]">
+                <BlogsPage
+                  activeSlug={activeBlogSlug}
+                  onOpenAssessment={(ind) => handleOpenAssessment(ind)}
+                  onOpenConsultation={() => setConsultationModalOpen(true)}
+                  onSelectBlog={(slug) => {
+                    setActiveBlogSlug(slug);
+                    window.history.pushState({}, '', `/blogs/${slug}`);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  onBackToBlogs={() => {
+                    setActiveBlogSlug('');
+                    window.history.pushState({}, '', '/blogs');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  onNavigateHome={() => handleSelectTab('home')}
+                />
+              </div>
+            </Suspense>
           )}
 
           {activeTab === 'contact' && (

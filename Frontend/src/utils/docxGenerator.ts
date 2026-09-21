@@ -976,6 +976,10 @@ export async function generateProjectTeaserDOCX(data: TeaserPDFData): Promise<vo
               ...(data.panNumber ? [{ label: 'PAN Number', val: data.panNumber }] : []),
               { label: 'Registered Location', val: `${data.location || 'India'}` },
               { label: 'Proposed Plant Site', val: `${data.location || 'India'} (${data.landStatus})` },
+              { label: 'Preferred Target Bank', val: data.bankName || 'Under Selection' },
+              { label: 'Preferred Bank Branch', val: data.branchLocation || 'Under Selection' },
+              ...(data.bankIfscCode ? [{ label: 'Branch IFSC Code', val: data.bankIfscCode }] : []),
+              ...(data.bankAppRefNumber ? [{ label: 'Proposal / Tracking Ref', val: data.bankAppRefNumber }] : []),
               { label: 'Feasibility Score', val: `${getFeasibilityTerm(data.feasibilityScore)} (${data.feasibilityScore}/100)` },
               { label: 'Bankability Grade', val: `${data.bankabilityRating} / 10 (Tier-1 Bankable Grade)` }
             ].map((item, idx) =>

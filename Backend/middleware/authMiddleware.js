@@ -99,6 +99,15 @@ export const authorizeRoles = (...roles) => {
 
     const userRole = req.user.role || 'user';
 
+    // Strict Super Admin Access Control: Super Admin is strictly Read-Only across all resources
+    if (userRole === 'superadmin' && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+      return sendError(
+        res,
+        'Super Admin account has View-Only privileges. Data modifications, updates, and deletions require an Admin account.',
+        403
+      );
+    }
+
     // Normalize admin aliases
     const normalizedRole = userRole === 'admin1' || userRole === 'admin2' || userRole === 'admin3'
       ? 'admin'
@@ -106,15 +115,14 @@ export const authorizeRoles = (...roles) => {
         ? 'prosync_admin'
         : userRole;
 
-    // Super Admin has view-only authorization for any admin or general resource
-    const isSuperAdminViewer = userRole === 'superadmin' && req.method === 'GET' && (roles.includes('admin') || roles.includes('superadmin'));
+    // Super Admin has view-only authorization for any admin, superadmin, or general reporting resource
+    const isSuperAdminViewer = userRole === 'superadmin' && req.method === 'GET' && (roles.includes('admin') || roles.includes('superadmin') || roles.includes('ca') || roles.includes('prosync_admin'));
 
     const isAuthorized =
       roles.includes(userRole) ||
       roles.includes(normalizedRole) ||
       isSuperAdminViewer ||
-      (roles.includes('admin') && (userRole.startsWith('admin') || req.user.email === 'admin@gmail.com' || req.user.email === 'inisioadmin@gmail.com')) ||
-      (roles.includes('superadmin') && (userRole === 'superadmin' || req.user.email === 'inisiosuperadmin@gmail.com'));
+      (roles.includes('admin') && (userRole.startsWith('admin') || req.user.email === 'admin@gmail.com' || req.user.email === 'inisioadmin@gmail.com'));
 
     if (!isAuthorized) {
       return sendError(

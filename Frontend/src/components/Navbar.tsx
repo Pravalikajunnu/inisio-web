@@ -73,24 +73,12 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'about', name: 'About' },
     { id: 'how-it-works', name: 'How It Works' },
     { id: 'industries', name: 'Industries' },
-    { id: 'faq', name: 'FAQ' },
     { id: 'blogs', name: 'Blogs' },
+    { id: 'faq', name: 'FAQ' },
     { id: 'contact', name: 'Contact' }
   ];
 
   const handleNavClick = (id: string) => {
-    if (id === 'blogs') {
-      onSelectTab('home');
-      setMobileMenuOpen(false);
-      setUserDropdownOpen(false);
-      setTimeout(() => {
-        const blogsElem = document.getElementById('blogs');
-        if (blogsElem) {
-          blogsElem.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 100);
-      return;
-    }
     onSelectTab(id);
     setMobileMenuOpen(false);
     setUserDropdownOpen(false);
@@ -168,15 +156,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 font-inter font-medium text-xs xl:text-sm">
               {navLinks.map((link) => {
                 const isActive = activeTab === link.id;
-                const isSecondary = link.id === 'faq' || link.id === 'blogs';
 
                 return (
                   <button
                     key={link.id}
                     onClick={() => handleNavClick(link.id)}
-                    className={`px-2.5 xl:px-3 py-1.5 rounded-xl transition-all font-medium cursor-pointer whitespace-nowrap min-h-[36px] ${
-                      isSecondary ? 'hidden xl:inline-flex' : 'inline-flex'
-                    } items-center ${
+                    className={`px-2 xl:px-3 py-1.5 rounded-xl transition-all font-medium cursor-pointer whitespace-nowrap min-h-[36px] inline-flex items-center ${
                       isActive
                         ? 'bg-blue-600 text-white font-semibold shadow-xs'
                         : 'text-[#4B5563] hover:text-[#111827] hover:bg-gray-100'

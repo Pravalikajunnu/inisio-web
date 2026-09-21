@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { AuthUser, PromoterDetail, CustomCostComponent, CustomFinanceComponent, ProjectDocument } from '../types';
+import {
+  AuthUser,
+  PromoterDetail,
+  CustomCostComponent,
+  CustomFinanceComponent,
+  ProjectDocument,
+  ProjectTimelineStage,
+  TimelineAuditLog,
+  PromoterFundAssistanceStatus,
+  PromoterFundAssistanceRequest,
+  PromoterFundAssistanceLog
+} from '../types';
 import { fetchLeadsFromBackend, updateLeadRecord, LeadRecord } from '../utils/leadStore';
 import { generateProjectTeaserPDF, TeaserPDFData } from '../utils/pdfGenerator';
 import { generateProjectTeaserDOCX } from '../utils/docxGenerator';
@@ -8,11 +19,21 @@ import { DocumentUploadModal } from './DocumentUploadModal';
 import { PhotoUploadModal } from './PhotoUploadModal';
 import { DetailedRiskProfileData } from './DetailedRiskProfileForm';
 import { CommercialSupplyFundingData } from './CommercialSupplyFundingForm';
+import { ProjectTimeline } from './ProjectTimeline';
+import { computeProjectTimeline } from '../utils/timelineManager';
 import { ProbabilityMeter } from './dashboard/ProbabilityMeter';
 import { PromotersManagement } from './dashboard/PromotersManagement';
 import { ProjectFinancialsBreakup } from './dashboard/ProjectFinancialsBreakup';
+import { PromoterFundAssistanceCard } from './dashboard/PromoterFundAssistanceCard';
+import { PromoterFundAssistanceModal } from './PromoterFundAssistanceModal';
 import { UnderwritingChecklist } from './dashboard/UnderwritingChecklist';
 import { DocumentsCompliance } from './dashboard/DocumentsCompliance';
+import { CibilScoreWidget } from './dashboard/CibilScoreWidget';
+import { CrisCompanyScoreBanner } from './dashboard/CrisCompanyScoreBanner';
+import { BankApplicationTracker } from './dashboard/BankApplicationTracker';
+import { CreditInformationCard } from './dashboard/CreditInformationCard';
+import { GetHelpFromCaModal } from './dashboard/GetHelpFromCaModal';
+import { detectUserLocation } from '../utils/locationDetector';
 import { getUserMembership, MembershipPlan } from '../utils/membershipStore';
 import { MembershipPlansModal } from './MembershipPlansModal';
 import { calculateSystemDscr, reconcileProjectFinancials } from '../utils/financialUtils';
@@ -133,6 +154,20 @@ export interface UserProjectDetail {
   uploadedDocuments?: ProjectDocument[];
   isFunded?: boolean;
   successProbability?: number;
+  bankName?: string;
+  branchLocation?: string;
+  bankIfscCode?: string;
+  bankAppRefNumber?: string;
+  bankApplicationStatus?: string;
+  dprTimelineRollbackReason?: string;
+  dprTargetDate?: string;
+  dprStageRollback?: boolean;
+  timelineStages?: ProjectTimelineStage[];
+  timelineAuditLogs?: TimelineAuditLog[];
+  promoterContributionAvailable?: 'Yes' | 'No';
+  promoterFundAssistanceStatus?: PromoterFundAssistanceStatus;
+  promoterFundAssistanceRequest?: PromoterFundAssistanceRequest;
+  promoterFundAssistanceLogs?: PromoterFundAssistanceLog[];
 }
 
 export const UserDashboard: React.FC<UserDashboardProps> = ({
@@ -147,6 +182,9 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   const [isEditingModalOpen, setIsEditingModalOpen] = useState<boolean>(false);
   const [isDocUploadModalOpen, setIsDocUploadModalOpen] = useState<boolean>(false);
   const [isPhotoUploadModalOpen, setIsPhotoUploadModalOpen] = useState<boolean>(false);
+  const [isHelpCaModalOpen, setIsHelpCaModalOpen] = useState<boolean>(false);
+  const [isPromoterFundAssistanceModalOpen, setIsPromoterFundAssistanceModalOpen] = useState<boolean>(false);
+  const [detectedLocation, setDetectedLocation] = useState<string>('');
   const [projectDropdownOpen, setProjectDropdownOpen] = useState<boolean>(false);
   const [activeSectionView, setActiveSectionView] = useState<string>('all');
   const [editSection, setEditSection] = useState<EditSectionType>('all');
@@ -155,6 +193,13 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   const [isMembershipModalOpen, setIsMembershipModalOpen] = useState<boolean>(false);
   const [isGeneratingTeaser, setIsGeneratingTeaser] = useState(false);
   const [membership, setMembership] = useState(() => getUserMembership(user.email));
+
+  useEffect(() => {
+    // Detect location silently from IP/Browser
+    detectUserLocation().then((loc) => {
+      if (loc) setDetectedLocation(loc);
+    });
+  }, []);
 
   useEffect(() => {
     const handleMembershipUpdate = () => {
@@ -232,7 +277,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           status: (lead.status || 'In Appraisal') as any,
           stageNumber: lead.status === 'CA Approved' ? 4 : (lead.downloadedPDF ? 3 : 2),
           assignedCA: lead.consultationAssignedTo || '',
-          assignedBank: '',
+          assignedBank: lead.bankName || lead.assignedBank || '',
           downloadedDate: lead.timestamp ? new Date(lead.timestamp).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently',
           downloadedPDF: Boolean(lead.downloadedPDF),
           notes: lead.notes || '',
@@ -260,7 +305,17 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           customFinanceComponents: lead.customFinanceComponents,
           uploadedDocuments: lead.uploadedDocuments,
           isFunded: lead.isFunded,
-          successProbability: lead.successProbability
+          successProbability: lead.successProbability,
+          bankName: lead.bankName,
+          branchLocation: lead.branchLocation,
+          bankIfscCode: lead.bankIfscCode,
+          bankAppRefNumber: lead.bankAppRefNumber,
+          bankApplicationStatus: lead.bankApplicationStatus,
+          dprTimelineRollbackReason: lead.dprTimelineRollbackReason,
+          dprTargetDate: lead.dprTargetDate,
+          dprStageRollback: lead.dprStageRollback,
+          timelineStages: lead.timelineStages,
+          timelineAuditLogs: lead.timelineAuditLogs
         };
 
         if (!existingEntry) {
@@ -354,7 +409,11 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             customFinanceComponents: proj.customFinanceComponents,
             uploadedDocuments: proj.uploadedDocuments,
             isFunded: proj.isFunded,
-            successProbability: proj.successProbability
+            successProbability: proj.successProbability,
+            promoterContributionAvailable: proj.promoterContributionAvailable || 'Yes',
+            promoterFundAssistanceStatus: proj.promoterFundAssistanceStatus || 'Not Requested',
+            promoterFundAssistanceRequest: proj.promoterFundAssistanceRequest,
+            promoterFundAssistanceLogs: proj.promoterFundAssistanceLogs
           });
         }
       });
@@ -569,6 +628,48 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
     triggerToast(isFundedVal ? 'Project marked as 100% Funded & Disbursed!' : 'Funding status updated.');
   };
 
+  const handleTimelineUpdated = (updatedStages: ProjectTimelineStage[], updatedRecord: LeadRecord) => {
+    if (!activeProject) return;
+    const updated: UserProjectDetail = {
+      ...activeProject,
+      ...updatedRecord,
+      timelineStages: updatedStages,
+      timelineAuditLogs: updatedRecord.timelineAuditLogs || activeProject.timelineAuditLogs
+    };
+    setUserProjects(prev => prev.map(p => p.id === activeProject.id ? updated : p));
+    triggerToast('Project syndication timeline updated.');
+  };
+
+  const handleSaveBankDetails = (details: {
+    bankName: string;
+    branchLocation: string;
+    bankIfscCode?: string;
+    bankAppRefNumber?: string;
+    bankApplicationStatus?: string;
+  }) => {
+    if (!activeProject) return;
+    const updated: UserProjectDetail = {
+      ...activeProject,
+      bankName: details.bankName,
+      assignedBank: details.bankName,
+      branchLocation: details.branchLocation,
+      bankIfscCode: details.bankIfscCode,
+      bankAppRefNumber: details.bankAppRefNumber,
+      bankApplicationStatus: details.bankApplicationStatus,
+    };
+    setUserProjects(prev => prev.map(p => p.id === activeProject.id ? updated : p));
+    updateLeadRecord(activeProject.id, {
+      email: activeProject.email || user.email,
+      projectName: activeProject.projectName,
+      bankName: details.bankName,
+      branchLocation: details.branchLocation,
+      bankIfscCode: details.bankIfscCode,
+      bankAppRefNumber: details.bankAppRefNumber,
+      bankApplicationStatus: details.bankApplicationStatus,
+    }, user.name || user.email);
+    triggerToast(details.bankName ? `Bank details updated for ${details.bankName}!` : 'Bank details updated.');
+  };
+
   const buildTeaserData = (proj: UserProjectDetail): TeaserPDFData => {
     let consultancyCr = proj.financials?.consultancyCostCr ? String(proj.financials.consultancyCostCr) : '';
     let machineryCr = proj.financials?.machineryCostCr ? String(proj.financials.machineryCostCr) : '';
@@ -634,7 +735,12 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       landStatus: proj.landStatus || 'Not provided',
       collateralStatus: proj.collateralStatus || 'Not provided',
       promoterExp: proj.promoterExp || 'Experienced in Industry',
-      description: proj.notes || `Targeting ${proj.assignedBank} debt syndication.`,
+      description: proj.notes || (proj.assignedBank ? `Targeting ${proj.assignedBank} debt syndication.` : undefined),
+      bankName: proj.bankName || proj.assignedBank || '',
+      assignedBank: proj.assignedBank || proj.bankName || '',
+      branchLocation: proj.branchLocation || '',
+      bankIfscCode: proj.bankIfscCode || '',
+      bankAppRefNumber: proj.bankAppRefNumber || '',
       feasibilityScore: Number(proj.feasibilityScore) || 0,
       bankabilityRating: proj.bankabilityRating || 'Investment Grade (A)',
       estimatedLoan: reconciled.termLoanFormatted,
@@ -762,68 +868,12 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   const isLoanApproved = Boolean(activeProject?.loanApprovedAt) || adminStageLevel >= 5;
   const isFundingCompleted = Boolean(activeProject?.fundingDisbursedAt);
 
-  const lifecycleStages = [
-    {
-      id: 1,
-      name: 'Project Assessment',
-      description: 'Check your project details and basic requirements.',
-      icon: ClipboardList,
-      isCompleted: isAssessmentCompleted,
-      isInProgress: !isAssessmentCompleted,
-      completedAt: isAssessmentCompleted ? assessmentCompletedTime : null
-    },
-    {
-      id: 2,
-      name: 'Bankability Rating',
-      description: 'Evaluate your project’s funding eligibility and financial strength.',
-      icon: Gauge,
-      isCompleted: isRatingCompleted,
-      isInProgress: isAssessmentCompleted && !isRatingCompleted,
-      completedAt: isRatingCompleted ? assessmentCompletedTime : null
-    },
-    {
-      id: 3,
-      name: 'Document Preparation',
-      description: 'Prepare your DPR and CMA documents for bank submission.',
-      icon: FileText,
-      isCompleted: isDocCompleted,
-      isInProgress: isRatingCompleted && !isDocCompleted,
-      completedAt: isDocCompleted ? dprDateFormatted : null
-    },
-    {
-      id: 4,
-      name: 'Bank Application',
-      description: 'Submit your funding application to suitable institutions.',
-      icon: Landmark,
-      isCompleted: isBankAppCompleted,
-      isInProgress: isDocCompleted && !isBankAppCompleted,
-      completedAt: isBankAppCompleted ? formatRealtimeDate(activeProject?.bankAppliedAt) : null
-    },
-    {
-      id: 5,
-      name: 'Funding Approval',
-      description: 'Get approval from the institution with funding terms.',
-      icon: ShieldCheck,
-      isCompleted: isLoanApproved,
-      isInProgress: isBankAppCompleted && !isLoanApproved,
-      completedAt: isLoanApproved ? formatRealtimeDate(activeProject?.loanApprovedAt) : null
-    },
-    {
-      id: 6,
-      name: 'Funding Disbursal',
-      description: 'Complete final steps and receive your project funding.',
-      icon: IndianRupee,
-      isCompleted: isFundingCompleted,
-      isInProgress: isLoanApproved && !isFundingCompleted,
-      completedAt: isFundingCompleted ? formatRealtimeDate(activeProject?.fundingDisbursedAt) : null
-    }
-  ];
-
-  const completedStagesCount = lifecycleStages.filter(s => s.isCompleted).length;
-  const currentStageIndex = Math.min(6, completedStagesCount + (lifecycleStages.some(s => s.isInProgress) ? 1 : 0) || 1);
-  const currentStageItem = lifecycleStages.find(s => s.id === currentStageIndex) || lifecycleStages[0];
-  const currentStageName = currentStageItem.name;
-  const progressPercent = Math.round((completedStagesCount / 6) * 100);
+  const timelineStages = computeProjectTimeline(activeProject || {});
+  const completedStagesCount = timelineStages.filter(s => s.status === 'Completed').length;
+  const activeTimelineStage = timelineStages.find(s => s.status === 'In Progress') || timelineStages[0];
+  const currentStageIndex = activeTimelineStage ? activeTimelineStage.id : 1;
+  const currentStageName = activeTimelineStage?.name || 'Project Assessment';
+  const progressPercent = Math.round((completedStagesCount / timelineStages.length) * 100);
 
   const hasDpr = Boolean(activeProject?.dprFile);
   const hasCma = Boolean(activeProject?.cmaFile);
@@ -1250,8 +1300,8 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           <div className="border border-zinc-200 rounded-2xl p-6 bg-white space-y-6">
             
             {/* Project Header Bar */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-100 pb-5">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-zinc-100 pb-5">
+              <div className="flex items-start gap-4 min-w-0">
                 <div className="relative shrink-0">
                   <button
                     onClick={() => setIsPhotoUploadModalOpen(true)}
@@ -1300,12 +1350,28 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
                     <span>•</span>
                     <span>{activeProject.location}</span>
                     <span>•</span>
-                    <span>Assigned Bank: <strong className="text-zinc-800">{activeProject.assignedBank}</strong></span>
+                    <span>
+                      Assigned Bank:{' '}
+                      {activeProject.bankName || activeProject.assignedBank ? (
+                        <strong className="text-zinc-800 font-semibold">{activeProject.bankName || activeProject.assignedBank}</strong>
+                      ) : (
+                        <span className="text-zinc-400 italic">Not Specified</span>
+                      )}
+                    </span>
                   </div>
                 </div>
               </div>
 
-
+              {/* Requirement: Credit Information Report (CIR) Card */}
+              <div className="w-full lg:w-[380px] shrink-0">
+                <CreditInformationCard
+                  status="Coming Soon"
+                  creditScore="—"
+                  bureau="—"
+                  reportDate="—"
+                  consentStatus="Not Provided"
+                />
+              </div>
             </div>
 
             {/* Smooth Linear Progress Bar */}
@@ -1409,148 +1475,70 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
             {/* SECTION 1: 6-STAGE PROJECT LIFECYCLE TRACKER */}
             {(activeSectionView === 'all' || activeSectionView === 'stages') && (
               <div className="border border-zinc-200 rounded-2xl p-6 bg-white space-y-6">
-                <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                      <MapIcon className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg sm:text-xl font-bold text-zinc-900">Your Journey with Inisio</h2>
-                      <p className="text-sm text-zinc-500 mt-0.5">Track real-time progress of your greenfield funding syndication.</p>
-                    </div>
-                  </div>
-                  <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
-                    Stage {currentStageIndex} Active
-                  </span>
-                </div>
+                <ProjectTimeline
+                  project={activeProject}
+                  user={user}
+                  onTimelineUpdated={handleTimelineUpdated}
+                  onOpenDocUpload={() => setIsDocUploadModalOpen(true)}
+                  onRequestCADrafting={() => {
+                    const text = `Hi, I would like to request Inisio CA Drafting for my project: ${activeProject?.projectName || ''}`;
+                    window.open(`https://wa.me/916302026462?text=${encodeURIComponent(text)}`, '_blank');
+                  }}
+                />
 
-                <div className="space-y-3">
-                  {lifecycleStages.map((st) => {
-                    const IconComponent = st.icon;
-                    const isCompleted = st.isCompleted;
-                    const isInProgress = st.isInProgress;
-                    const isPending = !isCompleted && !isInProgress;
-
-                    return (
-                      <div
-                        key={st.id}
-                        className={`p-4 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-                          isCompleted
-                            ? 'bg-emerald-50/40 border-emerald-200/80'
-                            : isInProgress
-                            ? 'bg-white border-blue-500 shadow-sm ring-2 ring-blue-500/20'
-                            : 'bg-zinc-50/60 border-zinc-200 text-zinc-400'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          {/* Stage Number Badge */}
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
-                            isCompleted
-                              ? 'bg-emerald-600 text-white'
-                              : isInProgress
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-zinc-200 text-zinc-500'
-                          }`}>
-                            {st.id}
-                          </div>
-
-                          {/* Icon & Title */}
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <h3 className={`text-xs font-bold ${isPending ? 'text-zinc-600' : 'text-zinc-900'}`}>
-                                {st.name}
-                              </h3>
-                              {isCompleted && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />}
-                            </div>
-                            <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">
-                              {st.description}
-                            </p>
-
-                            {/* Completed Timestamp */}
-                            {isCompleted && (
-                              <div className="text-[11px] text-emerald-800 font-semibold mt-1 flex items-center gap-1">
-                                <Check className="w-3 h-3 text-emerald-600 stroke-[3]" />
-                                <span>{st.completedAt ? `Completed: ${st.completedAt}` : 'Stage Completed'}</span>
-                              </div>
-                            )}
-                            
-                            {isInProgress && activeProject?.status && (
-                              <div className="text-[11px] text-blue-800 font-semibold mt-1 flex items-center gap-1 bg-blue-50 w-fit px-2 py-0.5 rounded-md border border-blue-100">
-                                <Activity className="w-3 h-3 text-blue-600" />
-                                <span>Current Status: {activeProject.status}</span>
-                              </div>
-                            )}
-
-                            {/* Actions for Stage 3 (DPR/CMA) when In Progress */}
-                            {isInProgress && st.id === 3 && (
-                              <div className="pt-2 flex items-center gap-2 flex-wrap">
-                                <button
-                                  onClick={() => setIsDocUploadModalOpen(true)}
-                                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-semibold cursor-pointer shadow-xs"
-                                >
-                                  Upload DPR/CMA
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    const text = `Hi, I would like to request Inisio CA Drafting for my project: ${activeProject?.projectName || ''}`;
-                                    window.open(`https://wa.me/916302026462?text=${encodeURIComponent(text)}`, '_blank');
-                                  }}
-                                  className="px-3 py-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-md text-xs font-semibold cursor-pointer"
-                                >
-                                  Get help from Inisio CA
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Status Badge */}
-                        <div className="shrink-0 pl-11 sm:pl-0">
-                          {isCompleted ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold">
-                              <Check className="w-3 h-3 stroke-[3]" />
-                              <span>Completed</span>
-                            </span>
-                          ) : isInProgress ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-600 text-white text-xs font-semibold animate-pulse">
-                              <Clock className="w-3 h-3" />
-                              <span>In Progress</span>
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-zinc-100 text-zinc-400 text-xs font-medium">
-                              <Clock className="w-3 h-3" />
-                              <span>Pending</span>
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                {/* Section 1.5: Direct Bank Application Tracking Details */}
+                <BankApplicationTracker
+                  bankName={activeProject.bankName || activeProject.assignedBank || ''}
+                  branchLocation={activeProject.branchLocation || ''}
+                  bankIfscCode={activeProject.bankIfscCode || ''}
+                  bankAppRefNumber={activeProject.bankAppRefNumber || ''}
+                  bankApplicationStatus={activeProject.bankApplicationStatus || (activeProject.status === 'Bank Sanction' ? 'Sanction Approved' : activeProject.status === 'CA Approved' ? 'Under CA Review' : 'Draft Filing / Pre-Sanction Review')}
+                  dprTimelineRollbackReason={activeProject.dprTimelineRollbackReason}
+                  dprTargetDate={activeProject.dprTargetDate}
+                  dprStageRollback={activeProject.dprStageRollback}
+                  onSaveBankDetails={handleSaveBankDetails}
+                />
               </div>
             )}
 
             {/* SECTION 2: PROJECT COST & MEANS OF FINANCE (CUSTOM COMPONENTS + UNITS) */}
             {(activeSectionView === 'all' || activeSectionView === 'financials') && (
-              <ProjectFinancialsBreakup
-                totalCostCr={activeProject.totalCostCr}
-                loanRequiredCr={activeProject.loanRequiredCr}
-                promoterContribCr={activeProject.promoterContribCr}
-                financials={activeProject.financials}
-                customCosts={activeProject.customCostComponents}
-                customFinances={activeProject.customFinanceComponents}
-                onSaveFinancials={handleSaveFinancials}
-                onOpenEditModal={() => handleOpenEditSection('financials')}
-              />
+              <div className="space-y-4">
+                <ProjectFinancialsBreakup
+                  totalCostCr={activeProject.totalCostCr}
+                  loanRequiredCr={activeProject.loanRequiredCr}
+                  promoterContribCr={activeProject.promoterContribCr}
+                  financials={activeProject.financials}
+                  customCosts={activeProject.customCostComponents}
+                  customFinances={activeProject.customFinanceComponents}
+                  onSaveFinancials={handleSaveFinancials}
+                  onOpenEditModal={() => handleOpenEditSection('financials')}
+                />
+
+                {/* Promoter Fund Assistance Feature Card */}
+                <PromoterFundAssistanceCard
+                  status={activeProject.promoterFundAssistanceStatus || 'Not Requested'}
+                  promoterContribCr={activeProject.promoterContribCr}
+                  totalCostCr={activeProject.totalCostCr}
+                  loanRequiredCr={activeProject.loanRequiredCr}
+                  assistanceRequest={activeProject.promoterFundAssistanceRequest}
+                  onRequestClick={() => setIsPromoterFundAssistanceModalOpen(true)}
+                />
+              </div>
             )}
 
             {/* SECTION 3: PROMOTERS & MANAGEMENT MANAGEMENT */}
             {(activeSectionView === 'all' || activeSectionView === 'promoters') && (
-              <PromotersManagement
-                promoters={activeProject.promotersList || []}
-                onUpdatePromoters={handleUpdatePromoters}
-                primaryPromoterName={activeProject.fullName || user.name}
-              />
+              <div className="space-y-4">
+                <PromotersManagement
+                  promoters={activeProject.promotersList || []}
+                  onUpdatePromoters={handleUpdatePromoters}
+                  primaryPromoterName={activeProject.fullName || user.name}
+                />
+                <CibilScoreWidget
+                  applicantName={user.name || activeProject.fullName || 'Lead Promoter'}
+                />
+              </div>
             )}
 
             {/* SECTION 4: INDICATIVE UNDERWRITING CHECKLIST */}
@@ -1570,49 +1558,58 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
 
             {/* SECTION 6: RISK & COLLATERAL PROFILE */}
             {(activeSectionView === 'all' || activeSectionView === 'risk') && (
-              <div className="border border-zinc-200 rounded-2xl p-6 bg-white space-y-5">
-                <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                      <ShieldCheck className="w-4 h-4" />
+              <div className="space-y-4">
+                <CrisCompanyScoreBanner
+                  score={activeProject.feasibilityScore}
+                  companyName={activeProject.projectName}
+                  industry={activeProject.industry}
+                  caAssessmentTier={membership.plan === 'pro' ? 'Inisio Pro Certified' : 'Standard Appraisal'}
+                />
+
+                <div className="border border-zinc-200 rounded-2xl p-6 bg-white space-y-5">
+                  <div className="flex items-center justify-between border-b border-zinc-100 pb-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                        <ShieldCheck className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg sm:text-xl font-bold text-zinc-900">Risk Profile, Land Title &amp; Collateral Status</h2>
+                        <p className="text-sm text-zinc-500 mt-0.5">Security coverage and promoter eligibility parameters for underwriting.</p>
+                      </div>
                     </div>
-                    <div>
-                      <h2 className="text-lg sm:text-xl font-bold text-zinc-900">Risk Profile, Land Title &amp; Collateral Status</h2>
-                      <p className="text-sm text-zinc-500 mt-0.5">Security coverage and promoter eligibility parameters for underwriting.</p>
+                    <button
+                      onClick={() => handleOpenEditSection('land')}
+                      className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Edit Risk Details</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                    <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-100 space-y-1">
+                      <span className="text-zinc-400 font-medium uppercase tracking-wider block text-[10px]">Land Status</span>
+                      <strong className="text-zinc-900 block font-semibold">{activeProject.landStatus}</strong>
+                      <span className="text-[11px] text-zinc-500">Industrial zoning verified</span>
                     </div>
-                  </div>
-                  <button
-                    onClick={() => handleOpenEditSection('land')}
-                    className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                    <span>Edit Risk Details</span>
-                  </button>
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
-                  <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-100 space-y-1">
-                    <span className="text-zinc-400 font-medium uppercase tracking-wider block text-[10px]">Land Status</span>
-                    <strong className="text-zinc-900 block font-semibold">{activeProject.landStatus}</strong>
-                    <span className="text-[11px] text-zinc-500">Industrial zoning verified</span>
-                  </div>
+                    <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-100 space-y-1">
+                      <span className="text-zinc-400 font-medium uppercase tracking-wider block text-[10px]">Collateral Security</span>
+                      <strong className="text-zinc-900 block font-semibold">{activeProject.collateralStatus}</strong>
+                      <span className="text-[11px] text-zinc-500">Primary + Collateral charge</span>
+                    </div>
 
-                  <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-100 space-y-1">
-                    <span className="text-zinc-400 font-medium uppercase tracking-wider block text-[10px]">Collateral Security</span>
-                    <strong className="text-zinc-900 block font-semibold">{activeProject.collateralStatus}</strong>
-                    <span className="text-[11px] text-zinc-500">Primary + Collateral charge</span>
-                  </div>
+                    <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-100 space-y-1">
+                      <span className="text-zinc-400 font-medium uppercase tracking-wider block text-[10px]">Promoter Track Record</span>
+                      <strong className="text-zinc-900 block font-semibold">{activeProject.promoterExp}</strong>
+                      <span className="text-[11px] text-zinc-500">Relevant domain experience</span>
+                    </div>
 
-                  <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-100 space-y-1">
-                    <span className="text-zinc-400 font-medium uppercase tracking-wider block text-[10px]">Promoter Track Record</span>
-                    <strong className="text-zinc-900 block font-semibold">{activeProject.promoterExp}</strong>
-                    <span className="text-[11px] text-zinc-500">Relevant domain experience</span>
-                  </div>
-
-                  <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-100 space-y-1">
-                    <span className="text-zinc-400 font-medium uppercase tracking-wider block text-[10px]">Target Debt Syndicate</span>
-                    <strong className="text-blue-700 block font-semibold truncate">{activeProject.assignedBank}</strong>
-                    <span className="text-[11px] text-zinc-500">Nationalized &amp; Private Banks</span>
+                    <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-100 space-y-1">
+                      <span className="text-zinc-400 font-medium uppercase tracking-wider block text-[10px]">Target Debt Syndicate</span>
+                      <strong className="text-blue-700 block font-semibold truncate">{activeProject.assignedBank}</strong>
+                      <span className="text-[11px] text-zinc-500">Nationalized &amp; Private Banks</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1658,14 +1655,22 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
 
                 {/* Direct Action Buttons */}
                 <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                  <button
+                    onClick={() => setIsHelpCaModalOpen(true)}
+                    className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-colors"
+                  >
+                    <Headphones className="w-4 h-4" />
+                    <span>Get Help from Inisio CA (Query Desk)</span>
+                  </button>
+
                   <a
                     href="https://wa.me/916302026462"
                     target="_blank"
                     rel="noreferrer"
-                    className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-colors"
+                    className="w-full sm:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-xs transition-colors"
                   >
                     <MessageSquare className="w-4 h-4" />
-                    <span>WhatsApp Inisio Expert Desk (+91 63020 26462)</span>
+                    <span>WhatsApp Inisio Expert (+91 63020 26462)</span>
                   </a>
 
                   <button
@@ -1691,6 +1696,18 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
         )}
 
       </div>
+
+      {/* Get Help from Inisio CA Query Modal */}
+      {activeProject && (
+        <GetHelpFromCaModal
+          isOpen={isHelpCaModalOpen}
+          onClose={() => setIsHelpCaModalOpen(false)}
+          projectName={activeProject.projectName}
+          assignedCA={activeProject.assignedCA || activeProject.assignedTeam}
+          userEmail={user.email}
+          userName={user.name || activeProject.fullName}
+        />
+      )}
 
       {/* Membership Plans Modal */}
       <MembershipPlansModal
@@ -1741,6 +1758,35 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           projectName={activeProject.projectName}
           onClose={() => setIsPhotoUploadModalOpen(false)}
           onSave={handleSavePhotoOrLogo}
+        />
+      )}
+
+      {/* Promoter Fund Assistance Modal */}
+      {activeProject && (
+        <PromoterFundAssistanceModal
+          isOpen={isPromoterFundAssistanceModalOpen}
+          onClose={() => setIsPromoterFundAssistanceModalOpen(false)}
+          project={{
+            id: activeProject.id,
+            projectName: activeProject.projectName,
+            totalCostCr: activeProject.totalCostCr,
+            loanRequiredCr: activeProject.loanRequiredCr,
+            promoterContribCr: activeProject.promoterContribCr,
+            fullName: activeProject.fullName || user.name,
+            mobile: activeProject.mobile || user.phone,
+            email: activeProject.email || user.email,
+            promoterFundAssistanceStatus: activeProject.promoterFundAssistanceStatus,
+            promoterFundAssistanceRequest: activeProject.promoterFundAssistanceRequest
+          }}
+          user={user}
+          onRequestSubmitted={(req) => {
+            handleSaveModalProject({
+              promoterContributionAvailable: 'No',
+              promoterFundAssistanceStatus: 'Request Submitted',
+              promoterFundAssistanceRequest: req
+            });
+            triggerToast(`Promoter fund assistance request for ₹${req.requiredAmountCr} Cr submitted!`);
+          }}
         />
       )}
     </div>

@@ -3,7 +3,7 @@ import multer from 'multer';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
-import { authenticateUser } from '../middleware/authMiddleware.js';
+import { authenticateUser, restrictSuperAdminViewer } from '../middleware/authMiddleware.js';
 import { uploadDocument, listDocuments, downloadDocument } from '../controllers/documentController.js';
 
 const router = express.Router();
@@ -22,7 +22,7 @@ const upload = multer({
 });
 
 router.use(authenticateUser);
-router.post('/upload', upload.single('file'), uploadDocument);
+router.post('/upload', restrictSuperAdminViewer, upload.single('file'), uploadDocument);
 router.get('/project/:leadId', listDocuments);
 router.get('/:id/download', downloadDocument);
 

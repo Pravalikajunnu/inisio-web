@@ -1,5 +1,6 @@
 // Inisio User Management & Login History Store
 import { AuthUser, UserRole } from '../types';
+import { escapeCSV, downloadCSV, getStoredLeads, LeadRecord } from './leadStore';
 
 export interface RegisteredUserRecord {
   id: string;
@@ -131,3 +132,53 @@ export function updateUserStatus(userId: string, newStatus: 'active' | 'suspende
     body: JSON.stringify({ status: newStatus }),
   }).catch(() => {});
 }
+
+export function exportUsersToCSV(usersToExport?: RegisteredUserRecord[], leads?: LeadRecord[]): void {
+  const users = (usersToExport && usersToExport.length > 0) ? usersToExport : getAllRegisteredUsers();
+  if (users.length === 0) {
+    alert('No user accounts to export.');
+    return;
+  }
+
+  const allLeads = leads || getStoredLeads();
+  const headers = [
+    'User ID',
+    'Full Name',
+    'Email Address',
+    'Phone Number',
+    'Company / Enterprise',
+    'Role & Privileges',
+    'Account Status',
+    'Registration Date',
+    'Last Login Date & Time',
+    'Total Login Sessions',
+    'Associated Projects Count',
+    'Associated Projects List'
+  ];
+
+  const rows = users.map(u => {
+    const userProjects = allLeads.filter(l => l.email && u.email && l.email.toLowerCase().trim() === u.email.toLowerCase().trim());
+    const regDate = u.createdAt ? (!isNaN(new Date(u.createdAt).getTime()) ? new Date(u.createdAt).toLocaleDateString('en-IN') : u.createdAt) : '';
+    const lastLogin = u.lastLoginAt ? (!isNaN(new Date(u.lastLoginAt).getTime()) ? new Date(u.lastLoginAt).toLocaleString('en-IN') : u.lastLoginAt) : '';
+
+    return [
+      escapeCSV(u.id || ''),
+      escapeCSV(u.name || ''),
+      escapeCSV(u.email || ''),
+      escapeCSV(u.phone || 'N/A'),
+      escapeCSV(u.company || 'N/A'),
+      escapeCSV(u.role || 'user'),
+      escapeCSV(u.status || 'active'),
+      escapeCSV(regDate),
+      escapeCSV(lastLogin),
+      escapeCSV(u.loginCount || 1),
+      escapeCSV(userProjects.length),
+      escapeCSV(userProjects.map(p => p.projectName).filter(Boolean).join('; ') || 'None')
+    ];
+  });
+
+  const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+  const filename = `Inisio_Registered_Users_${new Date().toISOString().slice(0, 10)}.csv`;
+  downloadCSV(csvContent, filename);
+}
+

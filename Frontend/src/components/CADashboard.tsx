@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { AuthUser } from '../types';
+import { AuthUser, CASubscription } from '../types';
 import { updateLeadRecord, fetchLeadsFromBackend, LeadRecord } from '../utils/leadStore';
+import { getCASubscription, canPerformCAAssessment, recordCAAssessment } from '../utils/caMembershipStore';
+import { CASubscriptionModal } from './ca/CASubscriptionModal';
 import api from '../utils/apiClient';
 import {
   Briefcase,
@@ -24,7 +26,9 @@ import {
   Filter,
   IndianRupee,
   Calendar,
-  Layers
+  Layers,
+  Zap,
+  Award
 } from 'lucide-react';
 
 interface CADashboardProps {
@@ -55,10 +59,16 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'Pending Audit' | 'CA Approved'>('ALL');
   const [showToast, setShowToast] = useState<string | null>(null);
+  const [caSubscription, setCaSubscription] = useState<CASubscription>(() => getCASubscription(user.email, user.name));
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
   const triggerToast = (msg: string) => {
     setShowToast(msg);
     setTimeout(() => setShowToast(null), 3500);
+  };
+
+  const refreshSubscription = () => {
+    setCaSubscription(getCASubscription(user.email, user.name));
   };
 
   const loadAudits = async () => {
@@ -99,11 +109,28 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
       triggerToast('Unable to load assigned projects.');
     });
     const handleUpdate = () => { loadAudits().catch(() => setAudits([])); };
+    const handleSubUpdate = () => refreshSubscription();
+
     window.addEventListener('inisio_lead_added', handleUpdate);
-    return () => window.removeEventListener('inisio_lead_added', handleUpdate);
+    window.addEventListener('inisio_ca_subscription_updated', handleSubUpdate);
+    return () => {
+      window.removeEventListener('inisio_lead_added', handleUpdate);
+      window.removeEventListener('inisio_ca_subscription_updated', handleSubUpdate);
+    };
   }, []);
 
   const handleApprove = (id: string) => {
+    // Check CA assessment permission / rate limit
+    const check = canPerformCAAssessment(user.email);
+    if (!check.allowed) {
+      setIsUpgradeModalOpen(true);
+      triggerToast(check.reason || 'Daily assessment limit reached. Please upgrade to CA Pro.');
+      return;
+    }
+
+    recordCAAssessment(user.email);
+    refreshSubscription();
+
     setAudits(prev =>
       prev.map(item => (item.id === id ? { ...item, status: 'CA Approved', stageNumber: 4 } : item))
     );
@@ -158,7 +185,7 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
         {/* 1. TOP MINIMALIST HEADER & BREADCRUMB                */}
         {/* ---------------------------------------------------- */}
         <div className="border-b border-zinc-100 pb-4 pt-2">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xs font-semibold text-blue-600 uppercase tracking-wider">CA Audit Desk</span>
@@ -174,6 +201,46 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
               <p className="text-xs text-zinc-500 mt-0.5">
                 Audit promoter financial models, verify DSCR benchmarks, and issue bank-ready certifications.
               </p>
+            </div>
+
+            {/* CA Subscription Tier Badge & Upgrade CTA */}
+            <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-2xl border border-blue-100/80 shadow-2xs">
+              <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black shrink-0">
+                <Award className="w-5 h-5 text-amber-300" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-900">
+                    {caSubscription.isPaidActive
+                      ? 'Annual Pro Tier (₹2,500/yr)'
+                      : caSubscription.plan === '3_MONTH_TRIAL'
+                      ? '3-Month Free Trial'
+                      : 'Trial Expired (Limit 2/day)'}
+                  </span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    caSubscription.isPaidActive
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-blue-100 text-blue-800'
+                  }`}>
+                    {caSubscription.isPaidActive ? 'Unlimited Active' : `${caSubscription.dailyAssessmentsUsed}/${caSubscription.maxDailyAssessmentsFree || 2} Today`}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  {caSubscription.isPaidActive
+                    ? 'Full access to project appraisals & bank syndications'
+                    : 'Upgrade to Annual Pro for unlimited daily assessments'}
+                </p>
+              </div>
+
+              {!caSubscription.isPaidActive && (
+                <button
+                  onClick={() => setIsUpgradeModalOpen(true)}
+                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0 transition-all"
+                >
+                  <Zap className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Upgrade ₹2,500</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -439,6 +506,17 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
         </div>
 
       </div>
+
+      {/* CA Pro Subscription Modal */}
+      <CASubscriptionModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        subscription={caSubscription}
+        onUpgraded={() => {
+          refreshSubscription();
+          triggerToast('Successfully upgraded to Inisio CA Pro Annual Tier!');
+        }}
+      />
     </div>
   );
 };
