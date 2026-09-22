@@ -249,42 +249,83 @@ export const sendVerificationEmail = async ({ to, name, otp }) => {
 };
 
 /**
- * Send a Password Reset OTP
+ * Send a Password Reset Link and OTP Email
  */
-export const sendPasswordResetEmail = async ({ to, name, otp }) => {
+export const sendPasswordResetEmail = async ({ to, name, otp, resetLink }) => {
+  const safeResetLink = resetLink || `http://localhost:3000/?action=reset-password&email=${encodeURIComponent(to)}&otp=${otp}`;
+
   const htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Reset Your Password</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset Your Inisio Password</title>
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #0f172a;">
-  <div style="max-width: 540px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0;">
-    <div style="background-color: #0f172a; padding: 28px 32px; text-align: center;">
-      <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800;">
-        Password Reset Request
+  <div style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06); border: 1px solid #e2e8f0;">
+    
+    <!-- Brand Header -->
+    <div style="background-color: #1e3a8a; padding: 28px 32px; text-align: center;">
+      <div style="display: inline-block; width: 44px; height: 44px; line-height: 44px; background-color: #ffffff; color: #1e3a8a; border-radius: 12px; font-weight: 900; font-size: 20px; margin-bottom: 12px;">
+        IN
+      </div>
+      <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px;">
+        INISIO CAPITAL
       </h1>
-      <p style="color: #94a3b8; margin: 4px 0 0 0; font-size: 13px;">
-        Inisio Greenfield Advisory Platform
+      <p style="color: #bfdbfe; margin: 4px 0 0 0; font-size: 13px;">
+        Greenfield Project Advisory & Bank Syndication Desk
       </p>
     </div>
+
+    <!-- Body -->
     <div style="padding: 32px;">
-      <p style="font-size: 14px; line-height: 22px; color: #475569; margin-top: 0;">
-        Hello <strong>${name || 'User'}</strong>,<br/>
-        We received a request to reset your Inisio account password. Use the verification code below to set a new password:
+      <h2 style="font-size: 18px; font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 16px;">
+        Password Reset Request
+      </h2>
+      <p style="font-size: 14px; line-height: 22px; color: #475569; margin-bottom: 24px;">
+        Hello <strong>${name || 'Valued User'}</strong>,<br/>
+        We received a request to reset the password associated with your Inisio account (<strong>${to}</strong>). Click the secure link below to set a new password:
       </p>
-      <div style="background-color: #f1f5f9; border-radius: 12px; padding: 20px; text-align: center; margin: 24px 0;">
-        <span style="font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #0f172a; font-family: monospace;">
+
+      <!-- Primary Action Button -->
+      <div style="text-align: center; margin: 28px 0;">
+        <a href="${safeResetLink}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #2563eb; color: #ffffff; font-weight: 700; font-size: 14px; padding: 14px 32px; border-radius: 10px; text-decoration: none; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);">
+          Reset Your Password &rarr;
+        </a>
+      </div>
+
+      <!-- Backup OTP Section -->
+      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin: 24px 0; text-align: center;">
+        <p style="margin: 0 0 8px 0; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">
+          Or Enter This 6-Digit Reset Code Manually
+        </p>
+        <div style="font-size: 28px; font-weight: 800; letter-spacing: 6px; color: #1e3a8a; font-family: monospace;">
           ${otp}
-        </span>
-        <p style="margin: 8px 0 0 0; font-size: 12px; color: #64748b;">
-          Valid for 15 minutes
+        </div>
+        <p style="margin: 6px 0 0 0; font-size: 11px; color: #94a3b8;">
+          Link & code remain valid for 15 minutes
         </p>
       </div>
-      <p style="font-size: 13px; color: #64748b;">
-        If you did not request this, please ignore this email or reach out to security@inisio.com immediately.
+
+      <!-- Fallback Direct Link -->
+      <p style="font-size: 12px; line-height: 18px; color: #64748b; margin-bottom: 8px;">
+        If the button above does not work, copy and paste this link into your web browser:
       </p>
+      <div style="background-color: #f1f5f9; padding: 10px 14px; border-radius: 8px; font-family: monospace; font-size: 11px; color: #334155; word-break: break-all; margin-bottom: 24px;">
+        ${safeResetLink}
+      </div>
+
+      <p style="font-size: 12px; line-height: 18px; color: #94a3b8; margin-bottom: 24px;">
+        If you did not request a password reset, you can safely ignore this email. Your password will remain unchanged and your account stays fully protected.
+      </p>
+
+      <div style="border-top: 1px solid #e2e8f0; padding-top: 20px;">
+        <p style="font-size: 11px; color: #94a3b8; margin: 0; line-height: 18px;">
+          Inisio Capital Project Underwriting & Syndication Services<br/>
+          Secured with Bank-Grade 256-bit Encryption
+        </p>
+      </div>
     </div>
   </div>
 </body>
@@ -294,14 +335,14 @@ export const sendPasswordResetEmail = async ({ to, name, otp }) => {
   const result = await sendMailWithResilience(
     {
       to,
-      subject: `Inisio Password Reset Code: ${otp}`,
-      text: `Your Inisio password reset code is: ${otp}. Valid for 15 minutes.`,
+      subject: `Reset Your Inisio Password: ${otp}`,
+      text: `Hello ${name || 'User'}, we received a request to reset your password. Use link: ${safeResetLink} or enter 6-digit code: ${otp} (valid for 15 minutes).`,
       html: htmlContent,
     },
-    { otp, type: 'password-reset' }
+    { otp, resetLink: safeResetLink, type: 'password-reset' }
   );
 
-  return { ...result, otp };
+  return { ...result, otp, resetLink: safeResetLink };
 };
 
 /**

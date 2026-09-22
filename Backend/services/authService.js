@@ -17,6 +17,38 @@ import bcrypt from 'bcryptjs';
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 /**
+ * Sync memory users to MongoDB to ensure preloaded demo & registered users exist in DB
+ */
+export const syncMemoryUsersToDB = async () => {
+  if (!isDBConnected()) return;
+  try {
+    for (const memUser of memoryUsers) {
+      const cleanEmail = memUser.email.toLowerCase().trim();
+      const existing = await User.findOne({ email: cleanEmail });
+      if (!existing) {
+        await User.create({
+          name: memUser.name,
+          email: cleanEmail,
+          password: 'Password@123', // Will be hashed by pre-save hook
+          role: memUser.role || 'user',
+          company: memUser.company || '',
+          phone: memUser.phone || '',
+          isVerified: true,
+        });
+        console.log(`[AuthService] Seeded user ${cleanEmail} into MongoDB.`);
+      }
+    }
+  } catch (err) {
+    console.warn('[AuthService] Auto-sync to DB warning:', err.message);
+  }
+};
+
+// Initial sync attempt
+setTimeout(() => {
+  syncMemoryUsersToDB().catch(() => {});
+}, 3000);
+
+/**
  * Register a new user and dispatch email verification OTP via Nodemailer
  */
 export const registerUser = async ({ name, email, password, role = 'user', company = '', phone = '' }) => {
@@ -55,7 +87,38 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
     try {
       const userExists = await User.findOne({ email: cleanEmail });
       if (userExists) {
-        const error = new Error('An account with this email address already exists. Please sign in instead.');
+        if (!userExists.isVerified) {
+          userExists.verificationOtp = otp;
+          userExists.verificationExpires = otpExpiry;
+          if (password && password.length >= 6) {
+            userExists.password = password; // Mongoose will re-hash
+          }
+          if (name) userExists.name = name;
+          if (phone) userExists.phone = phone;
+          if (company) userExists.company = company;
+          await userExists.save();
+
+          await sendVerificationEmail({
+            to: cleanEmail,
+            name: userExists.name,
+            otp,
+          });
+
+          return {
+            _id: userExists._id,
+            name: userExists.name,
+            email: userExists.email,
+            role: userExists.role,
+            company: userExists.company,
+            phone: userExists.phone,
+            avatarUrl: userExists.avatarUrl,
+            isVerified: false,
+            requiresVerification: true,
+            message: `Account already exists and is pending verification. A fresh 6-digit code has been dispatched to ${cleanEmail}.`,
+          };
+        }
+
+        const error = new Error(`An account with ${cleanEmail} is already registered. Please click 'Sign In' or 'Forgot Password?' to access your account.`);
         error.statusCode = 400;
         throw error;
       }
@@ -73,7 +136,7 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
       });
 
       // Send verification email via Nodemailer
-      const mailResult = await sendVerificationEmail({
+      await sendVerificationEmail({
         to: cleanEmail,
         name: user.name,
         otp,
@@ -94,17 +157,44 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
         message: feedbackMessage,
       };
     } catch (err) {
-      if (err.message.includes('already exists') || err.message.includes('valid') || err.message.includes('Password')) {
+      if (err.message.includes('already') || err.message.includes('valid') || err.message.includes('Password')) {
         throw err;
       }
       console.warn('MongoDB error in registerUser, fallback to memory store:', err.message);
     }
   }
 
-  // Memory fallback when DB is offline
+  // Memory fallback when DB is offline or for memory users
   const userExists = memoryUsers.find((u) => u.email.toLowerCase() === cleanEmail);
   if (userExists) {
-    const error = new Error('An account with this email address already exists. Please sign in instead.');
+    if (!userExists.isVerified) {
+      userExists.verificationOtp = otp;
+      userExists.verificationExpires = otpExpiry;
+      userExists.password = await bcrypt.hash(password, 10);
+      if (name) userExists.name = name;
+      if (phone) userExists.phone = phone;
+
+      await sendVerificationEmail({
+        to: cleanEmail,
+        name: userExists.name,
+        otp,
+      });
+
+      return {
+        _id: userExists._id,
+        name: userExists.name,
+        email: userExists.email,
+        role: userExists.role,
+        company: userExists.company,
+        phone: userExists.phone,
+        avatarUrl: userExists.avatarUrl,
+        isVerified: false,
+        requiresVerification: true,
+        message: `Account already exists and is pending verification. A fresh 6-digit code has been dispatched to ${cleanEmail}.`,
+      };
+    }
+
+    const error = new Error(`An account with ${cleanEmail} is already registered. Please click 'Sign In' or 'Forgot Password?' to access your account.`);
     error.statusCode = 400;
     throw error;
   }
@@ -394,31 +484,48 @@ export const loginUser = async ({ email, password }) => {
     try {
       const user = await User.findOne({ email: cleanEmail }).select('+password');
       
-      if (!user) {
-        const error = new Error('Invalid email or password. Please verify your credentials or register.');
-        error.statusCode = 401;
-        throw error;
-      }
+      if (user) {
+        const isMatch = await user.matchPassword(password);
+        if (!isMatch) {
+          const error = new Error(`Incorrect password for ${cleanEmail}. If you forgot your password, please click 'Forgot Password?' to reset it.`);
+          error.statusCode = 401;
+          throw error;
+        }
 
-      const isMatch = await user.matchPassword(password);
-      if (!isMatch) {
-        const error = new Error('Invalid email or password. Please verify your credentials or register.');
-        error.statusCode = 401;
-        throw error;
-      }
+        // Check if user's email is verified
+        if (!user.isVerified) {
+          const otp = generateOtp();
+          user.verificationOtp = otp;
+          user.verificationExpires = new Date(Date.now() + 15 * 60 * 1000);
+          await user.save();
 
-      // Check if user's email is verified
-      if (!user.isVerified) {
-        // Generate and dispatch a fresh verification OTP via Nodemailer
-        const otp = generateOtp();
-        user.verificationOtp = otp;
-        user.verificationExpires = new Date(Date.now() + 15 * 60 * 1000);
-        await user.save();
+          await sendVerificationEmail({
+            to: cleanEmail,
+            name: user.name,
+            otp,
+          });
 
-        await sendVerificationEmail({
-          to: cleanEmail,
+          return {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            company: user.company,
+            phone: user.phone,
+            isVerified: false,
+            requiresVerification: true,
+            message: `Email verification required. A 6-digit verification code has been dispatched to ${cleanEmail}.`,
+          };
+        }
+
+        const token = generateToken({
+          id: user._id,
+          email: user.email,
+          role: user.role,
           name: user.name,
-          otp,
+          company: user.company,
+          phone: user.phone,
+          isVerified: true,
         });
 
         return {
@@ -428,55 +535,53 @@ export const loginUser = async ({ email, password }) => {
           role: user.role,
           company: user.company,
           phone: user.phone,
-          isVerified: false,
-          requiresVerification: true,
-          message: `Email verification required. A 6-digit verification code has been dispatched to ${cleanEmail}.`,
+          avatarUrl: user.avatarUrl,
+          isVerified: true,
+          token,
+          message: 'Login successful',
         };
       }
-
-      const token = generateToken({
-        id: user._id,
-        email: user.email,
-        role: user.role,
-        name: user.name,
-        company: user.company,
-        phone: user.phone,
-        isVerified: true,
-      });
-
-      return {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        company: user.company,
-        phone: user.phone,
-        avatarUrl: user.avatarUrl,
-        isVerified: true,
-        token,
-        message: 'Login successful',
-      };
     } catch (err) {
-      if (err.statusCode || err.message.includes('Invalid email or password')) {
+      if (err.statusCode || err.message.includes('password') || err.message.includes('Password')) {
         throw err;
       }
       console.warn('MongoDB error in loginUser, checking memory fallback:', err.message);
     }
   }
 
-  // 2. Memory store fallback (when database is offline)
+  // 2. Memory store fallback (or when DB user was not yet created)
   const user = memoryUsers.find((u) => u.email.toLowerCase() === cleanEmail);
   if (!user) {
-    const error = new Error('Invalid email or password. Please verify your credentials or register.');
-    error.statusCode = 401;
+    const error = new Error(`No account found with ${cleanEmail}. Please click 'Create Account' to sign up.`);
+    error.statusCode = 404;
     throw error;
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    const error = new Error('Invalid email or password. Please verify your credentials or register.');
+    const error = new Error(`Incorrect password for ${cleanEmail}. If you forgot your password, please click 'Forgot Password?' to reset it.`);
     error.statusCode = 401;
     throw error;
+  }
+
+  // If DB is connected now, sync this user to DB so future lookups find it directly
+  if (isDBConnected()) {
+    try {
+      const existingInDb = await User.findOne({ email: cleanEmail });
+      if (!existingInDb) {
+        await User.create({
+          name: user.name,
+          email: cleanEmail,
+          password: password,
+          role: user.role || 'user',
+          company: user.company || '',
+          phone: user.phone || '',
+          isVerified: true,
+        });
+      }
+    } catch (syncErr) {
+      console.warn('Could not sync memory user to DB:', syncErr.message);
+    }
   }
 
   if (!user.isVerified) {
@@ -602,9 +707,9 @@ export const updateUserProfile = async (userId, updates) => {
 };
 
 /**
- * Forgot password - dispatches password reset OTP via Nodemailer
+ * Forgot password - dispatches password reset link and OTP via Nodemailer
  */
-export const forgotPassword = async (email) => {
+export const forgotPassword = async (email, clientOrigin = '') => {
   if (!email) {
     const error = new Error('Please provide an email address');
     error.statusCode = 400;
@@ -618,7 +723,9 @@ export const forgotPassword = async (email) => {
 
   if (isDBConnected()) {
     try {
-      const user = await User.findOne({ email: cleanEmail });
+      const user = await User.findOne({
+        email: { $regex: new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+      });
       if (user) {
         foundUser = true;
         user.resetPasswordOtp = otp;
@@ -632,33 +739,64 @@ export const forgotPassword = async (email) => {
   }
 
   if (!foundUser) {
-    const memUser = memoryUsers.find((u) => u.email.toLowerCase() === cleanEmail);
+    const memUser = memoryUsers.find((u) => u.email.toLowerCase().trim() === cleanEmail);
     if (memUser) {
       foundUser = true;
       memUser.resetPasswordOtp = otp;
       memUser.resetPasswordExpires = otpExpiry;
       userName = memUser.name || userName;
+
+      // Sync into DB if DB is connected
+      if (isDBConnected()) {
+        try {
+          await User.create({
+            name: memUser.name,
+            email: cleanEmail,
+            password: 'Password@123',
+            role: memUser.role || 'user',
+            company: memUser.company || '',
+            phone: memUser.phone || '',
+            isVerified: true,
+            resetPasswordOtp: otp,
+            resetPasswordExpires: otpExpiry,
+          });
+        } catch (syncErr) {
+          console.warn('Could not sync memory user to DB on forgotPassword:', syncErr.message);
+        }
+      }
     }
   }
 
   if (!foundUser) {
-    const error = new Error('No registered account found with this email address.');
+    const error = new Error('No registered account found with this email address. Please click Register to create a new account.');
     error.statusCode = 404;
     throw error;
   }
+
+  // Determine base application URL
+  const baseUrl = (
+    clientOrigin ||
+    process.env.APP_URL ||
+    process.env.FRONTEND_URL ||
+    'http://localhost:3000'
+  ).replace(/\/$/, '');
+
+  const resetLink = `${baseUrl}/?action=reset-password&email=${encodeURIComponent(cleanEmail)}&otp=${otp}&token=${otp}`;
 
   // Send password reset email via Nodemailer
   await sendPasswordResetEmail({
     to: cleanEmail,
     name: userName,
     otp,
+    resetLink,
   });
 
   const maskedEmail = cleanEmail.replace(/^(.{2})(.*)(@.*)$/, '$1***$3');
   return {
-    message: `Password reset verification code dispatched to ${maskedEmail}`,
+    message: `Password reset link and code dispatched to ${maskedEmail}`,
     email: cleanEmail,
     maskedEmail,
+    resetLink,
     expiresIn: '15 minutes',
   };
 };

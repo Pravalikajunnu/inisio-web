@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { AuthUser } from '../types';
 import { getUserMembership, setUserMembership, MembershipPlan } from '../utils/membershipStore';
+import { initiateRazorpayCheckout, VerifiedPaymentResult } from '../utils/razorpay';
+import { PaymentReceiptModal } from './PaymentReceiptModal';
 import {
   Sparkles,
   Check,
@@ -18,7 +20,9 @@ import {
   Coins,
   Briefcase,
   Layers,
-  Award
+  Award,
+  AlertCircle,
+  CreditCard,
 } from 'lucide-react';
 
 interface MembershipPlansModalProps {
@@ -38,39 +42,77 @@ export const MembershipPlansModal: React.FC<MembershipPlansModalProps> = ({
   onOpenAuth,
   onOpenConsultation,
   onPlanUpgraded,
-  initialReason
+  initialReason,
 }) => {
   const [activeTab, setActiveTab] = useState<'personal' | 'business'>('personal');
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'quarterly'>('quarterly');
   const [upgradingPlan, setUpgradingPlan] = useState<MembershipPlan | null>(null);
   const [successPlan, setSuccessPlan] = useState<MembershipPlan | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [verifiedPayment, setVerifiedPayment] = useState<VerifiedPaymentResult | null>(null);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
   const currentMembership = getUserMembership(currentUser?.email);
 
-  const handleSelectPlan = (plan: MembershipPlan) => {
+  const calculatePlanPrice = (plan: MembershipPlan): number => {
+    if (plan === 'pro') {
+      return billingCycle === 'quarterly' ? 11997 : 4999;
+    }
+    if (plan === 'enterprise') {
+      return billingCycle === 'quarterly' ? 59997 : 24999;
+    }
+    return 0;
+  };
+
+  const handleSelectPlan = async (plan: MembershipPlan) => {
+    setErrorMessage('');
+
     if (plan === 'free') {
       onClose();
       return;
     }
 
+    if (!currentUser) {
+      if (onOpenAuth) {
+        onOpenAuth('signup');
+      }
+      return;
+    }
+
+    const price = calculatePlanPrice(plan);
     setUpgradingPlan(plan);
 
-    setTimeout(() => {
-      setUserMembership(plan, currentUser?.email);
-      setUpgradingPlan(null);
-      setSuccessPlan(plan);
+    await initiateRazorpayCheckout({
+      amount: price,
+      planName: plan === 'pro' ? 'Pro Promoter' : 'Enterprise & Syndication',
+      billingCycle: billingCycle,
+      itemType: 'membership',
+      user: currentUser,
+      notes: {
+        membershipPlan: plan,
+        requestedTier: plan.toUpperCase(),
+      },
+      onSuccess: (paymentResult: VerifiedPaymentResult) => {
+        setUserMembership(plan, currentUser.email);
+        setUpgradingPlan(null);
+        setSuccessPlan(plan);
+        setVerifiedPayment(paymentResult);
+        setIsReceiptModalOpen(true);
 
-      if (onPlanUpgraded) {
-        onPlanUpgraded(plan);
-      }
-
-      setTimeout(() => {
-        setSuccessPlan(null);
-        onClose();
-      }, 1800);
-    }, 800);
+        if (onPlanUpgraded) {
+          onPlanUpgraded(plan);
+        }
+      },
+      onError: (err: string) => {
+        setUpgradingPlan(null);
+        setErrorMessage(err || 'Payment was not completed. Please try again.');
+      },
+      onDismiss: () => {
+        setUpgradingPlan(null);
+      },
+    });
   };
 
   return (
@@ -173,11 +215,34 @@ export const MembershipPlansModal: React.FC<MembershipPlansModalProps> = ({
 
         {/* Upgrade Success Notification */}
         {successPlan && (
-          <div className="w-full max-w-3xl mb-8 p-4 bg-emerald-50 border border-emerald-300 rounded-2xl text-emerald-900 flex items-center gap-3 animate-in zoom-in-95 shadow-sm">
-            <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
-            <div>
-              <p className="font-extrabold text-sm sm:text-base">Membership Upgraded Successfully!</p>
-              <p className="text-xs text-emerald-700">You now have active access to the <strong>{successPlan.toUpperCase()}</strong> plan. Unlimited assessments unlocked.</p>
+          <div className="w-full max-w-3xl mb-6 p-4 bg-emerald-50 border border-emerald-300 rounded-2xl text-emerald-900 flex items-center justify-between gap-3 animate-in zoom-in-95 shadow-sm">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
+              <div>
+                <p className="font-extrabold text-sm sm:text-base">Payment &amp; Membership Verified!</p>
+                <p className="text-xs text-emerald-700">You now have active access to the <strong>{successPlan.toUpperCase()}</strong> plan. Unlimited assessments unlocked.</p>
+              </div>
+            </div>
+            {verifiedPayment && (
+              <button
+                type="button"
+                onClick={() => setIsReceiptModalOpen(true)}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-2xs transition-colors cursor-pointer shrink-0 flex items-center gap-1.5"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>View Invoice</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Payment Error Alert */}
+        {errorMessage && (
+          <div className="w-full max-w-3xl mb-6 p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-900 flex items-center gap-3 animate-in zoom-in-95 shadow-sm">
+            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+            <div className="text-xs sm:text-sm">
+              <span className="font-bold">Payment Error: </span>
+              <span>{errorMessage}</span>
             </div>
           </div>
         )}
@@ -461,6 +526,16 @@ export const MembershipPlansModal: React.FC<MembershipPlansModalProps> = ({
         </div>
 
       </div>
+
+      {/* Payment Receipt & Tax Invoice Modal */}
+      <PaymentReceiptModal
+        isOpen={isReceiptModalOpen}
+        onClose={() => {
+          setIsReceiptModalOpen(false);
+          onClose();
+        }}
+        paymentData={verifiedPayment}
+      />
 
     </div>
   );

@@ -23,7 +23,7 @@ interface NavbarProps {
   selectedIndustryName?: string;
   onSelectIndustry?: (industryName: string) => void;
   currentUser: AuthUser | null;
-  onOpenAuth: (mode?: 'login' | 'signup' | 'forgot-password') => void;
+  onOpenAuth: (mode?: 'login' | 'signup' | 'forgot-password' | 'reset-password') => void;
   onLogout: () => void;
 }
 

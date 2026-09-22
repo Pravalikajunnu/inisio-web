@@ -36,6 +36,8 @@ import { GetHelpFromCaModal } from './dashboard/GetHelpFromCaModal';
 import { detectUserLocation } from '../utils/locationDetector';
 import { getUserMembership, MembershipPlan } from '../utils/membershipStore';
 import { MembershipPlansModal } from './MembershipPlansModal';
+import { PaymentReceiptModal } from './PaymentReceiptModal';
+import { VerifiedPaymentResult } from '../utils/razorpay';
 import { calculateSystemDscr, reconcileProjectFinancials } from '../utils/financialUtils';
 import {
   Building,
@@ -85,7 +87,10 @@ import {
   ArrowRight,
   Search,
   Crown,
-  Star
+  Star,
+  CreditCard,
+  Receipt,
+  Printer
 } from 'lucide-react';
 
 interface UserDashboardProps {
@@ -193,13 +198,30 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   const [isMembershipModalOpen, setIsMembershipModalOpen] = useState<boolean>(false);
   const [isGeneratingTeaser, setIsGeneratingTeaser] = useState(false);
   const [membership, setMembership] = useState(() => getUserMembership(user.email));
+  const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
+  const [selectedReceipt, setSelectedReceipt] = useState<VerifiedPaymentResult | null>(null);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState<boolean>(false);
+
+  // Fetch payment history
+  const loadPaymentHistory = async () => {
+    try {
+      const res = await fetch(`/api/payments/history?email=${encodeURIComponent(user.email)}`);
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        setPaymentHistory(data.data);
+      }
+    } catch (err) {
+      console.warn('Error fetching payment history:', err);
+    }
+  };
 
   useEffect(() => {
     // Detect location silently from IP/Browser
     detectUserLocation().then((loc) => {
       if (loc) setDetectedLocation(loc);
     });
-  }, []);
+    loadPaymentHistory();
+  }, [user.email]);
 
   useEffect(() => {
     const handleMembershipUpdate = () => {
@@ -1450,7 +1472,8 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               { id: 'checklist', label: '4. Indicative Checklist' },
               { id: 'documents', label: '5. Document Repository (DPDP)' },
               { id: 'risk', label: '6. Risk & Collateral' },
-              { id: 'advisory', label: '7. Advisory Team & Support' }
+              { id: 'advisory', label: '7. Advisory Team & Support' },
+              { id: 'payments', label: '8. Payments & Invoices' }
             ].map((tab) => {
               const isSel = activeSectionView === tab.id;
               return (
@@ -1692,6 +1715,163 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
               </div>
             )}
 
+            {/* SECTION 8: PAYMENTS & INVOICES (RAZORPAY INTEGRATION) */}
+            {(activeSectionView === 'all' || activeSectionView === 'payments') && (
+              <div className="border border-zinc-200 rounded-2xl p-6 bg-white space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-100 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 shrink-0">
+                      <CreditCard className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-zinc-900">8. Subscription, Payments &amp; Tax Invoices</h3>
+                      <p className="text-xs text-zinc-500">Official GST receipts, subscription plans &amp; verified Razorpay transactions.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsMembershipModalOpen(true)}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Crown className="w-3.5 h-3.5 text-amber-300" />
+                      <span>{membership.isMember ? 'Upgrade / Renew Plan' : 'Get Inisio Pro Plan'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Subscription Status Card */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col justify-between">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Current Tier</span>
+                    <div className="my-2 flex items-center gap-2">
+                      <span className="text-2xl font-black text-slate-900 capitalize font-manrope">
+                        {membership.plan || 'Free'} Plan
+                      </span>
+                      {membership.isMember && (
+                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-extrabold rounded-full">
+                          ACTIVE
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs text-slate-500">
+                      {membership.isMember ? 'Unlimited assessment & bank models unlocked' : '1 free project appraisal included'}
+                    </span>
+                  </div>
+
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col justify-between">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Payment Gateway</span>
+                    <div className="my-2 flex items-center gap-2">
+                      <ShieldCheck className="w-5 h-5 text-blue-600" />
+                      <span className="text-base font-bold text-slate-900">Razorpay Verified</span>
+                    </div>
+                    <span className="text-xs text-slate-500">UPI, NetBanking, Debit/Credit Cards &amp; EMI</span>
+                  </div>
+
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col justify-between">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Transactions</span>
+                    <div className="my-2">
+                      <span className="text-2xl font-black text-slate-900 font-manrope">
+                        {paymentHistory.length}
+                      </span>
+                    </div>
+                    <span className="text-xs text-slate-500">All invoices GST-compliant (18% ITC claimable)</span>
+                  </div>
+                </div>
+
+                {/* Transactions Table */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Billing History &amp; Receipts</span>
+                    <button
+                      type="button"
+                      onClick={loadPaymentHistory}
+                      className="text-xs text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      <span>Refresh</span>
+                    </button>
+                  </div>
+
+                  {paymentHistory.length === 0 ? (
+                    <div className="p-8 text-center bg-zinc-50 border border-dashed border-zinc-200 rounded-2xl text-zinc-500">
+                      <Receipt className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
+                      <p className="text-xs font-semibold">No paid transaction records found yet.</p>
+                      <p className="text-[11px] text-zinc-400 mt-1">When you upgrade to Pro or Enterprise, your Razorpay invoices will appear here.</p>
+                    </div>
+                  ) : (
+                    <div className="border border-zinc-200 rounded-2xl overflow-hidden overflow-x-auto">
+                      <table className="w-full text-xs text-left min-w-[650px]">
+                        <thead className="bg-zinc-50 border-b border-zinc-200 text-zinc-600 font-bold">
+                          <tr>
+                            <th className="py-2.5 px-4">Invoice #</th>
+                            <th className="py-2.5 px-4">Description / Plan</th>
+                            <th className="py-2.5 px-4">Amount</th>
+                            <th className="py-2.5 px-4">Date</th>
+                            <th className="py-2.5 px-4">Status</th>
+                            <th className="py-2.5 px-4 text-right">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-100 font-medium text-zinc-800">
+                          {paymentHistory.map((p: any) => {
+                            const dateStr = p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-IN') : 'Recent';
+                            return (
+                              <tr key={p._id || p.orderId} className="hover:bg-zinc-50/80 transition-colors">
+                                <td className="py-3 px-4 font-mono font-bold text-blue-600">
+                                  {p.invoiceNumber || 'INV-INISIO-2026'}
+                                </td>
+                                <td className="py-3 px-4">
+                                  <span className="font-bold">{p.planName || 'Pro'}</span>
+                                  <span className="text-[11px] text-zinc-500 block capitalize">{p.billingCycle || 'Quarterly'} Subscription</span>
+                                </td>
+                                <td className="py-3 px-4 font-bold font-mono">
+                                  ₹{Number(p.amount || 0).toLocaleString('en-IN')}
+                                </td>
+                                <td className="py-3 px-4 text-zinc-500">{dateStr}</td>
+                                <td className="py-3 px-4">
+                                  <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-extrabold rounded-full inline-flex items-center gap-1">
+                                    <CheckCircle2 className="w-2.5 h-2.5" />
+                                    <span>CAPTURED</span>
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4 text-right">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedReceipt({
+                                        success: true,
+                                        message: 'Verified receipt',
+                                        paymentId: p.paymentId || p._id,
+                                        orderId: p.orderId,
+                                        invoiceNumber: p.invoiceNumber || 'INV-INISIO-2026',
+                                        status: p.status || 'captured',
+                                        planName: p.planName || 'Pro Promoter',
+                                        amount: p.amount || 0,
+                                        currency: p.currency || 'INR',
+                                        receipt: p.receipt || '',
+                                        userEmail: p.userEmail || user.email,
+                                      });
+                                      setIsReceiptModalOpen(true);
+                                    }}
+                                    className="px-2.5 py-1.5 bg-white hover:bg-zinc-100 border border-zinc-200 text-zinc-700 font-bold text-[11px] rounded-lg shadow-2xs transition-colors cursor-pointer inline-flex items-center gap-1"
+                                  >
+                                    <FileText className="w-3 h-3 text-blue-600" />
+                                    <span>View Invoice</span>
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            )}
+
           </div>
         )}
 
@@ -1789,6 +1969,13 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           }}
         />
       )}
+
+      {/* Payment Receipt / Tax Invoice Modal */}
+      <PaymentReceiptModal
+        isOpen={isReceiptModalOpen}
+        onClose={() => setIsReceiptModalOpen(false)}
+        paymentData={selectedReceipt}
+      />
     </div>
   );
 };

@@ -70,7 +70,7 @@ export default function App() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [membershipModalOpen, setMembershipModalOpen] = useState(false);
   const [membershipModalReason, setMembershipModalReason] = useState('');
-  const [authInitialMode, setAuthInitialMode] = useState<'login' | 'signup' | 'forgot-password'>('login');
+  const [authInitialMode, setAuthInitialMode] = useState<'login' | 'signup' | 'forgot-password' | 'reset-password'>('login');
   
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
     if (typeof window === 'undefined') return null;
@@ -88,7 +88,7 @@ export default function App() {
   const [selectedIndustryForAssessment, setSelectedIndustryForAssessment] = useState<string>('');
   const [editingProjectForAssessment, setEditingProjectForAssessment] = useState<any>(null);
 
-  const [authPrefill, setAuthPrefill] = useState<{ email?: string; name?: string; phone?: string }>({});
+  const [authPrefill, setAuthPrefill] = useState<{ email?: string; name?: string; phone?: string; otp?: string }>({});
 
   // Dynamically verify active user token and session with the backend API
   useEffect(() => {
@@ -126,8 +126,8 @@ export default function App() {
   }, []);
 
   const handleOpenAuth = (
-    mode: 'login' | 'signup' | 'forgot-password' = 'login',
-    prefill?: { email?: string; name?: string; phone?: string }
+    mode: 'login' | 'signup' | 'forgot-password' | 'reset-password' = 'login',
+    prefill?: { email?: string; name?: string; phone?: string; otp?: string }
   ) => {
     setAuthInitialMode(mode);
     setAuthPrefill(prefill || {});
@@ -142,6 +142,28 @@ export default function App() {
       }
     };
     checkAdminHash();
+
+    // Check for password reset link parameters in URL (e.g. ?action=reset-password&email=...&otp=...)
+    const checkResetPasswordParams = () => {
+      try {
+        const searchParams = new URLSearchParams(window.location.search);
+        const action = searchParams.get('action');
+        const email = searchParams.get('email') || searchParams.get('to');
+        const otp = searchParams.get('otp') || searchParams.get('token') || searchParams.get('code');
+
+        if (action === 'reset-password' || searchParams.has('resetPassword') || searchParams.has('resetToken')) {
+          setAuthInitialMode('reset-password');
+          setAuthPrefill({
+            email: email || '',
+            otp: otp || '',
+          });
+          setAuthModalOpen(true);
+        }
+      } catch (err) {
+        console.warn('Error reading URL search params:', err);
+      }
+    };
+    checkResetPasswordParams();
 
     const handlePopState = () => {
       const path = window.location.pathname;
@@ -555,6 +577,7 @@ export default function App() {
             prefilledEmail={authPrefill.email}
             prefilledName={authPrefill.name}
             prefilledPhone={authPrefill.phone}
+            initialOtp={authPrefill.otp}
           />
         </Suspense>
       )}

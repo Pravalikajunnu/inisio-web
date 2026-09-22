@@ -61,7 +61,23 @@ export const forgotPassword = async (req, res, next) => {
     if (!email) {
       return sendError(res, 'Please provide an email address', 400);
     }
-    const result = await authService.forgotPassword(email);
+    // Determine request origin for link generation
+    let origin = req.headers.origin;
+    if (!origin && req.headers.referer) {
+      try {
+        const urlObj = new URL(req.headers.referer);
+        origin = `${urlObj.protocol}//${urlObj.host}`;
+      } catch {
+        origin = req.headers.referer;
+      }
+    }
+    if (!origin) {
+      const host = req.get('host');
+      const protocol = req.protocol || 'http';
+      origin = `${protocol}://${host}`;
+    }
+
+    const result = await authService.forgotPassword(email, origin);
     return sendSuccess(res, result, result.message);
   } catch (error) {
     next(error);
