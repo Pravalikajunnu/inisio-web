@@ -60,19 +60,32 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
   const url = resolveApiUrl(endpoint);
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 12000);
 
-  const data = await response.json().catch(() => ({}));
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers,
+      signal: options.signal || controller.signal,
+    });
+    clearTimeout(timeoutId);
 
-  if (!response.ok) {
-    const errorMsg = data?.message || `Request failed with status ${response.status}`;
-    throw new Error(errorMsg);
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      const errorMsg = data?.message || `Request failed with status ${response.status}`;
+      throw new Error(errorMsg);
+    }
+
+    return data.data !== undefined ? data.data : data;
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new Error('Request timed out. Please check your network connection.');
+    }
+    throw err;
   }
-
-  return data.data !== undefined ? data.data : data;
 }
 
 export const api = {

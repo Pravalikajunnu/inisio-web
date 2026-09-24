@@ -91,33 +91,18 @@ export const createCustomTransporter = () => {
 };
 
 /**
- * Get or initialize fallback test transporter
+ * Get or initialize fallback test transporter (fast in-process JSON transport)
  */
 export const getFallbackTransporter = async () => {
   if (cachedTestTransporter) {
     return cachedTestTransporter;
   }
-
-  try {
-    const testAccount = await nodemailer.createTestAccount();
-    cachedTestTransporter = nodemailer.createTransport({
-      host: testAccount.smtp.host,
-      port: testAccount.smtp.port,
-      secure: testAccount.smtp.secure,
-      auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
-      },
-    });
-    return cachedTestTransporter;
-  } catch {
-    cachedTestTransporter = nodemailer.createTransport({ jsonTransport: true });
-    return cachedTestTransporter;
-  }
+  cachedTestTransporter = nodemailer.createTransport({ jsonTransport: true });
+  return cachedTestTransporter;
 };
 
 /**
- * Send an email with automatic error resilience and delivery confirmation
+ * Send an email with automatic error resilience, strict timeout and delivery confirmation
  */
 export const sendMailWithResilience = async (mailOptions, metadata = {}) => {
   const recipient = mailOptions.to;
@@ -130,25 +115,34 @@ export const sendMailWithResilience = async (mailOptions, metadata = {}) => {
     ...mailOptions,
   };
 
-  // Try custom SMTP if credentials are provided
+  // Try custom SMTP if credentials are provided with a strict 3-second timeout to prevent login/signup latency
   if (user && pass) {
     const customTransporter = createCustomTransporter();
     if (customTransporter) {
       try {
-        const info = await customTransporter.sendMail(optionsWithFrom);
+        const sendPromise = customTransporter.sendMail(optionsWithFrom);
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('SMTP_TIMEOUT')), 3000)
+        );
+
+        const info = await Promise.race([sendPromise, timeoutPromise]);
         console.log(`✅ [Email Dispatched to Gmail] Verification OTP successfully sent to: ${recipient} (Message ID: ${info?.messageId || 'sent'})`);
         return { success: true, messageId: info?.messageId, isFallback: false };
       } catch (smtpErr) {
         const errMsg = smtpErr?.message || '';
-        console.warn(`⚠️ [Gmail SMTP Error] ${errMsg}`);
-        if (errMsg.includes('535') || errMsg.includes('Username and Password') || errMsg.includes('Invalid login')) {
-          console.warn(`🔑 [Gmail App Password Required] To send emails directly to Gmail inboxes, Gmail requires a 16-character Google App Password from https://myaccount.google.com/apppasswords`);
+        if (errMsg === 'SMTP_TIMEOUT') {
+          console.warn(`⏱️ [SMTP Timeout] Email dispatch to ${recipient} timed out after 3s. Fallback mode activated to ensure instant authentication.`);
+        } else {
+          console.warn(`⚠️ [Gmail SMTP Error] ${errMsg}`);
+          if (errMsg.includes('535') || errMsg.includes('Username and Password') || errMsg.includes('Invalid login')) {
+            console.warn(`🔑 [Gmail App Password Required] To send emails directly to Gmail inboxes, Gmail requires a 16-character Google App Password from https://myaccount.google.com/apppasswords`);
+          }
         }
       }
     }
   }
 
-  // Fallback to testing transport if custom SMTP is missing or failed
+  // Fallback to instantaneous in-process transport
   try {
     const fallback = await getFallbackTransporter();
     const info = await fallback.sendMail(optionsWithFrom);
@@ -157,12 +151,7 @@ export const sendMailWithResilience = async (mailOptions, metadata = {}) => {
       console.log(`🔑 [Inisio Verification OTP] Recipient: ${recipient} | Code: ${metadata.otp} | Valid for 15 minutes`);
     }
 
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-    if (previewUrl) {
-      console.log(`🔗 [Email Preview Link] View rendered email in browser: ${previewUrl}`);
-    }
-
-    return { success: true, messageId: info?.messageId || 'test-sent', isFallback: true, previewUrl };
+    return { success: true, messageId: info?.messageId || 'test-sent', isFallback: true };
   } catch (err) {
     if (metadata.otp) {
       console.log(`🔑 [Inisio Verification OTP] Recipient: ${recipient} | Code: ${metadata.otp}`);

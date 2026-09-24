@@ -248,6 +248,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     if (isVerifyingOtp) {
       return handleVerifyOtpSubmit(e);
     }
@@ -283,30 +284,38 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
 
     if (mode === 'forgot-password') {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+
       try {
         const response = await fetch('/api/auth/forgot-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: cleanEmail }),
+          signal: controller.signal,
         });
+        clearTimeout(timeoutId);
         const resData = await response.json().catch(() => ({}));
         setLoading(false);
         if (response.ok && resData.success) {
           setSuccessMessage(resData.message || `Reset link and verification code have been dispatched to ${cleanEmail}.`);
           setResendCooldown(30);
-          // Transition to the Reset Password code entry screen so user can enter the OTP or click the link
           setMode('reset-password');
         } else {
           setError(resData.message || 'Unable to process password reset request. Please check your email.');
         }
       } catch (err: any) {
+        clearTimeout(timeoutId);
         setLoading(false);
-        setError('Network error while sending reset instructions. Please try again.');
+        setError(err.name === 'AbortError' ? 'Request timed out. Please try again.' : 'Network error while sending reset instructions. Please try again.');
       }
       return;
     }
 
     // Backend authentication call (Login / Signup)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+
     try {
       const endpoint = mode === 'signup' ? '/api/auth/register' : '/api/auth/login';
       const body = mode === 'signup' 
@@ -317,7 +326,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       const resData = await response.json().catch(() => ({}));
 
@@ -350,16 +361,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         onClose();
         return;
       } else {
-        const backendMessage = typeof resData.message === 'string' ? resData.message : '';
-        setError(
-          backendMessage || (response.status === 404
-            ? `No registered account found with ${cleanEmail}. Please click 'Create Account' to sign up.`
-            : 'Authentication failed. Please verify your credentials.')
-        );
+        setError(resData.message || 'Authentication failed. Please verify your credentials.');
       }
     } catch (err: any) {
+      clearTimeout(timeoutId);
       setLoading(false);
-      setError('Unable to connect to the authentication server. Please try again.');
+      setError(err.name === 'AbortError' ? 'Authentication timed out. Please try again.' : 'Unable to connect to the authentication server. Please try again.');
     }
   };
 

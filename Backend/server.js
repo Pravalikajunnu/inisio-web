@@ -51,14 +51,6 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Ensure DB connection attempt on request if not yet established
-app.use(async (req, res, next) => {
-  try {
-    connectDB().catch(() => {});
-  } catch (e) {}
-  next();
-});
-
 // Simple request logger
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
