@@ -350,7 +350,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         onClose();
         return;
       } else {
-        setError(resData.message || 'Authentication failed. Please verify your credentials.');
+        const backendMessage = typeof resData.message === 'string' ? resData.message : '';
+        setError(
+          backendMessage || (response.status === 404
+            ? `No registered account found with ${cleanEmail}. Please click 'Create Account' to sign up.`
+            : 'Authentication failed. Please verify your credentials.')
+        );
       }
     } catch (err: any) {
       setLoading(false);

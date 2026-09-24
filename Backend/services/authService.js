@@ -571,6 +571,10 @@ export const loginUser = async ({ email, password }) => {
           message: 'Login successful',
         };
       }
+
+      const error = new Error(`No registered account found with ${cleanEmail}. Please click 'Create Account' to sign up.`);
+      error.statusCode = 404;
+      throw error;
     } catch (err) {
       if (err.statusCode || err.message.includes('password') || err.message.includes('Password')) {
         throw err;

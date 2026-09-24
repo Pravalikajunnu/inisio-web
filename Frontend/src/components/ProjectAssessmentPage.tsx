@@ -787,7 +787,12 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
           onLoginSuccess(loggedUser);
         }
       } else {
-        setInlineAuthError(data.message || 'Authentication failed. Please check your credentials.');
+        const backendMessage = typeof data.message === 'string' ? data.message : '';
+        setInlineAuthError(
+          backendMessage || (res.status === 404
+            ? `No registered account found with ${emailToUse}. Please create an account first.`
+            : 'Authentication failed. Please check your credentials.')
+        );
       }
     } catch (err) {
       setInlineAuthLoading(false);
