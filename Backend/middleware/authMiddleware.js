@@ -97,7 +97,21 @@ export const authorizeRoles = (...roles) => {
       return sendError(res, 'User authentication required', 401);
     }
 
+    const userEmail = (req.user.email || '').toLowerCase().trim();
     const userRole = req.user.role || 'user';
+
+    // Strict Admin and Super Admin email validation:
+    // Only inisio2026@gmail.com (admin) and junnupravalika59@gmail.com (superadmin) are authorized for administrative operations
+    if (roles.includes('admin') || roles.includes('superadmin')) {
+      const isAuthorizedAdminEmail = ['inisio2026@gmail.com', 'junnupravalika59@gmail.com'].includes(userEmail);
+      if (!isAuthorizedAdminEmail) {
+        return sendError(
+          res,
+          'Access Denied: Only authorized administrative emails (inisio2026@gmail.com and junnupravalika59@gmail.com) have access to administrative resources.',
+          403
+        );
+      }
+    }
 
     // Strict Super Admin Access Control: Super Admin is strictly Read-Only across all resources
     if (userRole === 'superadmin' && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
@@ -122,7 +136,8 @@ export const authorizeRoles = (...roles) => {
       roles.includes(userRole) ||
       roles.includes(normalizedRole) ||
       isSuperAdminViewer ||
-      (roles.includes('admin') && (userRole.startsWith('admin') || req.user.email === 'admin@gmail.com' || req.user.email === 'inisioadmin@gmail.com'));
+      (roles.includes('admin') && (userRole === 'admin' || userEmail === 'inisio2026@gmail.com')) ||
+      (roles.includes('superadmin') && (userRole === 'superadmin' || userEmail === 'junnupravalika59@gmail.com'));
 
     if (!isAuthorized) {
       return sendError(

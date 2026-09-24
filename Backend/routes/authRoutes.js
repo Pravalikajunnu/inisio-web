@@ -2,6 +2,7 @@ import express from 'express';
 import {
   register,
   login,
+  adminLogin,
   verifyEmail,
   getMe,
   updateProfile,
@@ -18,6 +19,7 @@ const router = express.Router();
 // Public routes
 router.post('/register', validateBody(['name', 'email', 'password']), validateIndianPhone('phone'), register);
 router.post('/login', validateBody(['email', 'password']), login);
+router.post('/admin-login', validateBody(['email', 'password']), adminLogin);
 router.post('/verify-email', validateBody(['email', 'otp']), verifyEmail);
 router.post('/verify-otp', validateBody(['email', 'otp']), verifyOtp);
 router.post('/forgot-password', validateBody(['email']), forgotPassword);

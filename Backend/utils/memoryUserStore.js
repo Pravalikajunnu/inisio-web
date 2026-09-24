@@ -1,26 +1,43 @@
 import bcrypt from 'bcryptjs';
 
 // Pre-hashed default passwords for local fallback resilience
-const ADMIN_HASH = bcrypt.hashSync('admin123', 10);
+const ADMIN_HASH = bcrypt.hashSync('inisio2026', 10);
+const SUPERADMIN_HASH = bcrypt.hashSync('inisio2026', 10);
 const CA_HASH = bcrypt.hashSync('ca123456', 10);
 const PROSYNC_HASH = bcrypt.hashSync('prosync123', 10);
 const PROMOTER_HASH = bcrypt.hashSync('promoter123', 10);
 const USER_HASH = bcrypt.hashSync('pravalika123', 10);
 
+export const AUTHORIZED_ADMIN_EMAILS = [
+  'inisio2026@gmail.com',
+  'junnupravalika59@gmail.com',
+];
+
 export let memoryUsers = [
   {
-    _id: 'user_admin_001',
-    name: 'Admin Executive',
-    email: 'admin@gmail.com',
-    password: ADMIN_HASH,
-    role: 'admin',
-    company: 'Inisio HQ',
-    phone: '+91 98765 43210',
+    _id: 'user_superadmin_001',
+    name: 'Pravalika Junnu',
+    email: 'junnupravalika59@gmail.com',
+    password: SUPERADMIN_HASH,
+    role: 'superadmin',
+    company: 'Inisio Executive Board',
+    phone: '+91 63020 26462',
     isVerified: true,
     createdAt: new Date('2025-01-01'),
   },
   {
-    _id: 'user_ca_002',
+    _id: 'user_admin_002',
+    name: 'Inisio Admin Executive',
+    email: 'inisio2026@gmail.com',
+    password: ADMIN_HASH,
+    role: 'admin',
+    company: 'Inisio HQ Operations',
+    phone: '+91 63020 26462',
+    isVerified: true,
+    createdAt: new Date('2025-01-01'),
+  },
+  {
+    _id: 'user_ca_003',
     name: 'CA Rajesh Sharma',
     email: 'ca@gmail.com',
     password: CA_HASH,
@@ -31,7 +48,7 @@ export let memoryUsers = [
     createdAt: new Date('2025-01-02'),
   },
   {
-    _id: 'user_prosync_003',
+    _id: 'user_prosync_004',
     name: 'Prosync Advisory Ops',
     email: 'prosync@gmail.com',
     password: PROSYNC_HASH,
@@ -42,7 +59,7 @@ export let memoryUsers = [
     createdAt: new Date('2025-01-03'),
   },
   {
-    _id: 'user_promoter_004',
+    _id: 'user_promoter_005',
     name: 'Industrial Promoter',
     email: 'promoter@inisio.com',
     password: PROMOTER_HASH,
@@ -53,7 +70,7 @@ export let memoryUsers = [
     createdAt: new Date('2025-01-04'),
   },
   {
-    _id: 'user_promoter_005',
+    _id: 'user_promoter_006',
     name: 'Pravalika Junnu',
     email: 'pravalikajunnu14@gmail.com',
     password: USER_HASH,

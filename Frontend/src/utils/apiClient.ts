@@ -261,18 +261,47 @@ export const api = {
       }),
   },
 
-  // Contact Inquiries
+  // Contact Enquiries
   contact: {
-    sendMessage: (data: { fullName: string; email: string; phone: string; message: string; subject?: string }) =>
+    sendMessage: (data: {
+      name?: string;
+      fullName?: string;
+      email: string;
+      phone: string;
+      company?: string;
+      subject?: string;
+      message: string;
+    }) =>
       request<any>('/contact', {
         method: 'POST',
         body: JSON.stringify(data),
       }),
-    getMessages: () => request<any[]>('/contact'),
+    getEnquiries: (params: Record<string, any> = {}) => {
+      const query = new URLSearchParams();
+      Object.entries(params).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== '') query.append(k, String(v));
+      });
+      const qStr = query.toString();
+      return request<any>(`/contact${qStr ? `?${qStr}` : ''}`);
+    },
+    getMessages: () => request<any>('/contact'),
+    getEnquiryDetails: (id: string) => request<any>(`/contact/${id}`),
+    updateEnquiry: (
+      id: string,
+      updates: { status?: string; notes?: string; assignedTo?: string; isArchived?: boolean }
+    ) =>
+      request<any>(`/contact/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(updates),
+      }),
     updateStatus: (id: string, status: string, notes?: string) =>
-      request<any>(`/contact/${id}/status`, {
+      request<any>(`/contact/${id}`, {
         method: 'PUT',
         body: JSON.stringify({ status, notes }),
+      }),
+    deleteEnquiry: (id: string, permanent: boolean = false) =>
+      request<any>(`/contact/${id}${permanent ? '?permanent=true' : ''}`, {
+        method: 'DELETE',
       }),
   },
 
@@ -304,4 +333,5 @@ export const api = {
   },
 };
 
+export const apiClient = api;
 export default api;

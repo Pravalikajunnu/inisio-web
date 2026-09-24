@@ -8,6 +8,7 @@ import {
   findMemoryUserById,
   addMemoryUser,
   updateMemoryUser,
+  AUTHORIZED_ADMIN_EMAILS,
 } from '../utils/memoryUserStore.js';
 import bcrypt from 'bcryptjs';
 
@@ -22,6 +23,12 @@ const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString()
 export const syncMemoryUsersToDB = async () => {
   if (!isDBConnected()) return;
   try {
+    // 1. Sanitize any legacy accounts so only the two authorized emails have admin privileges
+    await User.updateMany(
+      { email: { $nin: ['inisio2026@gmail.com', 'junnupravalika59@gmail.com'] }, role: { $in: ['admin', 'superadmin', 'admin1', 'admin2', 'admin3'] } },
+      { $set: { role: 'user' } }
+    );
+
     for (const memUser of memoryUsers) {
       const cleanEmail = memUser.email.toLowerCase().trim();
       const existing = await User.findOne({ email: cleanEmail });
@@ -35,7 +42,16 @@ export const syncMemoryUsersToDB = async () => {
           phone: memUser.phone || '',
           isVerified: true,
         });
-        console.log(`[AuthService] Seeded user ${cleanEmail} into MongoDB.`);
+        console.log(`[AuthService] Seeded user ${cleanEmail} (${memUser.role}) into MongoDB.`);
+      } else {
+        // Ensure proper role is strictly set for the authorized emails
+        if (cleanEmail === 'junnupravalika59@gmail.com' && existing.role !== 'superadmin') {
+          existing.role = 'superadmin';
+          await existing.save();
+        } else if (cleanEmail === 'inisio2026@gmail.com' && existing.role !== 'admin') {
+          existing.role = 'admin';
+          await existing.save();
+        }
       }
     }
   } catch (err) {
@@ -64,15 +80,29 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
   }
   const cleanEmail = email.toLowerCase().trim();
 
-  // Validate allowed roles
-  const validRoles = ['user', 'ca', 'superadmin', 'dpr_consultant', 'prosync_admin', 'admin', 'admin1', 'admin2', 'admin3', 'prosync'];
-  const assignedRole = validRoles.includes(role) ? role : 'user';
+  // Strict role security: ONLY junnupravalika59@gmail.com is superadmin, ONLY inisio2026@gmail.com is admin
+  let assignedRole = 'user';
+  if (cleanEmail === 'junnupravalika59@gmail.com') {
+    assignedRole = 'superadmin';
+  } else if (cleanEmail === 'inisio2026@gmail.com') {
+    assignedRole = 'admin';
+  } else if (role === 'ca') {
+    assignedRole = 'ca';
+  } else if (role === 'prosync' || role === 'prosync_admin') {
+    assignedRole = 'prosync_admin';
+  } else if (role === 'dpr_consultant') {
+    assignedRole = 'dpr_consultant';
+  } else {
+    assignedRole = 'user';
+  }
 
   const defaultCompany = company || (
     assignedRole === 'ca'
       ? 'Chartered Accountancy Firm'
-      : assignedRole.startsWith('admin') || assignedRole === 'superadmin'
-      ? 'Inisio HQ'
+      : assignedRole === 'superadmin'
+      ? 'Inisio Executive Board'
+      : assignedRole === 'admin'
+      ? 'Inisio HQ Operations'
       : assignedRole === 'prosync' || assignedRole === 'prosync_admin'
       ? 'Prosync Advisory'
       : assignedRole === 'dpr_consultant'
@@ -987,15 +1017,127 @@ export const resetPassword = async ({ email, otp, newPassword }) => {
   };
 };
 
+/**
+ * Dedicated Admin & Super Admin Login
+ * Exclusively restricted to inisio2026@gmail.com and junnupravalika59@gmail.com
+ */
+export const adminLogin = async ({ email, password }) => {
+  if (!email || !password) {
+    const error = new Error('Please enter both administrative email and password');
+    error.statusCode = 400;
+    throw error;
+  }
+  const cleanEmail = email.toLowerCase().trim();
+
+  // Strict email whitelist check
+  if (!AUTHORIZED_ADMIN_EMAILS.includes(cleanEmail)) {
+    const error = new Error('Access Denied. The Admin Portal is strictly restricted to authorized emails (junnupravalika59@gmail.com and inisio2026@gmail.com). Please use standard User Sign In.');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  // 1. Try DB first
+  if (isDBConnected()) {
+    try {
+      const user = await User.findOne({ email: cleanEmail }).select('+password');
+      if (user) {
+        const isMatch = await user.matchPassword(password);
+        if (!isMatch) {
+          const error = new Error(`Incorrect administrative password for ${cleanEmail}. Click 'Forgot Password?' to reset.`);
+          error.statusCode = 401;
+          throw error;
+        }
+
+        const role = cleanEmail === 'junnupravalika59@gmail.com' ? 'superadmin' : 'admin';
+        if (user.role !== role) {
+          user.role = role;
+          await user.save();
+        }
+
+        const token = generateToken({
+          id: user._id,
+          email: user.email,
+          role: user.role,
+          name: user.name,
+          company: user.company,
+          phone: user.phone,
+          isVerified: true,
+        });
+
+        return {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          company: user.company,
+          phone: user.phone,
+          avatarUrl: user.avatarUrl,
+          isVerified: true,
+          token,
+          message: `${user.role === 'superadmin' ? 'Super Admin' : 'Admin'} authentication successful`,
+        };
+      }
+    } catch (err) {
+      if (err.statusCode || err.message.includes('password') || err.message.includes('Password') || err.message.includes('Access Denied')) {
+        throw err;
+      }
+      console.warn('MongoDB error during adminLogin:', err.message);
+    }
+  }
+
+  // 2. Memory fallback
+  const memUser = memoryUsers.find((u) => u.email.toLowerCase() === cleanEmail);
+  if (!memUser) {
+    const error = new Error('Administrative account not initialized in system store.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const isMatch = await bcrypt.compare(password, memUser.password);
+  if (!isMatch) {
+    const error = new Error(`Incorrect administrative password for ${cleanEmail}. Click 'Forgot Password?' to reset.`);
+    error.statusCode = 401;
+    throw error;
+  }
+
+  const role = cleanEmail === 'junnupravalika59@gmail.com' ? 'superadmin' : 'admin';
+  memUser.role = role;
+
+  const token = generateToken({
+    id: memUser._id,
+    email: memUser.email,
+    role: memUser.role,
+    name: memUser.name,
+    company: memUser.company,
+    phone: memUser.phone,
+    isVerified: true,
+  });
+
+  return {
+    _id: memUser._id,
+    name: memUser.name,
+    email: memUser.email,
+    role: memUser.role,
+    company: memUser.company,
+    phone: memUser.phone,
+    avatarUrl: memUser.avatarUrl,
+    isVerified: true,
+    token,
+    message: `${memUser.role === 'superadmin' ? 'Super Admin' : 'Admin'} authentication successful`,
+  };
+};
+
 export default {
   registerUser,
   verifyEmailOtp,
   sendVerificationOtp,
   loginUser,
+  adminLogin,
   getUserProfile,
   updateUserProfile,
   forgotPassword,
   verifyResetOtp,
   resetPassword,
+  syncMemoryUsersToDB,
 };
 

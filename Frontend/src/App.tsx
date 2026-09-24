@@ -596,6 +596,12 @@ export default function App() {
           <AdminLeadsModal
             isOpen={adminModalOpen}
             onClose={() => setAdminModalOpen(false)}
+            currentUser={currentUser}
+            onLoginSuccess={(user) => {
+              handleLoginSuccess(user);
+              setActiveTab('admin-dashboard');
+            }}
+            onOpenAdminDashboard={() => setActiveTab('admin-dashboard')}
           />
         </Suspense>
       )}

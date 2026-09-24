@@ -413,6 +413,115 @@ export const sendConsultationConfirmationEmail = async ({ to, name, preferredDat
   return result;
 };
 
+/**
+ * Send Contact Enquiry Alert to Admin and Confirmation to User
+ */
+export const sendContactEnquiryAlertEmail = async (enquiry) => {
+  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || process.env.SMTP_USER || 'advisory@inisio.in';
+  
+  // 1. User Acknowledgment Email
+  const userHtml = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px;">
+  <div style="max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;">
+    <div style="background: #0f172a; padding: 24px 32px;">
+      <h2 style="color: #ffffff; margin: 0; font-size: 20px;">INISIO ADVISORY</h2>
+      <p style="color: #94a3b8; margin: 4px 0 0; font-size: 13px;">Greenfield Project Advisory & Bank Syndication</p>
+    </div>
+    <div style="padding: 32px;">
+      <h3 style="color: #0f172a; margin: 0 0 12px; font-size: 18px;">Thank You, ${enquiry.name}!</h3>
+      <p style="font-size: 14px; line-height: 1.6; color: #475569;">
+        We have received your enquiry regarding <strong>"${enquiry.subject || 'Greenfield Project Consultancy'}"</strong>.
+      </p>
+      <div style="background: #f1f5f9; border-left: 4px solid #2563eb; padding: 16px; border-radius: 6px; margin: 20px 0;">
+        <p style="margin: 0 0 6px; font-size: 13px; font-weight: bold; color: #1e293b;">Enquiry Summary:</p>
+        <p style="margin: 0; font-size: 13px; color: #334155; font-style: italic;">"${enquiry.message}"</p>
+      </div>
+      <p style="font-size: 14px; line-height: 1.6; color: #475569;">
+        Our Senior Project Advisory Desk has been notified and a lead consultant will contact you via phone (<strong>${enquiry.phone}</strong>) or email shortly.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  // 2. Admin Alert Email
+  const adminHtml = `
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px;">
+  <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;">
+    <div style="background: #1e3a8a; padding: 24px 32px;">
+      <span style="display:inline-block; background: #fbbf24; color: #000; font-weight: bold; font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-bottom: 8px;">NEW WEBSITE ENQUIRY</span>
+      <h2 style="color: #ffffff; margin: 0; font-size: 20px;">📩 New Contact Form Submission</h2>
+    </div>
+    <div style="padding: 32px;">
+      <table style="width: 100%; font-size: 14px; border-collapse: collapse; margin-bottom: 20px;">
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 8px 0; font-weight: 600; color: #475569; width: 30%;">Full Name:</td>
+          <td style="padding: 8px 0; font-weight: 700; color: #0f172a;">${enquiry.name}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 8px 0; font-weight: 600; color: #475569;">Phone:</td>
+          <td style="padding: 8px 0; font-weight: 700; color: #0f172a;">${enquiry.phone}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 8px 0; font-weight: 600; color: #475569;">Email:</td>
+          <td style="padding: 8px 0; color: #0f172a;">${enquiry.email}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 8px 0; font-weight: 600; color: #475569;">Company:</td>
+          <td style="padding: 8px 0; color: #0f172a;">${enquiry.company || 'Not Specified'}</td>
+        </tr>
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 8px 0; font-weight: 600; color: #475569;">Subject:</td>
+          <td style="padding: 8px 0; font-weight: 600; color: #0f172a;">${enquiry.subject || 'General Enquiry'}</td>
+        </tr>
+      </table>
+
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+        <p style="margin: 0 0 8px; font-weight: 600; font-size: 13px; color: #334155;">Message Content:</p>
+        <p style="margin: 0; font-size: 14px; color: #1e293b; white-space: pre-line;">${enquiry.message}</p>
+      </div>
+
+      <p style="font-size: 12px; color: #94a3b8; margin: 0;">
+        Received on: ${new Date(enquiry.createdAt || Date.now()).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  try {
+    if (enquiry.email) {
+      sendMailWithResilience(
+        {
+          to: enquiry.email,
+          subject: `We have received your enquiry - Inisio Project Advisory`,
+          text: `Thank you ${enquiry.name}. We have received your message and will contact you shortly.`,
+          html: userHtml,
+        },
+        { type: 'contact_user' }
+      ).catch(() => {});
+    }
+
+    sendMailWithResilience(
+      {
+        to: adminEmail,
+        subject: `[New Enquiry] ${enquiry.name} - ${enquiry.subject || 'Project Inquiry'}`,
+        text: `New contact enquiry from ${enquiry.name} (${enquiry.phone}, ${enquiry.email}): ${enquiry.message}`,
+        html: adminHtml,
+      },
+      { type: 'contact_admin' }
+    ).catch(() => {});
+  } catch (e) {}
+};
+
 export default {
   getSmtpConfig,
   createCustomTransporter,
@@ -421,4 +530,5 @@ export default {
   sendVerificationEmail,
   sendPasswordResetEmail,
   sendConsultationConfirmationEmail,
+  sendContactEnquiryAlertEmail,
 };

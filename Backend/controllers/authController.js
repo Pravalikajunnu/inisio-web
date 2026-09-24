@@ -24,6 +24,16 @@ export const login = async (req, res, next) => {
   }
 };
 
+export const adminLogin = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    const result = await authService.adminLogin({ email, password });
+    return sendSuccess(res, result, result.message || 'Admin authentication successful', 200);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const verifyEmail = async (req, res, next) => {
   try {
     const { email, otp } = req.body;

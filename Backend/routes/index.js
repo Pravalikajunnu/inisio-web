@@ -34,6 +34,7 @@ router.use('/projects', projectRoutes);
 router.use('/industries', industryRoutes);
 router.use('/services', serviceRoutes);
 router.use('/contact', contactRoutes);
+router.use('/admin/contact', contactRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/documents', documentRoutes);
 router.use('/payments', paymentRoutes);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getStoredLeads, fetchLeadsFromBackend, deleteLeadRecord, clearAllLeads, exportLeadsToCSV, LeadRecord } from '../utils/leadStore';
+import { getStoredLeads, fetchLeadsFromBackend, deleteLeadRecord, clearAllLeads, exportLeadsToCSV, updateLeadRecord, LeadRecord } from '../utils/leadStore';
 import { getAdminNotifications, AdminNotification, getUnreadNotificationCount } from '../utils/notificationStore';
 import { getAllRegisteredUsers, RegisteredUserRecord, updateUserStatus, exportUsersToCSV } from '../utils/userStore';
 import { getVisitorSummary, VisitorSummary, getStoredVisitorLogs, VisitorLog, exportVisitorsToCSV } from '../utils/visitorStore';
@@ -38,7 +38,11 @@ import {
   Radio,
   ExternalLink,
   Lock,
-  UserPlus
+  UserPlus,
+  IndianRupee,
+  PhoneCall,
+  Calendar,
+  Mail
 } from 'lucide-react';
 
 interface AdminDashboardViewProps {
@@ -185,11 +189,27 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
     Boolean(l.promoterFundAssistanceRequest)
   );
 
+  const consultationLeads = leads.filter(l => 
+    l.source?.toLowerCase().includes('consultation') ||
+    l.source?.toLowerCase().includes('advisory') ||
+    Boolean(l.consultationAssignedTo) ||
+    Boolean(l.consultationStatus) ||
+    l.source === 'Advisory Call Booked' ||
+    l.source === 'Free Consultation Booked' ||
+    l.source === 'Contact Form Submitted'
+  );
+
   const handleUpdateFundStatus = (leadId: string, newStatus: any) => {
     updateLeadRecord(leadId, {
       promoterFundAssistanceStatus: newStatus
     }, user.name || user.email || 'Admin');
     triggerToast(`Updated fund assistance status to "${newStatus}"`);
+    loadData();
+  };
+
+  const handleUpdateConsultation = (leadId: string, updates: { consultationStatus?: any; consultationAssignedTo?: string; notes?: string }) => {
+    updateLeadRecord(leadId, updates, user.name || user.email || 'Admin');
+    triggerToast('Updated consultation booking status!');
     loadData();
   };
 
@@ -269,6 +289,9 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
                         : getStoredVisitorLogs();
                       exportVisitorsToCSV(logs);
                       triggerToast(`Exported ${logs.length} visitor traffic records to CSV!`);
+                    } else if (activeTab === 'consultations') {
+                      exportLeadsToCSV(consultationLeads);
+                      triggerToast(`Exported ${consultationLeads.length} consultation records to CSV!`);
                     } else {
                       const list = filteredLeads.length > 0 ? filteredLeads : leads;
                       exportLeadsToCSV(list);
@@ -361,6 +384,21 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
               {promoterFundLeads.length > 0 && (
                 <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${activeTab === 'promoter_funds' ? 'bg-emerald-500 text-emerald-950' : 'bg-emerald-100 text-emerald-800'}`}>
                   {promoterFundLeads.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('consultations')}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                activeTab === 'consultations' ? 'bg-zinc-900 text-white shadow-xs' : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100'
+              }`}
+            >
+              <PhoneCall className="w-3.5 h-3.5" />
+              <span>Free Consultations</span>
+              {consultationLeads.length > 0 && (
+                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${activeTab === 'consultations' ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-800'}`}>
+                  {consultationLeads.length}
                 </span>
               )}
             </button>
@@ -852,8 +890,269 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
           </div>
         )}
 
-        {/* VIEW D: PROMOTER PROJECTS & LEADS TABLE (When on 'all', 'edits', 'assignments', 'teasers') */}
-        {activeTab !== 'users' && activeTab !== 'visitors' && activeTab !== 'promoter_funds' && (
+        {/* VIEW D: PROMOTER FUND ASSISTANCE DESK VIEW */}
+
+        {/* VIEW E: FREE 1-ON-1 BANKING CONSULTATIONS DESK */}
+        {activeTab === 'consultations' && (
+          <div className="space-y-5">
+            {/* Quick Metrics */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-4 bg-white rounded-xl border border-zinc-200 shadow-2xs">
+                <span className="text-[10px] uppercase font-bold text-zinc-400 block tracking-wider">Total Consultations</span>
+                <div className="text-2xl font-bold text-blue-600 mt-1">{consultationLeads.length}</div>
+                <span className="text-[11px] text-zinc-500">1-on-1 banking sessions booked</span>
+              </div>
+
+              <div className="p-4 bg-amber-50/60 rounded-xl border border-amber-200 shadow-2xs">
+                <span className="text-[10px] uppercase font-bold text-amber-700 block tracking-wider">Pending / New</span>
+                <div className="text-2xl font-bold text-amber-900 mt-1">
+                  {consultationLeads.filter(l => !l.consultationStatus || l.consultationStatus === 'Pending' || l.consultationStatus === 'New').length}
+                </div>
+                <span className="text-[11px] text-amber-700">Awaiting advisor callback</span>
+              </div>
+
+              <div className="p-4 bg-indigo-50/60 rounded-xl border border-indigo-200 shadow-2xs">
+                <span className="text-[10px] uppercase font-bold text-indigo-700 block tracking-wider">In Progress</span>
+                <div className="text-2xl font-bold text-indigo-900 mt-1">
+                  {consultationLeads.filter(l => l.consultationStatus === 'In Progress').length}
+                </div>
+                <span className="text-[11px] text-indigo-700">Advisory discussions active</span>
+              </div>
+
+              <div className="p-4 bg-emerald-50/60 rounded-xl border border-emerald-200 shadow-2xs">
+                <span className="text-[10px] uppercase font-bold text-emerald-700 block tracking-wider">Completed Sessions</span>
+                <div className="text-2xl font-bold text-emerald-900 mt-1">
+                  {consultationLeads.filter(l => l.consultationStatus === 'Completed').length}
+                </div>
+                <span className="text-[11px] text-emerald-700">Banking advisory concluded</span>
+              </div>
+            </div>
+
+            {/* Consultations Table Container */}
+            <div className="border border-zinc-200 rounded-2xl p-5 bg-white space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <PhoneCall className="w-4 h-4 text-blue-600" />
+                  <h2 className="text-sm font-bold text-zinc-900">Booked Banking Consultations</h2>
+                  <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold">
+                    {consultationLeads.length} Bookings
+                  </span>
+                </div>
+
+                <div className="relative w-full sm:w-60">
+                  <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-2.5" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Search promoter, phone, notes..."
+                    className="w-full pl-8 pr-3 py-1.5 bg-zinc-50 border border-zinc-200 text-xs text-zinc-900 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[950px] text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-zinc-200 text-zinc-400 font-semibold uppercase text-[10px]">
+                      <th className="py-2.5 px-3">Date &amp; Time</th>
+                      <th className="py-2.5 px-3">Promoter &amp; Contact</th>
+                      <th className="py-2.5 px-3">Company &amp; Sector</th>
+                      <th className="py-2.5 px-3">Project Budget / Capex</th>
+                      <th className="py-2.5 px-3">Promoter Requirements / Notes</th>
+                      <th className="py-2.5 px-3">Assigned Advisor</th>
+                      <th className="py-2.5 px-3">Status</th>
+                      <th className="py-2.5 px-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-100 text-zinc-700">
+                    {consultationLeads.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="text-center py-12 text-zinc-400">
+                          <PhoneCall className="w-8 h-8 mx-auto mb-2 text-zinc-300" />
+                          <p className="font-medium text-sm">No consultation bookings yet</p>
+                          <p className="text-xs text-zinc-400 mt-0.5">When promoters click "Book Free Consultation", submissions will appear here instantly.</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      consultationLeads
+                        .filter(l => {
+                          if (!searchQuery) return true;
+                          const q = searchQuery.toLowerCase();
+                          return (
+                            (l.fullName && l.fullName.toLowerCase().includes(q)) ||
+                            (l.projectName && l.projectName.toLowerCase().includes(q)) ||
+                            (l.mobile && l.mobile.includes(q)) ||
+                            (l.email && l.email.toLowerCase().includes(q)) ||
+                            (l.industry && l.industry.toLowerCase().includes(q)) ||
+                            (l.notes && l.notes.toLowerCase().includes(q))
+                          );
+                        })
+                        .map((lead) => {
+                          const status = lead.consultationStatus || 'Pending';
+                          const assigned = lead.consultationAssignedTo || 'Prosync';
+
+                          return (
+                            <tr key={lead.id} className="hover:bg-zinc-50 transition-colors">
+                              <td className="py-3 px-3 whitespace-nowrap">
+                                <div className="font-semibold text-zinc-800">
+                                  {new Date(lead.timestamp).toLocaleDateString('en-IN', {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric'
+                                  })}
+                                </div>
+                                <div className="text-[10px] text-zinc-400">
+                                  {new Date(lead.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                                <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                  status === 'Completed'
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                    : status === 'In Progress'
+                                    ? 'bg-indigo-100 text-indigo-800 border border-indigo-200'
+                                    : status === 'Customer Declined'
+                                    ? 'bg-red-100 text-red-800 border border-red-200'
+                                    : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                }`}>
+                                  {status}
+                                </span>
+                              </td>
+
+                              <td className="py-3 px-3">
+                                <div className="font-bold text-zinc-900">{lead.fullName || 'Promoter'}</div>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-[11px] font-medium text-zinc-700">{lead.mobile || '—'}</span>
+                                  {lead.mobile && (
+                                    <a
+                                      href={`tel:${lead.mobile}`}
+                                      className="text-blue-600 hover:text-blue-800"
+                                      title="Call"
+                                    >
+                                      <Phone className="w-3 h-3" />
+                                    </a>
+                                  )}
+                                </div>
+                                <div className="text-[10px] text-zinc-400 truncate max-w-[150px]">{lead.email || '—'}</div>
+                              </td>
+
+                              <td className="py-3 px-3">
+                                <div className="font-semibold text-zinc-900 max-w-[180px] truncate">{lead.projectName || 'Greenfield Enterprise'}</div>
+                                <div className="text-[11px] text-blue-600 font-medium">{lead.industry || 'General Sector'}</div>
+                                <div className="text-[10px] text-zinc-400">{lead.location || 'India'}</div>
+                              </td>
+
+                              <td className="py-3 px-3 whitespace-nowrap">
+                                <div className="font-bold text-zinc-900 text-sm">
+                                  {lead.totalCostCr ? `₹ ${lead.totalCostCr} Cr` : '—'}
+                                </div>
+                                <span className="text-[10px] text-zinc-400">Estimated Capex</span>
+                              </td>
+
+                              <td className="py-3 px-3">
+                                {lead.notes ? (
+                                  <div className="text-xs text-zinc-700 bg-zinc-50 p-2 rounded-lg border border-zinc-100 max-w-[220px] line-clamp-3" title={lead.notes}>
+                                    "{lead.notes}"
+                                  </div>
+                                ) : (
+                                  <span className="text-zinc-400 text-[11px] italic">No specific notes provided</span>
+                                )}
+                              </td>
+
+                              <td className="py-3 px-3 whitespace-nowrap">
+                                {(user.role === 'admin' || user.role === 'admin3') ? (
+                                  <select
+                                    value={assigned}
+                                    onChange={(e) => handleUpdateConsultation(lead.id, { consultationAssignedTo: e.target.value })}
+                                    className="px-2 py-1 bg-white border border-zinc-300 rounded text-[11px] font-semibold text-zinc-800 focus:outline-none focus:border-blue-500 cursor-pointer shadow-2xs"
+                                  >
+                                    <option value="Prosync">Prosync Desk</option>
+                                    <option value="Inisio Banking Desk">Inisio Banking Desk</option>
+                                    <option value="Senior Ex-Banker">Senior Ex-Banker</option>
+                                    <option value="CA Partner">CA Partner</option>
+                                  </select>
+                                ) : (
+                                  <span className="text-zinc-700 font-medium text-[11px]">{assigned}</span>
+                                )}
+                              </td>
+
+                              <td className="py-3 px-3 whitespace-nowrap">
+                                {(user.role === 'admin' || user.role === 'admin3') ? (
+                                  <select
+                                    value={status}
+                                    onChange={(e) => handleUpdateConsultation(lead.id, { consultationStatus: e.target.value as any })}
+                                    className="px-2 py-1 bg-white border border-zinc-300 rounded text-[11px] font-semibold text-zinc-800 focus:outline-none focus:border-blue-500 cursor-pointer shadow-2xs"
+                                  >
+                                    <option value="Pending">Pending</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="Customer Declined">Customer Declined</option>
+                                  </select>
+                                ) : (
+                                  <span className="text-zinc-700 text-[11px]">{status}</span>
+                                )}
+                              </td>
+
+                              <td className="py-3 px-3 text-right whitespace-nowrap">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    onClick={() => setSelectedLead(lead)}
+                                    className="px-2 py-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-700 rounded text-[11px] font-semibold transition-colors cursor-pointer"
+                                  >
+                                    Dossier
+                                  </button>
+
+                                  {(user.role === 'admin' || user.role === 'admin3') && (
+                                    <button
+                                      onClick={() => setEditingLead(lead)}
+                                      className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded text-[11px] font-semibold transition-colors cursor-pointer"
+                                    >
+                                      Edit
+                                    </button>
+                                  )}
+
+                                  {lead.mobile && (
+                                    <a
+                                      href={`https://wa.me/91${lead.mobile.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${lead.fullName || 'Promoter'},\n\nThank you for booking a Free Banking Consultation with Inisio Advisory regarding ${lead.projectName || 'your greenfield project'}. Our senior team is ready to connect.`)}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
+                                      title="Chat on WhatsApp"
+                                    >
+                                      <MessageSquare className="w-3 h-3 fill-current" />
+                                      <span>WA</span>
+                                    </a>
+                                  )}
+
+                                  {(user.role === 'admin' || user.role === 'admin3') && (
+                                    <button
+                                      onClick={() => {
+                                        if (confirm(`Delete consultation booking for ${lead.fullName || 'this lead'}?`)) {
+                                          deleteLeadRecord(lead.id);
+                                          triggerToast('Consultation booking deleted.');
+                                          loadData();
+                                        }
+                                      }}
+                                      className="p-1 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                                      title="Delete Record"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* VIEW F: PROMOTER PROJECTS & LEADS TABLE (When on 'all', 'edits', 'assignments', 'teasers') */}
+        {activeTab !== 'users' && activeTab !== 'visitors' && activeTab !== 'promoter_funds' && activeTab !== 'consultations' && (
           <div className="border border-zinc-200 rounded-2xl p-5 bg-white space-y-4">
             
             {/* Header with Search and Filters */}

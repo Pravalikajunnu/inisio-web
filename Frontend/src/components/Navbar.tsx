@@ -94,7 +94,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   const getRoleBadge = (role: string) => {
-    if (role === 'superadmin' || role === 'admin' || role === 'admin1' || role === 'admin2' || role === 'admin3') {
+    if (role === 'superadmin') {
+      return {
+        label: 'Super Admin',
+        bg: 'bg-amber-100 text-amber-900 border-amber-300',
+        icon: <ShieldCheck className="w-3.5 h-3.5 text-amber-700" />
+      };
+    }
+    if (role === 'admin' || role === 'admin1' || role === 'admin2' || role === 'admin3') {
       return {
         label: 'Admin Desk',
         bg: 'bg-emerald-100 text-emerald-800 border-emerald-300',
@@ -116,7 +123,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       };
     }
     return {
-      label: 'User Portal',
+      label: 'Promoter Desk',
       bg: 'bg-blue-100 text-blue-800 border-blue-300',
       icon: <User className="w-3.5 h-3.5 text-blue-700" />
     };

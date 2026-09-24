@@ -848,17 +848,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Select Account Role *
+                        Select Account Type *
                       </label>
                       <select
                         value={role}
                         onChange={(e) => setRole(e.target.value as UserRole)}
                         className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all cursor-pointer font-medium"
                       >
-                        <option value="user">Promoter / Borrower (Project Assessments &amp; DPR)</option>
+                        <option value="user">Promoter / Borrower (Project Assessments &amp; Bank-Grade DPR)</option>
                         <option value="ca">CA / Financial Auditor (Financial Vetting &amp; TEFR)</option>
                         <option value="prosync">Prosync Advisory Desk (Consultation &amp; Syndication)</option>
-                        <option value="admin">Platform Administrator (Full Management)</option>
                       </select>
                     </div>
                   </>

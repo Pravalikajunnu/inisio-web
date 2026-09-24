@@ -1,15 +1,32 @@
 import express from 'express';
-import { createMessage, getMessages, updateMessageStatus } from '../controllers/contactController.js';
+import {
+  createEnquiry,
+  getEnquiries,
+  getEnquiryDetails,
+  updateEnquiry,
+  deleteEnquiry,
+  updateMessageStatus,
+} from '../controllers/contactController.js';
 import { authenticateUser, authorizeRoles, restrictSuperAdminViewer } from '../middleware/authMiddleware.js';
-import { validateBody, validateIndianPhone } from '../middleware/validateMiddleware.js';
 
 const router = express.Router();
 
-// Public contact form
-router.post('/', validateBody(['fullName', 'email', 'phone', 'message']), validateIndianPhone('phone'), createMessage);
+/**
+ * Public Route
+ * POST /api/contact
+ */
+router.post('/', createEnquiry);
 
-// Admin & Super Admin review
-router.get('/', authenticateUser, authorizeRoles('admin', 'superadmin', 'ca'), getMessages);
-router.put('/:id/status', authenticateUser, restrictSuperAdminViewer, authorizeRoles('admin'), updateMessageStatus);
+/**
+ * Admin Routes
+ * Protected with Authentication & Role-based Authorization
+ */
+const allowedAdminRoles = ['admin', 'superadmin', 'ca', 'prosync_admin', 'prosync', 'admin1', 'admin2', 'admin3'];
+
+router.get('/', authenticateUser, authorizeRoles(...allowedAdminRoles), getEnquiries);
+router.get('/:id', authenticateUser, authorizeRoles(...allowedAdminRoles), getEnquiryDetails);
+router.put('/:id', authenticateUser, restrictSuperAdminViewer, authorizeRoles(...allowedAdminRoles), updateEnquiry);
+router.put('/:id/status', authenticateUser, restrictSuperAdminViewer, authorizeRoles(...allowedAdminRoles), updateMessageStatus);
+router.delete('/:id', authenticateUser, restrictSuperAdminViewer, authorizeRoles(...allowedAdminRoles), deleteEnquiry);
 
 export default router;

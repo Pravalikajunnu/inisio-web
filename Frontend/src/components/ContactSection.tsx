@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { saveLeadRecord } from '../utils/leadStore';
+import api from '../utils/apiClient';
 import {
   PhoneCall,
   Mail,
@@ -25,7 +26,7 @@ export const ContactSection: React.FC = () => {
     message: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const phoneValidation = validateIndianMobileNumber(formData.phone);
     if (!phoneValidation.isValid) {
@@ -34,6 +35,16 @@ export const ContactSection: React.FC = () => {
     }
     setSubmitted(true);
 
+    // 1. Send to Backend Express API / MongoDB contact collection
+    api.contact.sendMessage({
+      fullName: formData.fullName || 'Contact Inquiry',
+      email: formData.email,
+      phone: formData.phone,
+      message: `Sector: ${formData.projectType || 'N/A'} | Capex: ₹${formData.investmentAmount || '0'} Cr | Loan: ₹${formData.loanRequirement || '0'} Cr | Message: ${formData.message || 'N/A'}`,
+      subject: `Project Inquiry - ${formData.projectType || 'Greenfield'}`
+    }).catch(() => undefined);
+
+    // 2. Save into Live Admin Lead Store (shows on Admin Dashboard immediately)
     saveLeadRecord({
       fullName: formData.fullName || 'Contact Lead',
       mobile: formData.phone || 'N/A',
@@ -48,6 +59,7 @@ export const ContactSection: React.FC = () => {
       notes: formData.message
     });
 
+    // 3. Open WhatsApp chat with pre-filled message
     const text = `*NEW CONTACT & ADVISORY BRIEF* 📩\n\n` +
       `• Name: ${formData.fullName}\n` +
       `• Phone: ${formData.phone}\n` +
