@@ -382,8 +382,8 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased selection:bg-blue-100 selection:text-blue-800 flex flex-col justify-between">
-      <div>
+    <div className="min-h-screen w-full bg-white text-slate-900 font-sans antialiased selection:bg-blue-100 selection:text-blue-800 flex flex-col justify-between overflow-x-hidden">
+      <div className="w-full min-w-0">
         {/* Navbar */}
         <Navbar
           activeTab={activeTab}

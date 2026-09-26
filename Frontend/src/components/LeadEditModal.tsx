@@ -49,6 +49,37 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
   const [formData, setFormData] = useState<Partial<LeadRecord>>({});
   const [promoters, setPromoters] = useState<PromoterDetail[]>([]);
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
+
+  const projectStatusOptions = [
+    'Submitted',
+    'Under Review',
+    'CA Assigned',
+    'DPR In Progress',
+    'DPR Completed',
+    'Funding Assistance',
+    'Completed'
+  ];
+
+  const caOptions = [
+    'CA Rajesh Sharma (FCA #847201)',
+    'Priya Verma (Senior Financial Analyst)',
+    'Vikram Malhotra (Consortium Liaison)',
+    'Unassigned'
+  ];
+
+  const dprConsultantOptions = [
+    'DPR Consultant 1',
+    'DPR Consultant 2',
+    'DPR Consultant 3',
+    'Unassigned'
+  ];
+
+  const prosyncOptions = [
+    'Prosync Partner 1',
+    'Prosync Partner 2',
+    'Prosync Partner 3',
+    'Unassigned'
+  ];
   const [viewingDoc, setViewingDoc] = useState<DocumentViewerTarget | null>(null);
   const [newDocCategory, setNewDocCategory] = useState<string>('Company KYC');
   const [isUploading, setIsUploading] = useState<boolean>(false);
@@ -62,10 +93,12 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
         email: lead.email || '',
         industry: lead.industry || '',
         location: lead.location || '',
-        status: lead.status || 'In Appraisal',
+        status: lead.status || 'Submitted',
         totalCostCr: lead.totalCostCr || '',
         loanRequiredCr: lead.loanRequiredCr || '',
         promoterContribCr: lead.promoterContribCr || '',
+        dprAssignedTo: lead.dprAssignedTo || '',
+        consultationAssignedTo: lead.consultationAssignedTo || '',
         landStatus: lead.landStatus || 'Owned / Allotted',
         collateralStatus: lead.collateralStatus || 'Fixed Land & Machinery',
         promoterExp: lead.promoterExp || '5+ Years Experienced',
@@ -251,6 +284,10 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
 
     const finalPayload: Partial<LeadRecord> = {
       ...formData,
+      status: formData.status || 'Submitted',
+      assignedTeam: formData.assignedTeam || 'Unassigned',
+      dprAssignedTo: formData.dprAssignedTo || '',
+      consultationAssignedTo: formData.consultationAssignedTo || '',
       promotersList: promoters,
       uploadedDocuments: documents,
       promoterContribCr: formData.promoterContribCr || Math.round(calcEquity * 10) / 10,
@@ -900,31 +937,54 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
                   <div>
                     <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Project Workflow Stage</label>
                     <select
-                      value={formData.status || 'In Appraisal'}
+                      value={formData.status || 'Submitted'}
                       onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                       className="w-full px-3 py-2 text-xs bg-white border border-zinc-200 rounded-lg focus:outline-none focus:border-blue-500 font-semibold"
                     >
-                      <option value="New">New Inquiry</option>
-                      <option value="Contacted">Promoter Contacted</option>
-                      <option value="In Appraisal">In Financial Appraisal</option>
-                      <option value="CA Approved">CA Desk Approved</option>
-                      <option value="Bank Submitted">Submitted to Bank Consortium</option>
-                      <option value="Sanctioned">Loan Sanctioned</option>
-                      <option value="Disbursed">Funds Disbursed</option>
+                      {projectStatusOptions.map((status) => (
+                        <option key={status} value={status}>{status}</option>
+                      ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Assigned Advisory Team</label>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Assigned CA</label>
                     <select
-                      value={formData.assignedTeam || ''}
+                      value={formData.assignedTeam || 'Unassigned'}
                       onChange={(e) => setFormData({ ...formData, assignedTeam: e.target.value })}
                       className="w-full px-3 py-2 text-xs bg-white border border-zinc-200 rounded-lg focus:outline-none focus:border-blue-500"
                     >
-                      <option value="CA Rajesh Sharma (FCA #847201)">CA Rajesh Sharma (FCA #847201)</option>
-                      <option value="Priya Verma (Senior Financial Analyst)">Priya Verma (Senior Financial Analyst)</option>
-                      <option value="Vikram Malhotra (Consortium Liaison)">Vikram Malhotra (Consortium Liaison)</option>
-                      <option value="Advisory Desk & Debt Syndication Team">Advisory Desk &amp; Debt Syndication Team</option>
+                      {caOptions.map((ca) => (
+                        <option key={ca} value={ca}>{ca}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">DPR Consultant</label>
+                    <select
+                      value={formData.dprAssignedTo || 'Unassigned'}
+                      onChange={(e) => setFormData({ ...formData, dprAssignedTo: e.target.value === 'Unassigned' ? '' : e.target.value })}
+                      className="w-full px-3 py-2 text-xs bg-white border border-zinc-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="Unassigned">Unassigned</option>
+                      {dprConsultantOptions.filter(option => option !== 'Unassigned').map((consultant) => (
+                        <option key={consultant} value={consultant}>{consultant}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Prosync Partner</label>
+                    <select
+                      value={formData.consultationAssignedTo || 'Unassigned'}
+                      onChange={(e) => setFormData({ ...formData, consultationAssignedTo: e.target.value === 'Unassigned' ? '' : e.target.value })}
+                      className="w-full px-3 py-2 text-xs bg-white border border-zinc-200 rounded-lg focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="Unassigned">Unassigned</option>
+                      {prosyncOptions.filter(option => option !== 'Unassigned').map((partner) => (
+                        <option key={partner} value={partner}>{partner}</option>
+                      ))}
                     </select>
                   </div>
 
