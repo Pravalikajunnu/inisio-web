@@ -9,7 +9,7 @@ const consultationSchema = new mongoose.Schema(
     },
     email: {
       type: String,
-      required: [true, 'Please provide email'],
+      default: '',
       trim: true,
       lowercase: true,
     },

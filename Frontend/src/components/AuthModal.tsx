@@ -162,7 +162,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setResendingOtp(false);
       if (response.ok && resData.success) {
         setResendCooldown(30);
-        setSuccessMessage(resData.message || 'A fresh verification code and reset link have been dispatched to your email.');
+        setSuccessMessage(resData.message || 'A fresh verification code has been dispatched to your email address.');
       } else {
         setError(resData.message || 'Unable to resend code.');
       }
@@ -298,7 +298,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         const resData = await response.json().catch(() => ({}));
         setLoading(false);
         if (response.ok && resData.success) {
-          setSuccessMessage(resData.message || `Reset link and verification code have been dispatched to ${cleanEmail}.`);
+          setSuccessMessage(resData.message || `A password reset link and authorization code have been dispatched to ${cleanEmail}. Please check your email.`);
           setResendCooldown(30);
           setMode('reset-password');
         } else {
@@ -342,7 +342,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           setIsVerifyingOtp(true);
           setOtpCode('');
           setResendCooldown(30);
-          setSuccessMessage(userData.message || `A 6-digit verification code has been dispatched to ${cleanEmail}. Please check your inbox.`);
+          setSuccessMessage(userData.message || `A 6-digit verification code has been dispatched to ${cleanEmail}. Please check your email inbox.`);
           return;
         }
 
@@ -526,12 +526,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             {/* Email OTP Verification Mode */}
             {isVerifyingOtp ? (
               <div className="space-y-4">
-                <div className="bg-blue-50/80 border border-blue-100 rounded-xl p-3 flex items-start gap-2.5">
+                <div className="bg-blue-50/80 border border-blue-100 rounded-xl p-3.5 flex items-start gap-2.5">
                   <Mail className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
-                  <div className="text-xs text-blue-900">
-                    <p className="font-semibold">Verification Code Dispatched</p>
-                    <p className="text-[11px] text-blue-700 mt-0.5">
-                      We sent a 6-digit code via email to <span className="font-bold underline">{email}</span>.
+                  <div className="text-xs text-blue-900 flex-1">
+                    <p className="font-bold">Verification Code Sent to:</p>
+                    <div className="flex items-center justify-between gap-2 mt-1">
+                      <span className="font-mono font-bold text-blue-950 bg-blue-100/80 px-2 py-0.5 rounded-md text-[12px] truncate max-w-[240px]">
+                        {email}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => { setIsVerifyingOtp(false); setError(''); }}
+                        className="text-blue-700 hover:text-blue-900 underline text-[11px] font-bold cursor-pointer shrink-0"
+                      >
+                        Change Email
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-blue-700 mt-1.5">
+                      Please check your inbox (or spam folder) for the 6-digit code.
                     </p>
                   </div>
                 </div>
@@ -602,9 +614,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <div className="bg-blue-50/80 border border-blue-100 rounded-xl p-3 flex items-start gap-2.5">
                   <Mail className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
                   <div className="text-xs text-blue-900">
-                    <p className="font-semibold">Reset Link &amp; Code Dispatched</p>
+                    <p className="font-semibold">Reset Code Dispatched to Your Email</p>
                     <p className="text-[11px] text-blue-700 mt-0.5">
-                      Check your email at <span className="font-bold underline">{email || 'your address'}</span>. Click the link in your email or enter the 6-digit code below:
+                      Check your email inbox at <span className="font-bold underline">{email || 'your address'}</span> for your 6-digit authorization code and enter it below:
                     </p>
                   </div>
                 </div>
@@ -856,21 +868,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                           />
                         </div>
                       </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Select Account Type *
-                      </label>
-                      <select
-                        value={role}
-                        onChange={(e) => setRole(e.target.value as UserRole)}
-                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all cursor-pointer font-medium"
-                      >
-                        <option value="user">Promoter / Borrower (Project Assessments &amp; Bank-Grade DPR)</option>
-                        <option value="ca">CA / Financial Auditor (Financial Vetting &amp; TEFR)</option>
-                        <option value="prosync">Prosync Advisory Desk (Consultation &amp; Syndication)</option>
-                      </select>
                     </div>
                   </>
                 )}

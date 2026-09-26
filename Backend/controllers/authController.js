@@ -14,7 +14,7 @@ export const register = async (req, res, next) => {
 export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
-    const result = await authService.loginUser({ email, password });
+    const result = await authService.loginUser({ email, password, req });
     const message = result.isVerified === false
       ? 'Email verification required. Verification code has been sent to your inbox.'
       : 'Logged in successfully';
@@ -27,7 +27,7 @@ export const login = async (req, res, next) => {
 export const adminLogin = async (req, res, next) => {
   try {
     const { email, password } = req.body;
-    const result = await authService.adminLogin({ email, password });
+    const result = await authService.adminLogin({ email, password, req });
     return sendSuccess(res, result, result.message || 'Admin authentication successful', 200);
   } catch (error) {
     next(error);
@@ -40,7 +40,7 @@ export const verifyEmail = async (req, res, next) => {
     if (!email || !otp) {
       return sendError(res, 'Email and 6-digit OTP verification code are required', 400);
     }
-    const result = await authService.verifyEmailOtp({ email, otp });
+    const result = await authService.verifyEmailOtp({ email, otp, req });
     return sendSuccess(res, result, result.message || 'Email verified successfully', 200);
   } catch (error) {
     next(error);

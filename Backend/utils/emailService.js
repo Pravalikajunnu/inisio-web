@@ -6,13 +6,16 @@ dotenv.config();
 let cachedTestTransporter = null;
 
 /**
- * Get configured SMTP credentials from environment
+ * Get configured SMTP credentials from environment with robust alias matching
  */
 export const getSmtpConfig = () => {
   const user = (
     process.env.SMTP_USER ||
     process.env.EMAIL_USER ||
     process.env.GMAIL_USER ||
+    process.env.SMTP_USERNAME ||
+    process.env.MAIL_USER ||
+    process.env.MAIL_USERNAME ||
     ''
   ).trim();
 
@@ -21,10 +24,13 @@ export const getSmtpConfig = () => {
     process.env.EMAIL_PASS ||
     process.env.GMAIL_PASS ||
     process.env.GMAIL_APP_PASSWORD ||
+    process.env.SMTP_PASSWORD ||
+    process.env.MAIL_PASSWORD ||
+    process.env.MAIL_PASS ||
     ''
   ).trim();
 
-  // Strip quotes, wrapping spaces, or 4-block spaces (e.g. 'abcd efgh ijkl mnop')
+  // Strip wrapping quotes and internal spaces from 16-char Google App Passwords
   if (pass) {
     pass = pass.replace(/^['"]|['"]$/g, '').replace(/\s+/g, '');
   }
@@ -32,57 +38,73 @@ export const getSmtpConfig = () => {
   let host = (
     process.env.SMTP_HOST ||
     process.env.EMAIL_HOST ||
+    process.env.MAIL_HOST ||
     ''
   ).trim();
 
-  if (!host && user.toLowerCase().endsWith('@gmail.com')) {
+  const isGmail = (user && user.toLowerCase().endsWith('@gmail.com')) || (host && host.includes('gmail.com'));
+  if (!host && isGmail) {
     host = 'smtp.gmail.com';
   }
 
   const port = parseInt(
     process.env.SMTP_PORT ||
     process.env.EMAIL_PORT ||
-    (host.includes('gmail.com') ? '465' : '587'),
+    process.env.MAIL_PORT ||
+    (isGmail ? '587' : '587'),
     10
   );
 
   const isSecure = process.env.SMTP_SECURE === 'true' || port === 465;
 
-  return { user, pass, host, port, isSecure };
+  return { user, pass, host, port, isSecure, isGmail };
 };
 
 /**
- * Create custom SMTP transporter
+ * Create custom SMTP transporter with SSL/TLS resilience
  */
-export const createCustomTransporter = () => {
-  const { user, pass, host, port, isSecure } = getSmtpConfig();
+export const createCustomTransporter = (forcePort = null) => {
+  const { user, pass, host, port, isSecure, isGmail } = getSmtpConfig();
 
   if (!user || !pass || pass === 'your_smtp_password' || pass === 'password') {
     return null;
   }
 
+  const effectivePort = forcePort || port;
+  const effectiveSecure = effectivePort === 465;
+
   try {
-    if (host.includes('gmail.com') || user.toLowerCase().endsWith('@gmail.com')) {
+    if (isGmail || host === 'smtp.gmail.com') {
       return nodemailer.createTransport({
         service: 'gmail',
         auth: {
           user,
           pass,
         },
+        tls: {
+          rejectUnauthorized: false,
+        },
+        connectionTimeout: 10000,
+        greetingTimeout: 8000,
+        socketTimeout: 15000,
       });
     }
 
     return nodemailer.createTransport({
       host: host || 'smtp.gmail.com',
-      port,
-      secure: isSecure,
+      port: effectivePort,
+      secure: effectiveSecure,
       auth: {
         user,
         pass,
       },
       tls: {
         rejectUnauthorized: false,
+        minVersion: 'TLSv1.2',
       },
+      connectionTimeout: 10000,
+      greetingTimeout: 8000,
+      socketTimeout: 15000,
     });
   } catch (err) {
     console.warn('⚠️ SMTP Transporter build error:', err.message);
@@ -102,61 +124,85 @@ export const getFallbackTransporter = async () => {
 };
 
 /**
- * Send an email with automatic error resilience, strict timeout and delivery confirmation
+ * Send an email with automatic error resilience, retry on alternative port, and delivery confirmation
  */
 export const sendMailWithResilience = async (mailOptions, metadata = {}) => {
   const recipient = mailOptions.to;
   const { user, pass } = getSmtpConfig();
 
-  const senderFrom = process.env.EMAIL_FROM || (user ? `"Inisio Capital Advisory" <${user}>` : '"Inisio Capital Advisory" <no-reply@inisio.com>');
+  // For Gmail and custom SMTP, the "from" header must match the authenticated account
+  const senderFrom = user
+    ? (process.env.EMAIL_FROM && process.env.EMAIL_FROM.includes(user)
+        ? process.env.EMAIL_FROM
+        : `"Inisio Capital Advisory" <${user}>`)
+    : (process.env.EMAIL_FROM || '"Inisio Capital Advisory" <no-reply@inisio.com>');
   
   const optionsWithFrom = {
     from: senderFrom,
     ...mailOptions,
   };
 
-  // Try custom SMTP if credentials are provided with a strict 3-second timeout to prevent login/signup latency
+  // 1. Try primary custom SMTP if credentials are provided
   if (user && pass) {
     const customTransporter = createCustomTransporter();
     if (customTransporter) {
       try {
         const sendPromise = customTransporter.sendMail(optionsWithFrom);
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('SMTP_TIMEOUT')), 3000)
+          setTimeout(() => reject(new Error('SMTP_TIMEOUT')), 12000)
         );
 
         const info = await Promise.race([sendPromise, timeoutPromise]);
-        console.log(`✅ [Email Dispatched to Gmail] Verification OTP successfully sent to: ${recipient} (Message ID: ${info?.messageId || 'sent'})`);
-        return { success: true, messageId: info?.messageId, isFallback: false };
+        console.log(`✅ [Email Dispatched to SMTP] OTP successfully sent to: ${recipient} (Message ID: ${info?.messageId || 'sent'})`);
+        if (metadata.otp) {
+          console.log(`🔑 [Inisio Verification OTP] Recipient: ${recipient} | Code: ${metadata.otp} | Valid for 15 mins`);
+        }
+        return { success: true, messageId: info?.messageId, isFallback: false, otp: metadata.otp };
       } catch (smtpErr) {
         const errMsg = smtpErr?.message || '';
-        if (errMsg === 'SMTP_TIMEOUT') {
-          console.warn(`⏱️ [SMTP Timeout] Email dispatch to ${recipient} timed out after 3s. Fallback mode activated to ensure instant authentication.`);
-        } else {
-          console.warn(`⚠️ [Gmail SMTP Error] ${errMsg}`);
-          if (errMsg.includes('535') || errMsg.includes('Username and Password') || errMsg.includes('Invalid login')) {
-            console.warn(`🔑 [Gmail App Password Required] To send emails directly to Gmail inboxes, Gmail requires a 16-character Google App Password from https://myaccount.google.com/apppasswords`);
+        console.warn(`⚠️ [SMTP Primary Dispatch Error] ${errMsg}`);
+        
+        // 2. Retry on alternative port (587 STARTTLS or 465 SSL) if timeout or connection refused
+        if (errMsg.includes('TIMEOUT') || errMsg.includes('ECONNREFUSED') || errMsg.includes('ETIMEDOUT')) {
+          try {
+            console.log(`🔄 [SMTP Fallback] Retrying email delivery to ${recipient} via alternative port 587...`);
+            const fallbackPortTransporter = createCustomTransporter(587);
+            if (fallbackPortTransporter) {
+              const retryPromise = fallbackPortTransporter.sendMail(optionsWithFrom);
+              const retryTimeout = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('SMTP_RETRY_TIMEOUT')), 8000)
+              );
+              const retryInfo = await Promise.race([retryPromise, retryTimeout]);
+              console.log(`✅ [Email Dispatched via Port 587] OTP sent to: ${recipient}`);
+              return { success: true, messageId: retryInfo?.messageId, isFallback: false, otp: metadata.otp };
+            }
+          } catch (retryErr) {
+            console.warn(`⚠️ [SMTP Port 587 Retry Error] ${retryErr.message}`);
           }
+        }
+
+        if (errMsg.includes('535') || errMsg.includes('Username and Password') || errMsg.includes('Invalid login') || errMsg.includes('BadCredentials')) {
+          console.warn(`🔑 [Gmail App Password Notice] Gmail requires a 16-character Google App Password from https://myaccount.google.com/apppasswords`);
         }
       }
     }
   }
 
-  // Fallback to instantaneous in-process transport
+  // 3. Fallback to in-process transport to ensure registration/login is never blocked
   try {
     const fallback = await getFallbackTransporter();
     const info = await fallback.sendMail(optionsWithFrom);
     
     if (metadata.otp) {
-      console.log(`🔑 [Inisio Verification OTP] Recipient: ${recipient} | Code: ${metadata.otp} | Valid for 15 minutes`);
+      console.log(`🔑 [Inisio Verification OTP (Simulated/Dev)] Recipient: ${recipient} | Code: ${metadata.otp} | Valid for 15 minutes`);
     }
 
-    return { success: true, messageId: info?.messageId || 'test-sent', isFallback: true };
+    return { success: true, messageId: info?.messageId || 'simulated-sent', isFallback: true, otp: metadata.otp };
   } catch (err) {
     if (metadata.otp) {
-      console.log(`🔑 [Inisio Verification OTP] Recipient: ${recipient} | Code: ${metadata.otp}`);
+      console.log(`🔑 [Inisio Verification OTP (Direct Output)] Recipient: ${recipient} | Code: ${metadata.otp}`);
     }
-    return { success: true, simulated: true, isFallback: true, error: err.message };
+    return { success: true, simulated: true, isFallback: true, otp: metadata.otp, error: err.message };
   }
 };
 
@@ -337,52 +383,94 @@ export const sendPasswordResetEmail = async ({ to, name, otp, resetLink }) => {
 /**
  * Send Consultation Booking Confirmation Email
  */
-export const sendConsultationConfirmationEmail = async ({ to, name, preferredDate, preferredTime, topic, mode = 'Online Google Meet' }) => {
+export const sendConsultationConfirmationEmail = async ({
+  to,
+  name,
+  fullName,
+  companyName,
+  company,
+  projectCostCr,
+  capexAmount,
+  totalCostCr,
+}) => {
+  const promoterName = (name || fullName || 'Promoter').trim();
+  const rawCompany = (companyName || company || '').trim();
+  const companyDisplay = rawCompany ? rawCompany : 'your company';
+  
+  const rawCapex = projectCostCr || capexAmount || totalCostCr || '';
+  const digitsCapex = String(rawCapex).replace(/[₹\s,a-zA-Z]/g, '').trim();
+  const capexDisplay = digitsCapex ? `₹${digitsCapex} Cr ` : (rawCapex ? `₹${rawCapex} ` : '');
+
+  const textContent = `Hi ${promoterName},
+
+Thanks for reaching out. We have successfully received your consultation request for ${companyDisplay} regarding your ${capexDisplay}project.
+
+A Senior Advisory CA will review your submission and contact you within 24 hours to discuss your bankability and debt syndication strategy.
+
+If you have immediate questions, you can reach our advisory desk directly on WhatsApp at +91 63020 26462.
+
+Best regards,
+
+The Inisio Advisory Team`;
+
   const htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Consultation Confirmed</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Inisio Consultation is Confirmed</title>
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #0f172a;">
-  <div style="max-width: 540px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0;">
-    <div style="background-color: #059669; padding: 24px 32px; text-align: center;">
-      <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800;">
-        1-on-1 Consultation Confirmed
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #0f172a; line-height: 1.6;">
+  <div style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06); border: 1px solid #e2e8f0;">
+    
+    <!-- Brand Header -->
+    <div style="background-color: #1e3a8a; padding: 28px 32px; text-align: center;">
+      <div style="display: inline-block; width: 44px; height: 44px; line-height: 44px; background-color: #ffffff; color: #1e3a8a; border-radius: 12px; font-weight: 900; font-size: 20px; margin-bottom: 12px;">
+        IN
+      </div>
+      <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.5px;">
+        INISIO CAPITAL
       </h1>
-      <p style="color: #d1fae5; margin: 4px 0 0 0; font-size: 13px;">
-        Inisio Project Advisory Desk
+      <p style="color: #bfdbfe; margin: 4px 0 0 0; font-size: 13px;">
+        Greenfield Project Advisory & Bank Syndication Desk
       </p>
     </div>
+
+    <!-- Body -->
     <div style="padding: 32px;">
-      <p style="font-size: 14px; line-height: 22px; color: #475569; margin-top: 0;">
-        Dear <strong>${name}</strong>,<br/>
-        Your project advisory consultation has been scheduled with our Senior Project Finance Specialists.
+      <p style="font-size: 15px; color: #0f172a; margin-top: 0; margin-bottom: 16px;">
+        Hi <strong>${promoterName}</strong>,
       </p>
-      <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 18px; margin: 20px 0;">
-        <table style="width: 100%; font-size: 13px; color: #166534; border-collapse: collapse;">
-          <tr>
-            <td style="padding: 4px 0; font-weight: 600;">Date:</td>
-            <td style="padding: 4px 0; text-align: right;">${preferredDate || 'Scheduled within 24 Hrs'}</td>
-          </tr>
-          <tr>
-            <td style="padding: 4px 0; font-weight: 600;">Time Slot:</td>
-            <td style="padding: 4px 0; text-align: right;">${preferredTime || '11:00 AM - 12:00 PM IST'}</td>
-          </tr>
-          <tr>
-            <td style="padding: 4px 0; font-weight: 600;">Meeting Mode:</td>
-            <td style="padding: 4px 0; text-align: right;">${mode}</td>
-          </tr>
-          <tr>
-            <td style="padding: 4px 0; font-weight: 600;">Advisory Focus:</td>
-            <td style="padding: 4px 0; text-align: right;">${topic || 'Greenfield Project Bankability'}</td>
-          </tr>
-        </table>
+
+      <p style="font-size: 14px; line-height: 22px; color: #334155; margin-bottom: 18px;">
+        Thanks for reaching out. We have successfully received your consultation request for <strong>${companyDisplay}</strong> regarding your <strong>${capexDisplay}project</strong>.
+      </p>
+
+      <div style="background-color: #eff6ff; border-left: 4px solid #2563eb; padding: 16px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0; font-size: 13.5px; line-height: 20px; color: #1e3a8a; font-weight: 500;">
+          A Senior Advisory CA will review your submission and contact you within 24 hours to discuss your bankability and debt syndication strategy.
+        </p>
       </div>
-      <p style="font-size: 13px; color: #64748b;">
-        A calendar invitation with the meeting room link has been dispatched. Our team will review your project parameters prior to the call.
+
+      <p style="font-size: 14px; line-height: 22px; color: #334155; margin-bottom: 24px;">
+        If you have immediate questions, you can reach our advisory desk directly on WhatsApp at <a href="https://wa.me/916302026462" style="color: #2563eb; font-weight: 700; text-decoration: none;">+91 63020 26462</a>.
       </p>
+
+      <div style="text-align: center; margin: 24px 0;">
+        <a href="https://wa.me/916302026462" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #25D366; color: #ffffff; font-weight: 700; font-size: 13.5px; padding: 12px 24px; border-radius: 10px; text-decoration: none; box-shadow: 0 2px 8px rgba(37, 211, 102, 0.35);">
+          💬 Connect with Advisory Desk on WhatsApp
+        </a>
+      </div>
+
+      <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 24px;">
+        <p style="font-size: 14px; color: #334155; margin: 0 0 4px 0; font-weight: 600;">
+          Best regards,
+        </p>
+        <p style="font-size: 14px; color: #1e3a8a; margin: 0; font-weight: 700;">
+          The Inisio Advisory Team
+        </p>
+      </div>
     </div>
   </div>
 </body>
@@ -392,8 +480,8 @@ export const sendConsultationConfirmationEmail = async ({ to, name, preferredDat
   const result = await sendMailWithResilience(
     {
       to,
-      subject: `Inisio Advisory Consultation Confirmed - ${name}`,
-      text: `Your consultation is scheduled on ${preferredDate || 'soon'}.`,
+      subject: `Your Inisio Consultation is Confirmed`,
+      text: textContent,
       html: htmlContent,
     },
     { type: 'consultation' }

@@ -339,7 +339,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       className="w-full py-2.5 bg-blue-600 active:bg-blue-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
                     >
                       <LogIn className="w-4 h-4" />
-                      <span>Login to Portal</span>
+                      <span>Login</span>
                     </button>
                   </div>
                 )}

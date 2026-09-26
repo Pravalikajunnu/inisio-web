@@ -11,7 +11,7 @@ import { validateBody, validateIndianPhone } from '../middleware/validateMiddlew
 const router = express.Router();
 
 // Public booking
-router.post('/', validateBody(['fullName', 'email', 'phone']), validateIndianPhone('phone'), createConsultation);
+router.post('/', validateBody(['fullName', 'phone']), validateIndianPhone('phone'), createConsultation);
 
 // Advisor & Admin routes (Superadmin can view, but only admin/ca/prosync_admin can update status)
 router.get('/', authenticateUser, authorizeRoles('admin', 'superadmin', 'ca', 'prosync_admin'), getConsultations);

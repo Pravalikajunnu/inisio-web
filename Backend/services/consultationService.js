@@ -1,4 +1,6 @@
 import Consultation from '../models/Consultation.js';
+import Lead from '../models/Lead.js';
+import Notification from '../models/Notification.js';
 import { isDBConnected } from '../config/db.js';
 import { sendConsultationConfirmationEmail } from '../utils/emailService.js';
 
@@ -26,14 +28,47 @@ export const createConsultation = async (data) => {
     memoryConsultations.unshift(createdItem);
   }
 
+  // Ensure a Lead record is created/linked so it shows in Admin Leads & Pipelines
+  try {
+    if (isDBConnected()) {
+      await Lead.create({
+        fullName: createdItem.fullName || 'Consultation Lead',
+        mobile: createdItem.phone || 'N/A',
+        email: createdItem.email || 'N/A',
+        projectName: createdItem.companyName ? `${createdItem.companyName} Greenfield` : `${createdItem.industry || 'Advisory'} Project`,
+        industry: createdItem.industry || 'General Sector',
+        location: 'India',
+        totalCostCr: createdItem.projectCostCr || '0',
+        loanRequiredCr: '0',
+        source: 'Advisory Call Booked',
+        downloadedPDF: false,
+        notes: createdItem.additionalNotes || createdItem.message || '',
+        consultationAssignedTo: createdItem.assignedAdvisor || 'Prosync',
+        consultationStatus: 'Pending',
+      });
+
+      await Notification.create({
+        title: 'New Consultation Booking',
+        message: `${createdItem.fullName || 'A promoter'} booked a free 1-on-1 advisory session for ₹${createdItem.projectCostCr || 'N/A'} Cr project.`,
+        type: 'consultation',
+        read: false,
+      });
+    }
+  } catch (err) {
+    console.warn('Lead/Notification sync in createConsultation warning:', err.message);
+  }
+
   // Dispatch email notification via Nodemailer
   if (createdItem.email) {
     sendConsultationConfirmationEmail({
       to: createdItem.email,
       name: createdItem.fullName || 'Valued Promoter',
+      companyName: createdItem.companyName || '',
+      projectCostCr: createdItem.projectCostCr || '',
+      capexAmount: createdItem.projectCostCr || '',
       preferredDate: createdItem.preferredDate,
       preferredTime: createdItem.preferredTime,
-      topic: createdItem.projectStage || createdItem.message || 'Greenfield Project Bankability Consultation',
+      topic: createdItem.projectStage || createdItem.industry || createdItem.message || 'Greenfield Project Bankability Consultation',
     }).catch((e) => console.warn('Consultation confirmation email error:', e.message));
   }
 

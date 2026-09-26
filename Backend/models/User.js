@@ -62,6 +62,21 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    loginCount: {
+      type: Number,
+      default: 0,
+    },
+    lastLogin: {
+      date: { type: String, default: null },
+      time: { type: String, default: null },
+      city: { type: String, default: null },
+      state: { type: String, default: null },
+      country: { type: String, default: null },
+      ipAddress: { type: String, default: null },
+      device: { type: String, default: null },
+      browser: { type: String, default: null },
+      timestamp: { type: Date, default: null },
+    },
   },
   {
     timestamps: true,
@@ -87,27 +102,12 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
   if (!enteredPassword || !this.password) return false;
   
   // Direct bcrypt comparison
-  const isMatch = await bcrypt.compare(enteredPassword, this.password);
-  if (isMatch) return true;
-
-  // Handle fallback matching for seed demo accounts if password was seeded as default
-  const cleanEmail = this.email ? this.email.toLowerCase().trim() : '';
-  if (cleanEmail === 'inisio2026@gmail.com' || cleanEmail === 'junnupravalika59@gmail.com') {
-    if (enteredPassword === 'inisio2026' || enteredPassword === 'admin' || enteredPassword === 'Password@123') {
-      // Re-hash and update to user's entered password
-      this.password = enteredPassword;
-      await this.save().catch(() => {});
-      return true;
-    }
-  } else if (cleanEmail === 'pravalikajunnu14@gmail.com') {
-    if (enteredPassword === 'pravalika123' || enteredPassword === 'Password@123') {
-      this.password = enteredPassword;
-      await this.save().catch(() => {});
-      return true;
-    }
+  try {
+    return await bcrypt.compare(enteredPassword, this.password);
+  } catch (err) {
+    console.error('[User.matchPassword] bcrypt error:', err.message);
+    return false;
   }
-
-  return false;
 };
 
 const User = mongoose.models.User || mongoose.model('User', userSchema);

@@ -2,6 +2,18 @@
 import { AuthUser, UserRole } from '../types';
 import { escapeCSV, downloadCSV, getStoredLeads, LeadRecord } from './leadStore';
 
+export interface UserLoginLocation {
+  date?: string;
+  time?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  ipAddress?: string;
+  device?: string;
+  browser?: string;
+  timestamp?: string;
+}
+
 export interface RegisteredUserRecord {
   id: string;
   name: string;
@@ -14,6 +26,7 @@ export interface RegisteredUserRecord {
   loginCount: number;
   projectsCount?: number;
   status: 'active' | 'suspended' | 'pending';
+  lastLogin?: UserLoginLocation;
 }
 
 const REGISTERED_USERS_KEY = 'inisio_all_registered_users_v1';
@@ -53,10 +66,11 @@ export async function fetchUsersFromBackend(): Promise<RegisteredUserRecord[]> {
           company: u.company || '',
           role: u.role || 'user',
           createdAt: u.createdAt || new Date().toISOString(),
-          lastLoginAt: u.lastLoginAt || new Date().toISOString(),
+          lastLoginAt: u.lastLogin?.timestamp || u.lastLoginAt || new Date().toISOString(),
           loginCount: u.loginCount || 1,
           projectsCount: u.projectsCount !== undefined ? u.projectsCount : 0,
           status: u.status || 'active',
+          lastLogin: u.lastLogin,
         }));
 
         localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(mapped));
@@ -151,6 +165,9 @@ export function exportUsersToCSV(usersToExport?: RegisteredUserRecord[], leads?:
     'Account Status',
     'Registration Date',
     'Last Login Date & Time',
+    'Last Login Location (City/State/Country)',
+    'IP Address',
+    'Device & Browser',
     'Total Login Sessions',
     'Associated Projects Count',
     'Associated Projects List'
@@ -159,7 +176,18 @@ export function exportUsersToCSV(usersToExport?: RegisteredUserRecord[], leads?:
   const rows = users.map(u => {
     const userProjects = allLeads.filter(l => l.email && u.email && l.email.toLowerCase().trim() === u.email.toLowerCase().trim());
     const regDate = u.createdAt ? (!isNaN(new Date(u.createdAt).getTime()) ? new Date(u.createdAt).toLocaleDateString('en-IN') : u.createdAt) : '';
-    const lastLogin = u.lastLoginAt ? (!isNaN(new Date(u.lastLoginAt).getTime()) ? new Date(u.lastLoginAt).toLocaleString('en-IN') : u.lastLoginAt) : '';
+    const lastLogin = u.lastLogin?.date && u.lastLogin?.time
+      ? `${u.lastLogin.date} ${u.lastLogin.time}`
+      : u.lastLoginAt ? (!isNaN(new Date(u.lastLoginAt).getTime()) ? new Date(u.lastLoginAt).toLocaleString('en-IN') : u.lastLoginAt) : '';
+
+    const locationStr = u.lastLogin
+      ? [u.lastLogin.city, u.lastLogin.state, u.lastLogin.country].filter(Boolean).join(', ')
+      : 'India';
+
+    const ipStr = u.lastLogin?.ipAddress || '—';
+    const deviceBrowserStr = u.lastLogin
+      ? `${u.lastLogin.device || 'Desktop'} / ${u.lastLogin.browser || 'Browser'}`
+      : '—';
 
     return [
       escapeCSV(u.id || ''),
@@ -171,6 +199,9 @@ export function exportUsersToCSV(usersToExport?: RegisteredUserRecord[], leads?:
       escapeCSV(u.status || 'active'),
       escapeCSV(regDate),
       escapeCSV(lastLogin),
+      escapeCSV(locationStr),
+      escapeCSV(ipStr),
+      escapeCSV(deviceBrowserStr),
       escapeCSV(u.loginCount || 1),
       escapeCSV(userProjects.length),
       escapeCSV(userProjects.map(p => p.projectName).filter(Boolean).join('; ') || 'None')

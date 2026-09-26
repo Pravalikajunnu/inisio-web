@@ -2,6 +2,7 @@ import User from '../models/User.js';
 import { generateToken } from '../utils/generateToken.js';
 import { isDBConnected } from '../config/db.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../utils/emailService.js';
+import { captureLoginMetadata } from '../utils/geoIpService.js';
 import {
   memoryUsers,
   findMemoryUserByEmail,
@@ -11,6 +12,32 @@ import {
   AUTHORIZED_ADMIN_EMAILS,
 } from '../utils/memoryUserStore.js';
 import bcrypt from 'bcryptjs';
+
+/**
+ * Record login metadata (date, time, location, IP, device, browser) linked to user
+ */
+const recordSuccessfulLogin = async (userObj, req) => {
+  try {
+    const meta = await captureLoginMetadata(req);
+    if (userObj) {
+      if (typeof userObj.save === 'function') {
+        // Mongoose document
+        userObj.lastLogin = meta;
+        userObj.loginCount = (userObj.loginCount || 0) + 1;
+        await userObj.save();
+      } else {
+        // In-memory user object
+        userObj.lastLogin = meta;
+        userObj.loginCount = (userObj.loginCount || 0) + 1;
+        userObj.lastLoginAt = meta.timestamp;
+      }
+    }
+    return meta;
+  } catch (err) {
+    console.warn('[recordSuccessfulLogin] Error recording login audit metadata:', err.message);
+    return null;
+  }
+};
 
 /**
  * Helper to generate 6-digit numeric OTP
@@ -179,12 +206,12 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
         verificationExpires: otpExpiry,
       });
 
-      // Send verification email in background (non-blocking)
+      // Dispatch verification email with resilience
       sendVerificationEmail({
         to: cleanEmail,
         name: user.name,
         otp,
-      }).catch((e) => console.warn('[Email] Non-blocking dispatch notice:', e.message));
+      }).catch((e) => console.warn('[Email] Background dispatch notice:', e.message));
 
       const feedbackMessage = `Account created! A 6-digit verification code has been dispatched to ${cleanEmail}. Please enter the code to activate your account.`;
 
@@ -222,7 +249,7 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
         to: cleanEmail,
         name: userExists.name,
         otp,
-      }).catch((e) => console.warn('[Email] Non-blocking dispatch notice:', e.message));
+      }).catch((e) => console.warn('[Email] Background dispatch notice:', e.message));
 
       return {
         _id: userExists._id,
@@ -264,7 +291,7 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
     to: cleanEmail,
     name: newUser.name,
     otp,
-  }).catch((e) => console.warn('[Email] Non-blocking dispatch notice:', e.message));
+  }).catch((e) => console.warn('[Email] Background dispatch notice:', e.message));
 
   const feedbackMessage = `Account created! A 6-digit verification code has been dispatched to ${cleanEmail}. Please enter the code to activate your account.`;
 
@@ -285,7 +312,7 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
 /**
  * Verify Email with 6-Digit OTP Code
  */
-export const verifyEmailOtp = async ({ email, otp }) => {
+export const verifyEmailOtp = async ({ email, otp, req }) => {
   if (!email || !otp) {
     const error = new Error('Email and 6-digit OTP verification code are required');
     error.statusCode = 400;
@@ -304,6 +331,7 @@ export const verifyEmailOtp = async ({ email, otp }) => {
       }
 
       if (user.isVerified) {
+        await recordSuccessfulLogin(user, req);
         const token = generateToken({
           id: user._id,
           email: user.email,
@@ -342,7 +370,7 @@ export const verifyEmailOtp = async ({ email, otp }) => {
       user.isVerified = true;
       user.verificationOtp = null;
       user.verificationExpires = null;
-      await user.save();
+      await recordSuccessfulLogin(user, req);
 
       const token = generateToken({
         id: user._id,
@@ -383,6 +411,7 @@ export const verifyEmailOtp = async ({ email, otp }) => {
   }
 
   if (user.isVerified) {
+    await recordSuccessfulLogin(user, req);
     const token = generateToken({
       id: user._id,
       email: user.email,
@@ -421,6 +450,7 @@ export const verifyEmailOtp = async ({ email, otp }) => {
   user.isVerified = true;
   user.verificationOtp = null;
   user.verificationExpires = null;
+  await recordSuccessfulLogin(user, req);
 
   const token = generateToken({
     id: user._id,
@@ -493,12 +523,12 @@ export const sendVerificationOtp = async (email) => {
     throw error;
   }
 
-  // Send email via Nodemailer
-  await sendVerificationEmail({
+  // Send email via Nodemailer with non-blocking resilience
+  sendVerificationEmail({
     to: cleanEmail,
     name: userName,
     otp,
-  });
+  }).catch((e) => console.warn('[Email] Background dispatch notice in sendVerificationOtp:', e.message));
 
   return {
     email: cleanEmail,
@@ -510,7 +540,7 @@ export const sendVerificationOtp = async (email) => {
 /**
  * Login user strictly from database and ensure email is verified
  */
-export const loginUser = async ({ email, password }) => {
+export const loginUser = async ({ email, password, req }) => {
   if (!email) {
     const error = new Error('Please provide an email address');
     error.statusCode = 400;
@@ -547,7 +577,7 @@ export const loginUser = async ({ email, password }) => {
             to: cleanEmail,
             name: user.name,
             otp,
-          }).catch((e) => console.warn('[Email] Non-blocking dispatch notice:', e.message));
+          }).catch((e) => console.warn('[Email] Background dispatch notice:', e.message));
 
           return {
             _id: user._id,
@@ -561,6 +591,8 @@ export const loginUser = async ({ email, password }) => {
             message: `Email verification required. A 6-digit verification code has been dispatched to ${cleanEmail}.`,
           };
         }
+
+        await recordSuccessfulLogin(user, req);
 
         const token = generateToken({
           id: user._id,
@@ -637,7 +669,7 @@ export const loginUser = async ({ email, password }) => {
       to: cleanEmail,
       name: user.name,
       otp,
-    }).catch((e) => console.warn('[Email] Non-blocking dispatch notice:', e.message));
+    }).catch((e) => console.warn('[Email] Background dispatch notice:', e.message));
 
     return {
       _id: user._id,
@@ -648,9 +680,13 @@ export const loginUser = async ({ email, password }) => {
       phone: user.phone,
       isVerified: false,
       requiresVerification: true,
+      previewOtp: otp,
+      otp,
       message: `Email verification required. A 6-digit verification code has been dispatched to ${cleanEmail}.`,
     };
   }
+
+  await recordSuccessfulLogin(user, req);
 
   const token = generateToken({
     id: user._id,
@@ -827,13 +863,13 @@ export const forgotPassword = async (email, clientOrigin = '') => {
 
   const resetLink = `${baseUrl}/?action=reset-password&email=${encodeURIComponent(cleanEmail)}&otp=${otp}&token=${otp}`;
 
-  // Send password reset email via Nodemailer
-  await sendPasswordResetEmail({
+  // Send password reset email via Nodemailer with non-blocking resilience
+  sendPasswordResetEmail({
     to: cleanEmail,
     name: userName,
     otp,
     resetLink,
-  });
+  }).catch((e) => console.warn('[Email] Background dispatch notice in forgotPassword:', e.message));
 
   const maskedEmail = cleanEmail.replace(/^(.{2})(.*)(@.*)$/, '$1***$3');
   return {
@@ -1035,7 +1071,7 @@ export const resetPassword = async ({ email, otp, newPassword }) => {
  * Dedicated Admin & Super Admin Login
  * Exclusively restricted to inisio2026@gmail.com and junnupravalika59@gmail.com
  */
-export const adminLogin = async ({ email, password }) => {
+export const adminLogin = async ({ email, password, req }) => {
   if (!email || !password) {
     const error = new Error('Please enter both administrative email and password');
     error.statusCode = 400;
@@ -1067,6 +1103,8 @@ export const adminLogin = async ({ email, password }) => {
           user.role = role;
           await user.save();
         }
+
+        await recordSuccessfulLogin(user, req);
 
         const token = generateToken({
           id: user._id,
@@ -1121,6 +1159,8 @@ export const adminLogin = async ({ email, password }) => {
 
   const role = cleanEmail === 'junnupravalika59@gmail.com' ? 'superadmin' : 'admin';
   memUser.role = role;
+
+  await recordSuccessfulLogin(memUser, req);
 
   const token = generateToken({
     id: memUser._id,

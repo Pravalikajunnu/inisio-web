@@ -3,8 +3,7 @@ import {
   TrendingUp,
   MapPin,
   ShieldCheck,
-  PhoneCall,
-  Lock
+  PhoneCall
 } from 'lucide-react';
 
 interface FooterProps {
@@ -18,7 +17,6 @@ export const Footer: React.FC<FooterProps> = ({
   onSelectTab,
   onOpenAssessment,
   onOpenConsultation,
-  onOpenAdmin
 }) => {
   const handleNav = (tab: string) => {
     if (onSelectTab) {
@@ -143,20 +141,6 @@ export const Footer: React.FC<FooterProps> = ({
             <span className="flex items-center gap-1.5 text-blue-400 font-semibold text-xs">
               <ShieldCheck className="w-4 h-4" /> 256-Bit Encrypted
             </span>
-
-            {/* Dedicated Admin Portal Lock Button */}
-            {onOpenAdmin && (
-              <button
-                type="button"
-                onClick={onOpenAdmin}
-                className="group flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-blue-400 transition-all cursor-pointer text-xs"
-                title="Admin & Super Admin Portal Login"
-                aria-label="Admin Portal"
-              >
-                <Lock className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-400 transition-colors" />
-                <span className="font-semibold text-[11px] tracking-wide">Admin Portal</span>
-              </button>
-            )}
           </div>
         </div>
 

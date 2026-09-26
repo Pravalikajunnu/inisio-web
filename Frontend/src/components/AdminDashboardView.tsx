@@ -41,6 +41,7 @@ import {
   UserPlus,
   IndianRupee,
   PhoneCall,
+  MapPin,
   Calendar,
   Mail
 } from 'lucide-react';
@@ -113,9 +114,10 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
         company: u.company || '',
         role: u.role || 'user',
         createdAt: u.createdAt || '',
-        lastLoginAt: u.lastLoginAt || '',
+        lastLoginAt: u.lastLogin?.timestamp || u.lastLoginAt || '',
         loginCount: u.loginCount || 0,
-        status: u.status || 'active'
+        status: u.status || 'active',
+        lastLogin: u.lastLogin,
       })));
     } catch (error) {
       setLeads([]);
@@ -483,32 +485,45 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[800px] text-left text-xs">
+              <table className="w-full min-w-[950px] text-left text-xs">
                 <thead>
                   <tr className="border-b border-zinc-200 text-zinc-400 font-semibold uppercase text-[10px]">
                     <th className="py-2.5 px-3">User &amp; Organization</th>
                     <th className="py-2.5 px-3">Contact Details</th>
-                    <th className="py-2.5 px-3">Role &amp; Privilege</th>
+                    <th className="py-2.5 px-3">Role &amp; Privileges</th>
                     <th className="py-2.5 px-3">Last Active Login</th>
-                    <th className="py-2.5 px-3">Login Count</th>
+                    <th className="py-2.5 px-3">Location &amp; IP Network</th>
+                    <th className="py-2.5 px-3">Device &amp; Browser</th>
+                    <th className="py-2.5 px-3">Sessions</th>
                     <th className="py-2.5 px-3 text-right">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 text-zinc-700">
                   {filteredUsers.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="p-8 text-center text-zinc-400 text-xs">
+                      <td colSpan={8} className="p-8 text-center text-zinc-400 text-xs">
                         No registered users match your search.
                       </td>
                     </tr>
                   ) : (
                     filteredUsers.map(u => {
-                      const lastLoginFormatted = new Date(u.lastLoginAt).toLocaleDateString('en-IN', {
-                        day: '2-digit',
-                        month: 'short',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      });
+                      const lastLoginFormatted = u.lastLogin?.date && u.lastLogin?.time
+                        ? `${u.lastLogin.date}, ${u.lastLogin.time}`
+                        : u.lastLoginAt
+                        ? new Date(u.lastLoginAt).toLocaleDateString('en-IN', {
+                            day: '2-digit',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })
+                        : '—';
+
+                      const locationCity = u.lastLogin?.city || 'Hyderabad (Dev/Local)';
+                      const locationState = u.lastLogin?.state || 'Telangana';
+                      const locationCountry = u.lastLogin?.country || 'India';
+                      const ipAddress = u.lastLogin?.ipAddress || '127.0.0.1';
+                      const device = u.lastLogin?.device || 'Desktop (Windows)';
+                      const browser = u.lastLogin?.browser || 'Google Chrome';
 
                       const userProjects = leads.filter(l => (l.email || '').toLowerCase() === (u.email || '').toLowerCase());
 
@@ -517,11 +532,14 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
                           <td className="py-3 px-3">
                             <div className="font-bold text-zinc-900">{u.name}</div>
                             <div className="text-[11px] text-zinc-500">{u.company || 'Greenfield Enterprise'}</div>
+                            <div className="text-[10px] text-zinc-400 mt-0.5">
+                              Joined: {new Date(u.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </div>
                           </td>
 
                           <td className="py-3 px-3">
                             <div className="font-medium text-blue-700">{u.email}</div>
-                            <div className="text-[11px] text-zinc-400 font-mono">{u.phone || 'N/A'}</div>
+                            <div className="text-[11px] text-zinc-500 font-mono mt-0.5">{u.phone || 'N/A'}</div>
                           </td>
 
                           <td className="py-3 px-3">
@@ -530,6 +548,8 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
                                 ? 'bg-purple-50 text-purple-700 border border-purple-200'
                                 : u.role === 'ca'
                                 ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                : u.role === 'prosync' || u.role === 'prosync_admin'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                 : 'bg-blue-50 text-blue-700 border border-blue-200'
                             }`}>
                               {u.role}
@@ -552,16 +572,46 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
                           </td>
 
                           <td className="py-3 px-3 whitespace-nowrap">
-                            <div className="font-medium text-zinc-800">{lastLoginFormatted}</div>
-                            <div className="text-[10px] text-zinc-400">Created: {new Date(u.createdAt).toLocaleDateString('en-IN')}</div>
+                            <div className="font-semibold text-zinc-800 flex items-center gap-1.5">
+                              <Clock className="w-3 h-3 text-blue-600" />
+                              <span>{lastLoginFormatted}</span>
+                            </div>
+                            <span className="text-[10px] text-zinc-400 block mt-0.5">Recorded auto-audit</span>
                           </td>
 
                           <td className="py-3 px-3 whitespace-nowrap">
-                            <span className="font-bold text-zinc-900">{u.loginCount || 1}</span>
-                            <span className="text-zinc-400 text-[11px] ml-1">sessions</span>
+                            <div className="flex items-center gap-1 text-zinc-900 font-semibold text-xs">
+                              <MapPin className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                              <span>{locationCity}, {locationState}</span>
+                            </div>
+                            <div className="flex items-center gap-1 mt-1">
+                              <span className="px-1.5 py-0.5 rounded bg-zinc-100 border border-zinc-200 font-mono text-[10px] text-zinc-600">
+                                IP: {ipAddress}
+                              </span>
+                              <span className="text-[10px] text-zinc-400">{locationCountry}</span>
+                            </div>
                           </td>
 
-                          <td className="py-3 px-3 text-right">
+                          <td className="py-3 px-3 whitespace-nowrap">
+                            <div className="flex items-center gap-1 text-zinc-800 text-xs font-medium">
+                              {device.toLowerCase().includes('mobile') ? (
+                                <Smartphone className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                              ) : (
+                                <Laptop className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
+                              )}
+                              <span>{device}</span>
+                            </div>
+                            <span className="text-[10px] text-zinc-500 block mt-0.5">
+                              {browser}
+                            </span>
+                          </td>
+
+                          <td className="py-3 px-3 whitespace-nowrap">
+                            <span className="font-bold text-zinc-900 text-sm">{u.loginCount || 1}</span>
+                            <span className="text-zinc-400 text-[10px] ml-1">logins</span>
+                          </td>
+
+                          <td className="py-3 px-3 text-right whitespace-nowrap">
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                               <span>Active</span>

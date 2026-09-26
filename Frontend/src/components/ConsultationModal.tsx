@@ -21,17 +21,34 @@ export const ConsultationModal: React.FC<ConsultationModalProps> = ({
   isOpen,
   onClose
 }) => {
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    companyName: '',
-    industry: '',
-    projectCostCr: '',
-    additionalNotes: ''
+  const [formData, setFormData] = useState(() => {
+    let prefillName = '';
+    let prefillEmail = '';
+    let prefillPhone = '';
+    let prefillCompany = '';
+    try {
+      const saved = localStorage.getItem('inisio_active_user');
+      if (saved) {
+        const u = JSON.parse(saved);
+        prefillName = u.name || '';
+        prefillEmail = u.email || '';
+        prefillPhone = u.phone || '';
+        prefillCompany = u.company || '';
+      }
+    } catch {}
+    return {
+      fullName: prefillName,
+      email: prefillEmail,
+      phone: prefillPhone,
+      companyName: prefillCompany,
+      industry: '',
+      projectCostCr: '',
+      additionalNotes: ''
+    };
   });
 
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
@@ -44,7 +61,7 @@ export const ConsultationModal: React.FC<ConsultationModalProps> = ({
       (formData.email ? `• Email: ${formData.email}\n` : '') +
       (formData.companyName ? `• Company: ${formData.companyName}\n` : '') +
       `• Industry Sector: ${formData.industry}\n` +
-      `• Project Budget: ${formData.projectCostCr}` +
+      `• Project Budget: ${formData.projectCostCr ? `₹ ${formData.projectCostCr} Cr` : 'N/A'}` +
       (formData.additionalNotes ? `\n• Notes: ${formData.additionalNotes}` : '');
 
     return `https://wa.me/${targetWhatsAppNumber}?text=${encodeURIComponent(text)}`;
@@ -58,37 +75,43 @@ export const ConsultationModal: React.FC<ConsultationModalProps> = ({
       return;
     }
 
-    await api.consultations.create({
-      fullName: formData.fullName,
-      email: formData.email,
-      phone: formData.phone,
-      companyName: formData.companyName,
-      industry: formData.industry,
-      projectCostCr: formData.projectCostCr,
-      additionalNotes: formData.additionalNotes,
-      assignedAdvisor: 'Prosync',
-      status: 'pending'
-    }).catch(() => undefined);
+    setIsSubmitting(true);
 
-    await saveLeadRecord({
-      fullName: formData.fullName || 'Consultation Lead',
-      mobile: formData.phone || 'N/A',
-      email: formData.email || 'N/A',
-      projectName: formData.companyName ? `${formData.companyName} Greenfield` : `${formData.industry} Project`,
-      industry: formData.industry || 'General Sector',
-      location: 'India',
-      totalCostCr: formData.projectCostCr || 'N/A',
-      loanRequiredCr: 'N/A',
-      source: 'Advisory Call Booked',
-      downloadedPDF: false,
-      notes: formData.additionalNotes,
-      consultationAssignedTo: 'Prosync',
-      consultationStatus: 'New'
-    });
+    try {
+      await api.consultations.create({
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        companyName: formData.companyName,
+        industry: formData.industry,
+        projectCostCr: formData.projectCostCr,
+        additionalNotes: formData.additionalNotes,
+        assignedAdvisor: 'Prosync',
+        status: 'pending'
+      }).catch(() => undefined);
 
-    const whatsappUrl = constructWhatsAppUrl();
-    window.open(whatsappUrl, '_blank');
-    setIsSubmitted(true);
+      await saveLeadRecord({
+        fullName: formData.fullName || 'Consultation Lead',
+        mobile: formData.phone || 'N/A',
+        email: formData.email || 'N/A',
+        projectName: formData.companyName ? `${formData.companyName} Greenfield` : `${formData.industry || 'Advisory'} Project`,
+        industry: formData.industry || 'General Sector',
+        location: 'India',
+        totalCostCr: formData.projectCostCr || 'N/A',
+        loanRequiredCr: 'N/A',
+        source: 'Advisory Call Booked',
+        downloadedPDF: false,
+        notes: formData.additionalNotes,
+        consultationAssignedTo: 'Prosync',
+        consultationStatus: 'Pending'
+      });
+
+      const whatsappUrl = constructWhatsAppUrl();
+      window.open(whatsappUrl, '_blank');
+      setIsSubmitted(true);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -148,6 +171,28 @@ export const ConsultationModal: React.FC<ConsultationModalProps> = ({
               </div>
 
               <div className="space-y-1">
+                <label className="font-bold text-gray-800 block">Email Address</label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="name@company.com (for confirmation)"
+                  className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-gray-800 block">Company / Entity Name</label>
+                <input
+                  type="text"
+                  value={formData.companyName}
+                  onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                  placeholder="e.g. Acme Industries Ltd"
+                  className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+                />
+              </div>
+
+              <div className="space-y-1">
                 <label className="font-bold text-gray-800 block">Industry Sector *</label>
                 <select
                   required
@@ -163,12 +208,12 @@ export const ConsultationModal: React.FC<ConsultationModalProps> = ({
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold text-gray-800 block">Project Budget</label>
+                <label className="font-bold text-gray-800 block">Project Budget (₹ Cr)</label>
                 <input
                   type="text"
                   value={formData.projectCostCr}
                   onChange={(e) => setFormData({ ...formData, projectCostCr: e.target.value })}
-                  placeholder="Enter project budget in Crores"
+                  placeholder="e.g. 25 Cr"
                   className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-hidden font-medium"
                 />
               </div>

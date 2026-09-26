@@ -40,7 +40,7 @@ export const getAllLeads = async (query = {}, requester = null) => {
         filter.consultationAssignedTo = { $in: [requester.email, 'Prosync'] };
       }
       if (query.email) {
-        filter.email = { $regex: new RegExp(`^${query.email}$`, 'i') };
+        filter.email = { $regex: new RegExp(`^${query.email.trim()}$`, 'i') };
       }
       if (query.search) {
         const s = query.search;
@@ -64,30 +64,57 @@ export const getAllLeads = async (query = {}, requester = null) => {
       leadsList = [...memoryLeads];
     }
   } else {
-    // Memory fallback filtering
-    let results = [...memoryLeads];
-    if (query.email) {
-      const em = query.email.toLowerCase();
-      results = results.filter((l) => l.email && l.email.toLowerCase() === em);
-    }
-    if (query.search) {
-      const s = query.search.toLowerCase();
-      results = results.filter(
-        (l) =>
-          (l.fullName && l.fullName.toLowerCase().includes(s)) ||
-          (l.mobile && l.mobile.includes(s)) ||
-          (l.email && l.email.toLowerCase().includes(s)) ||
-          (l.projectName && l.projectName.toLowerCase().includes(s)) ||
-          (l.industry && l.industry.toLowerCase().includes(s))
-      );
-    }
-    if (query.filterSource === 'PDF') {
-      results = results.filter((l) => l.downloadedPDF);
-    } else if (query.filterSource === 'FORM') {
-      results = results.filter((l) => !l.downloadedPDF);
-    }
-    leadsList = results.sort((a, b) => new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime());
+    leadsList = [...memoryLeads];
   }
+
+  // Apply in-memory security filtering (applies to memory store AND as defense-in-depth)
+  let results = [...leadsList];
+
+  if (requester?.role === 'user') {
+    const reqEmail = (requester.email || '').toLowerCase().trim();
+    const reqId = String(requester._id || requester.id || '');
+    results = results.filter((l) => {
+      const lEmail = (l.email || '').toLowerCase().trim();
+      const lUserId = String(l.userId || '');
+      return (reqEmail && lEmail === reqEmail) || (reqId && lUserId === reqId);
+    });
+  } else if (requester?.role === 'ca') {
+    const caEmail = (requester.email || '').toLowerCase().trim();
+    results = results.filter((l) => (l.assignedCA || '').toLowerCase().trim() === caEmail);
+  } else if (requester?.role === 'dpr_consultant') {
+    const dprEmail = (requester.email || '').toLowerCase().trim();
+    results = results.filter((l) => (l.dprAssignedTo || '').toLowerCase().trim() === dprEmail);
+  } else if (requester?.role === 'prosync' || requester?.role === 'prosync_admin') {
+    const pEmail = (requester.email || '').toLowerCase().trim();
+    results = results.filter((l) => {
+      const assigned = (l.consultationAssignedTo || '').toLowerCase().trim();
+      return assigned === pEmail || assigned === 'prosync';
+    });
+  }
+
+  if (query.email) {
+    const em = query.email.toLowerCase().trim();
+    results = results.filter((l) => (l.email || '').toLowerCase().trim() === em);
+  }
+
+  if (query.search) {
+    const s = query.search.toLowerCase();
+    results = results.filter(
+      (l) =>
+        (l.fullName && l.fullName.toLowerCase().includes(s)) ||
+        (l.mobile && l.mobile.includes(s)) ||
+        (l.email && l.email.toLowerCase().includes(s)) ||
+        (l.projectName && l.projectName.toLowerCase().includes(s)) ||
+        (l.industry && l.industry.toLowerCase().includes(s))
+    );
+  }
+  if (query.filterSource === 'PDF') {
+    results = results.filter((l) => l.downloadedPDF);
+  } else if (query.filterSource === 'FORM') {
+    results = results.filter((l) => !l.downloadedPDF);
+  }
+
+  leadsList = results.sort((a, b) => new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime());
 
   // Deduplicate records for the same user with identical or uppercase/lowercase project name
   const dedupedMap = new Map();
