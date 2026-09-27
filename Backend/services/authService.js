@@ -53,6 +53,10 @@ const DEFAULT_SEED_PASSWORDS = {
   'promoter@inisio.com': 'promoter123',
 };
 
+const shouldAllowMemoryFallback = () => {
+  return process.env.ALLOW_MEMORY_FALLBACK === 'true';
+};
+
 /**
  * Sync memory users to MongoDB to ensure preloaded demo & registered users exist in DB
  */
@@ -233,6 +237,12 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
       }
       console.warn('MongoDB error in registerUser, fallback to memory store:', err.message);
     }
+  }
+
+  if (!shouldAllowMemoryFallback()) {
+    const error = new Error('Database connection is unavailable. Please try again in a few moments or contact support.');
+    error.statusCode = 503;
+    throw error;
   }
 
   // Memory fallback when DB is offline or for memory users
@@ -625,7 +635,13 @@ export const loginUser = async ({ email, password, req }) => {
     }
   }
 
-  // 2. Memory store fallback (or when DB user was not yet created)
+  // 2. Memory store fallback (only when explicitly allowed for local development)
+  if (!shouldAllowMemoryFallback()) {
+    const error = new Error(`No account found with ${cleanEmail}. Please click 'Create Account' to sign up.`);
+    error.statusCode = 404;
+    throw error;
+  }
+
   const user = memoryUsers.find((u) => u.email.toLowerCase() === cleanEmail);
   if (!user) {
     const error = new Error(`No account found with ${cleanEmail}. Please click 'Create Account' to sign up.`);
