@@ -130,6 +130,18 @@ export const sendMailWithResilience = async (mailOptions, metadata = {}) => {
   const recipient = mailOptions.to;
   const { user, pass } = getSmtpConfig();
 
+  if (!user || !pass || pass === 'your_smtp_password' || pass === 'password') {
+    const errorMessage = 'SMTP credentials are not configured. Set SMTP_USER and SMTP_PASS (or GMAIL_APP_PASSWORD) in the backend environment before enabling email delivery.';
+    console.warn(`[Email] ${errorMessage}`);
+    return {
+      success: false,
+      isFallback: true,
+      otp: metadata.otp || null,
+      error: errorMessage,
+      configured: false,
+    };
+  }
+
   // For Gmail and custom SMTP, the "from" header must match the authenticated account
   const senderFrom = user
     ? (process.env.EMAIL_FROM && process.env.EMAIL_FROM.includes(user)
@@ -197,12 +209,12 @@ export const sendMailWithResilience = async (mailOptions, metadata = {}) => {
       console.log(`🔑 [Inisio Verification OTP (Simulated/Dev)] Recipient: ${recipient} | Code: ${metadata.otp} | Valid for 15 minutes`);
     }
 
-    return { success: true, messageId: info?.messageId || 'simulated-sent', isFallback: true, otp: metadata.otp };
+    return { success: true, messageId: info?.messageId || 'simulated-sent', isFallback: true, otp: metadata.otp, configured: false };
   } catch (err) {
     if (metadata.otp) {
       console.log(`🔑 [Inisio Verification OTP (Direct Output)] Recipient: ${recipient} | Code: ${metadata.otp}`);
     }
-    return { success: true, simulated: true, isFallback: true, otp: metadata.otp, error: err.message };
+    return { success: false, simulated: true, isFallback: true, otp: metadata.otp, error: err.message, configured: false };
   }
 };
 

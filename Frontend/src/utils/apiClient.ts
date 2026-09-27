@@ -21,10 +21,20 @@ export const getAuthToken = (): string | null => {
 export const getApiBaseUrl = (): string => {
   const env = (import.meta as any).env || {};
   const configuredUrl = env.VITE_API_URL || env.VITE_BACKEND_URL;
-  if (!configuredUrl) return '/api';
 
-  const baseUrl = configuredUrl.replace(/\/$/, '');
-  return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
+  if (configuredUrl) {
+    const baseUrl = configuredUrl.replace(/\/$/, '');
+    return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
+  }
+
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname.toLowerCase();
+    if (hostname.includes('vercel.app') || hostname.includes('netlify.app') || hostname.includes('github.dev')) {
+      return 'https://inisio-web.onrender.com/api';
+    }
+  }
+
+  return '/api';
 };
 
 export const resolveApiUrl = (endpoint: string): string => {

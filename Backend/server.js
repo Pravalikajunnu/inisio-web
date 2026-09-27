@@ -16,7 +16,11 @@ connectDB().catch(() => {});
 // CORS Configuration supporting inisio.vercel.app and localhost:5173
 const allowedOrigins = [
   'https://inisio.vercel.app',
+  'https://www.inisio.vercel.app',
   'http://inisio.vercel.app',
+  'http://www.inisio.vercel.app',
+  'https://inisio-web.vercel.app',
+  'http://inisio-web.vercel.app',
   'http://localhost:5173',
   'https://localhost:5173',
   'http://127.0.0.1:5173',
@@ -24,6 +28,8 @@ const allowedOrigins = [
   'http://localhost:5000',
   process.env.CLIENT_URL,
   process.env.FRONTEND_URL,
+  process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+  process.env.RENDER_EXTERNAL_URL,
 ].filter(Boolean);
 
 const corsOptions = {
