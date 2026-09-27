@@ -337,15 +337,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       if (response.ok && resData.success && resData.data) {
         const userData = resData.data;
 
-        // Check if user requires email verification
-        if (userData.requiresVerification || userData.isVerified === false) {
-          setIsVerifyingOtp(true);
-          setOtpCode('');
-          setResendCooldown(30);
-          setSuccessMessage(userData.message || `A 6-digit verification code has been dispatched to ${cleanEmail}. Please check your email inbox.`);
-          return;
-        }
-
         if (userData.token) {
           localStorage.setItem('inisio_auth_token', userData.token);
         }

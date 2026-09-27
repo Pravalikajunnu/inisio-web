@@ -163,8 +163,9 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
       const userExists = await User.findOne({ email: cleanEmail });
       if (userExists) {
         if (!userExists.isVerified) {
-          userExists.verificationOtp = otp;
-          userExists.verificationExpires = otpExpiry;
+          userExists.isVerified = true;
+          userExists.verificationOtp = null;
+          userExists.verificationExpires = null;
           if (password && password.length >= 6) {
             userExists.password = password; // Mongoose will re-hash
           }
@@ -173,10 +174,14 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
           if (company) userExists.company = company;
           await userExists.save();
 
-          await sendVerificationEmail({
-            to: cleanEmail,
+          const token = generateToken({
+            id: userExists._id,
+            email: userExists.email,
+            role: userExists.role,
             name: userExists.name,
-            otp,
+            company: userExists.company,
+            phone: userExists.phone,
+            isVerified: true,
           });
 
           return {
@@ -187,9 +192,9 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
             company: userExists.company,
             phone: userExists.phone,
             avatarUrl: userExists.avatarUrl,
-            isVerified: false,
-            requiresVerification: true,
-            message: `Account already exists and is pending verification. A fresh 6-digit code has been dispatched to ${cleanEmail}.`,
+            isVerified: true,
+            token,
+            message: 'Account exists and is active. You can sign in now.',
           };
         }
 
@@ -205,19 +210,20 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
         role: assignedRole,
         company: defaultCompany,
         phone: phone || '',
-        isVerified: false,
-        verificationOtp: otp,
-        verificationExpires: otpExpiry,
+        isVerified: true,
+        verificationOtp: null,
+        verificationExpires: null,
       });
 
-      // Dispatch verification email with resilience
-      sendVerificationEmail({
-        to: cleanEmail,
+      const token = generateToken({
+        id: user._id,
+        email: user.email,
+        role: user.role,
         name: user.name,
-        otp,
-      }).catch((e) => console.warn('[Email] Background dispatch notice:', e.message));
-
-      const feedbackMessage = `Account created! A 6-digit verification code has been dispatched to ${cleanEmail}. Please enter the code to activate your account.`;
+        company: user.company,
+        phone: user.phone,
+        isVerified: true,
+      });
 
       return {
         _id: user._id,
@@ -227,9 +233,9 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
         company: user.company,
         phone: user.phone,
         avatarUrl: user.avatarUrl,
-        isVerified: false,
-        requiresVerification: true,
-        message: feedbackMessage,
+        isVerified: true,
+        token,
+        message: 'Account created successfully. You are now signed in.',
       };
     } catch (err) {
       if (err.message.includes('already') || err.message.includes('valid') || err.message.includes('Password')) {
@@ -576,30 +582,11 @@ export const loginUser = async ({ email, password, req }) => {
           throw error;
         }
 
-        // Check if user's email is verified
         if (!user.isVerified) {
-          const otp = generateOtp();
-          user.verificationOtp = otp;
-          user.verificationExpires = new Date(Date.now() + 15 * 60 * 1000);
+          user.isVerified = true;
+          user.verificationOtp = null;
+          user.verificationExpires = null;
           await user.save();
-
-          sendVerificationEmail({
-            to: cleanEmail,
-            name: user.name,
-            otp,
-          }).catch((e) => console.warn('[Email] Background dispatch notice:', e.message));
-
-          return {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            company: user.company,
-            phone: user.phone,
-            isVerified: false,
-            requiresVerification: true,
-            message: `Email verification required. A 6-digit verification code has been dispatched to ${cleanEmail}.`,
-          };
         }
 
         await recordSuccessfulLogin(user, req);
@@ -677,29 +664,9 @@ export const loginUser = async ({ email, password, req }) => {
   }
 
   if (!user.isVerified) {
-    const otp = generateOtp();
-    user.verificationOtp = otp;
-    user.verificationExpires = new Date(Date.now() + 15 * 60 * 1000);
-
-    sendVerificationEmail({
-      to: cleanEmail,
-      name: user.name,
-      otp,
-    }).catch((e) => console.warn('[Email] Background dispatch notice:', e.message));
-
-    return {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      company: user.company,
-      phone: user.phone,
-      isVerified: false,
-      requiresVerification: true,
-      previewOtp: otp,
-      otp,
-      message: `Email verification required. A 6-digit verification code has been dispatched to ${cleanEmail}.`,
-    };
+    user.isVerified = true;
+    user.verificationOtp = null;
+    user.verificationExpires = null;
   }
 
   await recordSuccessfulLogin(user, req);
