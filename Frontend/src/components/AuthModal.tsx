@@ -314,7 +314,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
     // Backend authentication call (Login / Signup)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 12000);
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
 
     try {
       const endpoint = mode === 'signup' ? '/api/auth/register' : '/api/auth/login';
