@@ -15,7 +15,9 @@ const canAccess = (lead, user) => {
   if (user.role === 'ca') return lead.assignedCA === user.email;
   if (user.role === 'dpr_consultant') return lead.dprAssignedTo === user.email;
   if (user.role === 'prosync' || user.role === 'prosync_admin') return lead.consultationAssignedTo === user.email || lead.consultationAssignedTo === 'Prosync';
-  return String(lead.userId) === String(user._id);
+  const leadEmail = String(lead.email || '').trim().toLowerCase();
+  const userEmail = String(user.email || '').trim().toLowerCase();
+  return String(lead.userId || '') === String(user._id || '') || Boolean(leadEmail && userEmail && leadEmail === userEmail);
 };
 
 export const uploadDocument = async (req, res, next) => {
