@@ -209,7 +209,17 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
     loadData();
   };
 
-  const handleUpdateConsultation = (leadId: string, updates: { consultationStatus?: any; consultationAssignedTo?: string; notes?: string }) => {
+  const handleUpdateConsultation = async (leadId: string, updates: { consultationStatus?: any; consultationAssignedTo?: string; notes?: string }) => {
+    if (updates.consultationAssignedTo !== undefined) {
+      try {
+        await api.leads.assign(leadId, { consultationAssignedTo: updates.consultationAssignedTo });
+        await loadData();
+        triggerToast('Project assignment updated.');
+      } catch {
+        triggerToast('Unable to assign this project. Please try again.');
+      }
+      return;
+    }
     updateLeadRecord(leadId, updates, user.name || user.email || 'Admin');
     triggerToast('Updated consultation booking status!');
     loadData();

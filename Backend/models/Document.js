@@ -2,7 +2,8 @@ import mongoose from 'mongoose';
 
 const documentSchema = new mongoose.Schema(
   {
-    leadId: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead', required: true, index: true },
+    leadId: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead', index: true },
+    projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', index: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     category: {
       type: String,

@@ -111,6 +111,10 @@ const leadSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    assignedCA: {
+      type: String,
+      default: '',
+    },
     assignedAt: {
       type: String,
       default: '',

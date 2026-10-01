@@ -80,6 +80,10 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
     'Prosync Partner 3',
     'Unassigned'
   ];
+  const assignmentValue = (team: string, value?: string) => {
+    if (!value || value === 'Unassigned') return 'Unassigned';
+    return value.toLowerCase().startsWith(`${team.toLowerCase()}:`) ? value : `${team}:${value}`;
+  };
   const [viewingDoc, setViewingDoc] = useState<DocumentViewerTarget | null>(null);
   const [newDocCategory, setNewDocCategory] = useState<string>('Company KYC');
   const [isUploading, setIsUploading] = useState<boolean>(false);
@@ -97,6 +101,7 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
         totalCostCr: lead.totalCostCr || '',
         loanRequiredCr: lead.loanRequiredCr || '',
         promoterContribCr: lead.promoterContribCr || '',
+        assignedCA: lead.assignedCA || lead.assignedTeam || '',
         dprAssignedTo: lead.dprAssignedTo || '',
         consultationAssignedTo: lead.consultationAssignedTo || '',
         landStatus: lead.landStatus || 'Owned / Allotted',
@@ -286,6 +291,7 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
       ...formData,
       status: formData.status || 'Submitted',
       assignedTeam: formData.assignedTeam || 'Unassigned',
+      assignedCA: formData.assignedCA || '',
       dprAssignedTo: formData.dprAssignedTo || '',
       consultationAssignedTo: formData.consultationAssignedTo || '',
       promotersList: promoters,
@@ -950,12 +956,12 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
                   <div>
                     <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Assigned CA</label>
                     <select
-                      value={formData.assignedTeam || 'Unassigned'}
-                      onChange={(e) => setFormData({ ...formData, assignedTeam: e.target.value })}
+                      value={assignmentValue('CA', formData.assignedCA || formData.assignedTeam)}
+                      onChange={(e) => setFormData({ ...formData, assignedCA: e.target.value, assignedTeam: e.target.value.replace(/^CA:/, '') })}
                       className="w-full px-3 py-2 text-xs bg-white border border-zinc-200 rounded-lg focus:outline-none focus:border-blue-500"
                     >
                       {caOptions.map((ca) => (
-                        <option key={ca} value={ca}>{ca}</option>
+                        <option key={ca} value={ca === 'Unassigned' ? ca : `CA:${ca}`}>{ca}</option>
                       ))}
                     </select>
                   </div>
@@ -963,13 +969,13 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
                   <div>
                     <label className="block text-[11px] font-semibold text-zinc-700 mb-1">DPR Consultant</label>
                     <select
-                      value={formData.dprAssignedTo || 'Unassigned'}
+                      value={assignmentValue('DPR', formData.dprAssignedTo)}
                       onChange={(e) => setFormData({ ...formData, dprAssignedTo: e.target.value === 'Unassigned' ? '' : e.target.value })}
                       className="w-full px-3 py-2 text-xs bg-white border border-zinc-200 rounded-lg focus:outline-none focus:border-blue-500"
                     >
                       <option value="Unassigned">Unassigned</option>
                       {dprConsultantOptions.filter(option => option !== 'Unassigned').map((consultant) => (
-                        <option key={consultant} value={consultant}>{consultant}</option>
+                        <option key={consultant} value={`DPR:${consultant}`}>{consultant}</option>
                       ))}
                     </select>
                   </div>
@@ -977,13 +983,13 @@ export const LeadEditModal: React.FC<LeadEditModalProps> = ({
                   <div>
                     <label className="block text-[11px] font-semibold text-zinc-700 mb-1">Prosync Partner</label>
                     <select
-                      value={formData.consultationAssignedTo || 'Unassigned'}
+                      value={assignmentValue('Prosync', formData.consultationAssignedTo)}
                       onChange={(e) => setFormData({ ...formData, consultationAssignedTo: e.target.value === 'Unassigned' ? '' : e.target.value })}
                       className="w-full px-3 py-2 text-xs bg-white border border-zinc-200 rounded-lg focus:outline-none focus:border-blue-500"
                     >
                       <option value="Unassigned">Unassigned</option>
                       {prosyncOptions.filter(option => option !== 'Unassigned').map((partner) => (
-                        <option key={partner} value={partner}>{partner}</option>
+                        <option key={partner} value={`Prosync:${partner}`}>{partner}</option>
                       ))}
                     </select>
                   </div>

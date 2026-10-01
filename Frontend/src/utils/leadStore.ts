@@ -37,6 +37,7 @@ export interface LeadRecord {
   photoOrLogo?: string;
   dprFile?: { name: string; size: number; uploadedAt: string; dataUrl?: string; fileUrl?: string };
   cmaFile?: { name: string; size: number; uploadedAt: string; dataUrl?: string; fileUrl?: string };
+  assignedCA?: string;
   assignedTeam?: string;
   assignedRole?: string;
   assignedAt?: string;
@@ -217,6 +218,7 @@ export async function fetchLeadsFromBackend(email?: string): Promise<LeadRecord[
           photoOrLogo: item.photoOrLogo,
           dprFile: item.dprFile,
           cmaFile: item.cmaFile,
+          assignedCA: item.assignedCA,
           assignedTeam: item.assignedTeam,
           assignedRole: item.assignedRole,
           assignedAt: item.assignedAt,

@@ -7,13 +7,19 @@ let memoryLeads = [];
 
 const isSuperAdminOrAdmin = (role = '') => ['superadmin', 'admin', 'admin1', 'admin2', 'admin3'].includes(role);
 
+const isAssignedToTeamMember = (assignment, requester, team) => {
+  const assigned = String(assignment || '').trim().toLowerCase();
+  const identities = [requester?.email, requester?.name].map((value) => String(value || '').trim().toLowerCase());
+  return identities.includes(assigned) || assigned === team || assigned.startsWith(`${team}:`);
+};
+
 const canAccessLead = (lead, requester) => {
   if (!requester) return false;
   if (isSuperAdminOrAdmin(requester.role)) return true;
-  if (requester.role === 'ca') return lead.assignedCA === requester.email;
-  if (requester.role === 'dpr_consultant') return lead.dprAssignedTo === requester.email;
+  if (requester.role === 'ca') return isAssignedToTeamMember(lead.assignedCA, requester, 'ca');
+  if (requester.role === 'dpr_consultant') return isAssignedToTeamMember(lead.dprAssignedTo, requester, 'dpr');
   if (requester.role === 'prosync' || requester.role === 'prosync_admin') {
-    return lead.consultationAssignedTo === requester.email || lead.consultationAssignedTo === 'Prosync';
+    return isAssignedToTeamMember(lead.consultationAssignedTo, requester, 'prosync');
   }
   return String(lead.userId) === String(requester._id) || (lead.email && requester.email && lead.email.toLowerCase() === requester.email.toLowerCase());
 };
@@ -33,11 +39,11 @@ export const getAllLeads = async (query = {}, requester = null) => {
           filter.userId = requester._id;
         }
       } else if (requester?.role === 'ca') {
-        filter.assignedCA = requester.email;
+        filter.assignedCA = { $in: [requester.email, requester.name, /^ca:/i] };
       } else if (requester?.role === 'dpr_consultant') {
-        filter.dprAssignedTo = requester.email;
+        filter.dprAssignedTo = { $in: [requester.email, requester.name, /^dpr:/i] };
       } else if (requester?.role === 'prosync' || requester?.role === 'prosync_admin') {
-        filter.consultationAssignedTo = { $in: [requester.email, 'Prosync'] };
+        filter.consultationAssignedTo = { $in: [requester.email, requester.name, 'Prosync', /^prosync:/i] };
       }
       if (query.email) {
         filter.email = { $regex: new RegExp(`^${query.email.trim()}$`, 'i') };
@@ -79,17 +85,11 @@ export const getAllLeads = async (query = {}, requester = null) => {
       return (reqEmail && lEmail === reqEmail) || (reqId && lUserId === reqId);
     });
   } else if (requester?.role === 'ca') {
-    const caEmail = (requester.email || '').toLowerCase().trim();
-    results = results.filter((l) => (l.assignedCA || '').toLowerCase().trim() === caEmail);
+    results = results.filter((lead) => isAssignedToTeamMember(lead.assignedCA, requester, 'ca'));
   } else if (requester?.role === 'dpr_consultant') {
-    const dprEmail = (requester.email || '').toLowerCase().trim();
-    results = results.filter((l) => (l.dprAssignedTo || '').toLowerCase().trim() === dprEmail);
+    results = results.filter((lead) => isAssignedToTeamMember(lead.dprAssignedTo, requester, 'dpr'));
   } else if (requester?.role === 'prosync' || requester?.role === 'prosync_admin') {
-    const pEmail = (requester.email || '').toLowerCase().trim();
-    results = results.filter((l) => {
-      const assigned = (l.consultationAssignedTo || '').toLowerCase().trim();
-      return assigned === pEmail || assigned === 'prosync';
-    });
+    results = results.filter((lead) => isAssignedToTeamMember(lead.consultationAssignedTo, requester, 'prosync'));
   }
 
   if (query.email) {

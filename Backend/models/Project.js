@@ -75,6 +75,30 @@ const projectSchema = new mongoose.Schema(
       type: String,
       default: 'CA Rajesh Sharma (FCA)',
     },
+    dprAssignedTo: {
+      type: String,
+      default: '',
+    },
+    consultationAssignedTo: {
+      type: String,
+      default: '',
+    },
+    uploadedDocuments: {
+      type: Array,
+      default: [],
+    },
+    dprFile: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    cmaFile: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
+    documentsUploaded: {
+      type: Boolean,
+      default: false,
+    },
     assignedBank: {
       type: String,
       default: 'State Bank of India / Punjab National Bank',

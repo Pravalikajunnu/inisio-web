@@ -298,7 +298,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           promoterExp: lead.promoterExp || 'Over 10+ Years Industry Track Record',
           status: (lead.status || 'In Appraisal') as any,
           stageNumber: lead.status === 'CA Approved' ? 4 : (lead.downloadedPDF ? 3 : 2),
-          assignedCA: lead.consultationAssignedTo || '',
+          assignedCA: lead.assignedCA || lead.assignedTeam || '',
           assignedBank: lead.bankName || lead.assignedBank || '',
           downloadedDate: lead.timestamp ? new Date(lead.timestamp).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently',
           downloadedPDF: Boolean(lead.downloadedPDF),
@@ -1907,11 +1907,14 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           project={activeProject}
           onClose={() => setIsDocUploadModalOpen(false)}
           onSave={(updates) => {
-            handleSaveModalProject({
-              dprFile: updates.dprFile !== undefined ? (updates.dprFile || undefined) : undefined,
-              cmaFile: updates.cmaFile !== undefined ? (updates.cmaFile || undefined) : undefined,
-              uploadedDocuments: updates.uploadedDocuments || activeProject.uploadedDocuments
-            });
+            setUserProjects((projects) => projects.map((project) => project.id === activeProject.id
+              ? {
+                  ...project,
+                  dprFile: updates.dprFile !== undefined ? (updates.dprFile || undefined) : project.dprFile,
+                  cmaFile: updates.cmaFile !== undefined ? (updates.cmaFile || undefined) : project.cmaFile,
+                  uploadedDocuments: updates.uploadedDocuments || project.uploadedDocuments,
+                }
+              : project));
             triggerToast('DPR / CMA Documents uploaded and synchronized successfully.');
           }}
         />
