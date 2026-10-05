@@ -65,6 +65,7 @@ interface AdminProjectRecord {
 export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) => {
   const [leads, setLeads] = useState<LeadRecord[]>([]);
   const [backendProjects, setBackendProjects] = useState<AdminProjectRecord[]>([]);
+  const [projectLoadError, setProjectLoadError] = useState(false);
   const [usersList, setUsersList] = useState<RegisteredUserRecord[]>([]);
   const [visitorSummary, setVisitorSummary] = useState<VisitorSummary>({
     totalVisits: 0,
@@ -113,14 +114,27 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
   }, []);
 
   const loadData = async () => {
+    const [leadsResult, usersResult, projectsResult] = await Promise.allSettled([
+      fetchLeadsFromBackend(),
+      api.users.getAll(),
+      api.projects.getAll()
+    ]);
+
+    if (projectsResult.status === 'fulfilled' && Array.isArray(projectsResult.value)) {
+      setBackendProjects(projectsResult.value);
+      setProjectLoadError(false);
+    } else {
+      setBackendProjects([]);
+      setProjectLoadError(true);
+      triggerToast('Unable to load backend project records.');
+    }
+
     try {
-      const [backendLeads, backendUsers, projects] = await Promise.all([
-        fetchLeadsFromBackend(),
-        api.users.getAll(),
-        api.projects.getAll().catch(() => [])
-      ]);
+      if (leadsResult.status === 'rejected') throw leadsResult.reason;
+      if (usersResult.status === 'rejected') throw usersResult.reason;
+      const backendLeads = leadsResult.value;
+      const backendUsers = usersResult.value;
       setLeads(backendLeads);
-      setBackendProjects(projects);
       setUsersList(backendUsers.map((u: any) => ({
         id: u._id || u.id,
         name: u.name || '',
@@ -1247,7 +1261,9 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 text-zinc-700">
-                  {backendProjects.length === 0 ? (
+                  {projectLoadError ? (
+                    <tr><td colSpan={5} className="p-6 text-center text-red-600">Unable to retrieve backend projects. Refresh to try again.</td></tr>
+                  ) : backendProjects.length === 0 ? (
                     <tr><td colSpan={5} className="p-6 text-center text-zinc-400">No backend project records found.</td></tr>
                   ) : backendProjects.map(project => (
                     <tr key={project._id}>
