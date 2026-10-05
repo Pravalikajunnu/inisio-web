@@ -2,6 +2,7 @@ import { verifyToken } from '../utils/generateToken.js';
 import User from '../models/User.js';
 import { sendError } from '../utils/responseHandler.js';
 import { isDBConnected } from '../config/db.js';
+import { isAuthorizedAdminEmail, getAdminEmail1, getAdminEmail2 } from '../utils/memoryUserStore.js';
 
 /**
  * Middleware to authenticate requests using JWT Access Token
@@ -101,13 +102,12 @@ export const authorizeRoles = (...roles) => {
     const userRole = req.user.role || 'user';
 
     // Strict Admin and Super Admin email validation:
-    // Only inisio2026@gmail.com (admin) and junnupravalika59@gmail.com (superadmin) are authorized for administrative operations
     if (roles.includes('admin') || roles.includes('superadmin')) {
-      const isAuthorizedAdminEmail = ['inisio2026@gmail.com', 'junnupravalika59@gmail.com'].includes(userEmail);
-      if (!isAuthorizedAdminEmail) {
+      const isAllowedAdmin = isAuthorizedAdminEmail(userEmail);
+      if (!isAllowedAdmin) {
         return sendError(
           res,
-          'Access Denied: Only authorized administrative emails (inisio2026@gmail.com and junnupravalika59@gmail.com) have access to administrative resources.',
+          `Access Denied: Only authorized administrative accounts (${getAdminEmail1()} and ${getAdminEmail2()}) have access to administrative resources.`,
           403
         );
       }
@@ -136,8 +136,8 @@ export const authorizeRoles = (...roles) => {
       roles.includes(userRole) ||
       roles.includes(normalizedRole) ||
       isSuperAdminViewer ||
-      (roles.includes('admin') && (userRole === 'admin' || userEmail === 'inisio2026@gmail.com')) ||
-      (roles.includes('superadmin') && (userRole === 'superadmin' || userEmail === 'junnupravalika59@gmail.com'));
+      (roles.includes('admin') && (userRole === 'admin' || isAuthorizedAdminEmail(userEmail))) ||
+      (roles.includes('superadmin') && (userRole === 'superadmin' || userEmail === getAdminEmail2()));
 
     if (!isAuthorized) {
       return sendError(

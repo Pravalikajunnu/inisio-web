@@ -9,7 +9,7 @@ import { uploadDocument, listDocuments, downloadDocument } from '../controllers/
 const router = express.Router();
 const storageRoot = path.resolve(
   process.env.DOCUMENT_STORAGE_DIR ||
-  (path.join(process.cwd(), 'Backend', 'storage', 'private'))
+  (path.join(process.cwd(), 'backend', 'storage', 'private'))
 );
 fs.mkdirSync(storageRoot, { recursive: true });
 

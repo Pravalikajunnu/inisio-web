@@ -375,7 +375,7 @@ export async function saveLeadRecord(lead: Omit<LeadRecord, 'id' | 'timestamp'>)
 export function updateLeadRecord(id: string, updates: Partial<LeadRecord>, editedBy = 'Promoter'): LeadRecord | null {
   const leads = getStoredLeads();
   let updatedRecord: LeadRecord | null = null;
-  let changes: string[] = [];
+  const changes: string[] = [];
 
   const updatedLeads = leads.map(l => {
     if (l.id === id) {

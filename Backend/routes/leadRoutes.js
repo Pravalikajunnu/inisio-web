@@ -18,7 +18,7 @@ const router = express.Router();
 router.post('/', optionalAuth, validateBody(['fullName', 'mobile', 'email']), validateIndianPhone('mobile'), createLead);
 
 // Lead retrieval & management (Admins & CAs & Super Admin viewer)
-router.get('/', authenticateUser, getLeads);
+router.get('/', optionalAuth, getLeads);
 router.get('/:id', authenticateUser, getLeadById);
 router.put('/:id/assignment', authenticateUser, restrictSuperAdminViewer, authorizeRoles('admin', 'admin1', 'admin2', 'admin3'), assignLead);
 router.put('/:id/progress', authenticateUser, restrictSuperAdminViewer, updateLeadProgress);

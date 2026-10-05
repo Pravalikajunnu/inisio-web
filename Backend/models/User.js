@@ -84,7 +84,6 @@ const userSchema = new mongoose.Schema(
 );
 
 // Indexes for instant queries and high performance in production
-userSchema.index({ email: 1 });
 userSchema.index({ phone: 1 });
 userSchema.index({ role: 1 });
 

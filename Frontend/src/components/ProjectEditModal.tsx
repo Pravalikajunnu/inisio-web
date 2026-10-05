@@ -203,7 +203,7 @@ export const ProjectEditModal: React.FC<ProjectEditModalProps> = ({
     };
 
     // Update synced uploaded documents
-    let updatedDocs: ProjectDocument[] = [...(project.uploadedDocuments || [])];
+    const updatedDocs: ProjectDocument[] = [...(project.uploadedDocuments || [])];
     if (formData.dprFile) {
       const existingDprIndex = updatedDocs.findIndex(d => d.type === 'DPR' || d.name === formData.dprFile?.name);
       const dprDoc: ProjectDocument = {

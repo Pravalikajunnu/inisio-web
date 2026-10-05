@@ -137,7 +137,7 @@ export const DocumentUploadModal: React.FC<DocumentUploadModalProps> = ({
     const persistedCmaFile = await persistFile(cmaFile, 'cma');
 
     // Build synchronized uploadedDocuments array
-    let updatedDocs: ProjectDocument[] = [...(project.uploadedDocuments || [])];
+    const updatedDocs: ProjectDocument[] = [...(project.uploadedDocuments || [])];
 
     if (persistedDprFile) {
       const existingDprIndex = updatedDocs.findIndex(d => d.type === 'DPR' || d.name === persistedDprFile.name);

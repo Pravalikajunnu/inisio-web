@@ -129,13 +129,14 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
       triggerToast('Unable to load backend project records.');
     }
 
-    try {
-      if (leadsResult.status === 'rejected') throw leadsResult.reason;
-      if (usersResult.status === 'rejected') throw usersResult.reason;
-      const backendLeads = leadsResult.value;
-      const backendUsers = usersResult.value;
-      setLeads(backendLeads);
-      setUsersList(backendUsers.map((u: any) => ({
+    if (leadsResult.status === 'fulfilled' && Array.isArray(leadsResult.value)) {
+      setLeads(leadsResult.value);
+    } else {
+      setLeads(getStoredLeads());
+    }
+
+    if (usersResult.status === 'fulfilled' && Array.isArray(usersResult.value)) {
+      setUsersList(usersResult.value.map((u: any) => ({
         id: u._id || u.id,
         name: u.name || '',
         email: u.email || '',
@@ -148,10 +149,8 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
         status: u.status || 'active',
         lastLogin: u.lastLogin,
       })));
-    } catch (error) {
-      setLeads([]);
-      setUsersList([]);
-      triggerToast('Unable to load live admin data.');
+    } else {
+      setUsersList(getAllRegisteredUsers());
     }
     setVisitorSummary(getVisitorSummary());
     setUnreadNotifs(getUnreadNotificationCount());

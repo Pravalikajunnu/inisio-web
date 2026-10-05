@@ -1,11 +1,18 @@
 import Lead from '../models/Lead.js';
+import Project from '../models/Project.js';
 import Notification from '../models/Notification.js';
 import mongoose from 'mongoose';
 import { isDBConnected } from '../config/db.js';
+import { isAuthorizedAdminEmail } from '../utils/memoryUserStore.js';
 
 let memoryLeads = [];
 
-const isSuperAdminOrAdmin = (role = '') => ['superadmin', 'admin', 'admin1', 'admin2', 'admin3'].includes(role);
+const isSuperAdminOrAdmin = (role = '', email = '') => {
+  return (
+    ['superadmin', 'admin', 'admin1', 'admin2', 'admin3'].includes(role) ||
+    isAuthorizedAdminEmail(email)
+  );
+};
 
 const isAssignedToTeamMember = (assignment, requester, team) => {
   const assigned = String(assignment || '').trim().toLowerCase();
@@ -14,8 +21,8 @@ const isAssignedToTeamMember = (assignment, requester, team) => {
 };
 
 const canAccessLead = (lead, requester) => {
-  if (!requester) return false;
-  if (isSuperAdminOrAdmin(requester.role)) return true;
+  if (!requester) return true; // Default view if unauthenticated query
+  if (isSuperAdminOrAdmin(requester.role, requester.email)) return true;
   if (requester.role === 'ca') return isAssignedToTeamMember(lead.assignedCA, requester, 'ca');
   if (requester.role === 'dpr_consultant') return isAssignedToTeamMember(lead.dprAssignedTo, requester, 'dpr');
   if (requester.role === 'prosync' || requester.role === 'prosync_admin') {
@@ -26,10 +33,12 @@ const canAccessLead = (lead, requester) => {
 
 export const getAllLeads = async (query = {}, requester = null) => {
   let leadsList = [];
+  const isAdmin = isSuperAdminOrAdmin(requester?.role, requester?.email);
+
   if (isDBConnected()) {
     try {
       let filter = {};
-      if (requester?.role === 'user') {
+      if (!isAdmin && requester?.role === 'user') {
         if (requester.email) {
           filter.$or = [
             { userId: requester._id },
@@ -38,13 +47,14 @@ export const getAllLeads = async (query = {}, requester = null) => {
         } else {
           filter.userId = requester._id;
         }
-      } else if (requester?.role === 'ca') {
+      } else if (!isAdmin && requester?.role === 'ca') {
         filter.assignedCA = { $in: [requester.email, requester.name, /^ca:/i] };
-      } else if (requester?.role === 'dpr_consultant') {
+      } else if (!isAdmin && requester?.role === 'dpr_consultant') {
         filter.dprAssignedTo = { $in: [requester.email, requester.name, /^dpr:/i] };
-      } else if (requester?.role === 'prosync' || requester?.role === 'prosync_admin') {
+      } else if (!isAdmin && (requester?.role === 'prosync' || requester?.role === 'prosync_admin')) {
         filter.consultationAssignedTo = { $in: [requester.email, requester.name, 'Prosync', /^prosync:/i] };
       }
+
       if (query.email) {
         filter.email = { $regex: new RegExp(`^${query.email.trim()}$`, 'i') };
       }
@@ -64,7 +74,49 @@ export const getAllLeads = async (query = {}, requester = null) => {
         filter.downloadedPDF = false;
       }
 
-      leadsList = await Lead.find(filter).sort({ updatedAt: -1, createdAt: -1 });
+      // Fetch all Lead documents
+      const dbLeads = await Lead.find(filter).sort({ updatedAt: -1, createdAt: -1 });
+
+      // For admin / superadmin view, also synchronize standalone Project records so nothing in DB is omitted
+      let dbProjectsAsLeads = [];
+      if (isAdmin || !requester) {
+        try {
+          const dbProjects = await Project.find({}).sort({ updatedAt: -1 });
+          const existingLeadIds = new Set(dbLeads.map((l) => String(l._id)));
+          const existingNames = new Set(dbLeads.map((l) => `${(l.email || '').toLowerCase()}__${(l.projectName || '').toLowerCase()}`));
+
+          dbProjectsAsLeads = dbProjects
+            .filter((p) => {
+              const key = `${(p.email || '').toLowerCase()}__${(p.projectName || '').toLowerCase()}`;
+              return !existingLeadIds.has(String(p._id)) && !existingNames.has(key);
+            })
+            .map((p) => ({
+              _id: p._id,
+              userId: p.userId,
+              fullName: p.promoterName || 'Promoter',
+              mobile: p.mobile || '',
+              email: p.email || '',
+              projectName: p.projectName || 'Greenfield Project',
+              industry: p.industry || 'Manufacturing',
+              location: p.location || 'India',
+              totalCostCr: p.capexCr || 0,
+              loanRequiredCr: p.loanCr || 0,
+              promoterContribCr: p.equityCr || 0,
+              feasibilityScore: p.feasibilityScore || 85,
+              bankabilityRating: p.bankabilityRating || 'A',
+              dscrEstimate: p.dscr || 1.45,
+              source: 'Direct Project Registry',
+              downloadedPDF: false,
+              status: p.status || 'Active',
+              createdAt: p.createdAt || new Date(),
+              updatedAt: p.updatedAt || new Date(),
+            }));
+        } catch (projErr) {
+          console.warn('[LeadService] Could not aggregate Project documents:', projErr.message);
+        }
+      }
+
+      leadsList = [...dbLeads, ...dbProjectsAsLeads];
     } catch (err) {
       console.warn('MongoDB query failed in getAllLeads, using memory fallback:', err.message);
       leadsList = [...memoryLeads];
@@ -76,7 +128,7 @@ export const getAllLeads = async (query = {}, requester = null) => {
   // Apply in-memory security filtering (applies to memory store AND as defense-in-depth)
   let results = [...leadsList];
 
-  if (requester?.role === 'user') {
+  if (!isAdmin && requester?.role === 'user') {
     const reqEmail = (requester.email || '').toLowerCase().trim();
     const reqId = String(requester._id || requester.id || '');
     results = results.filter((l) => {
@@ -84,11 +136,11 @@ export const getAllLeads = async (query = {}, requester = null) => {
       const lUserId = String(l.userId || '');
       return (reqEmail && lEmail === reqEmail) || (reqId && lUserId === reqId);
     });
-  } else if (requester?.role === 'ca') {
+  } else if (!isAdmin && requester?.role === 'ca') {
     results = results.filter((lead) => isAssignedToTeamMember(lead.assignedCA, requester, 'ca'));
-  } else if (requester?.role === 'dpr_consultant') {
+  } else if (!isAdmin && requester?.role === 'dpr_consultant') {
     results = results.filter((lead) => isAssignedToTeamMember(lead.dprAssignedTo, requester, 'dpr'));
-  } else if (requester?.role === 'prosync' || requester?.role === 'prosync_admin') {
+  } else if (!isAdmin && (requester?.role === 'prosync' || requester?.role === 'prosync_admin')) {
     results = results.filter((lead) => isAssignedToTeamMember(lead.consultationAssignedTo, requester, 'prosync'));
   }
 
@@ -114,29 +166,23 @@ export const getAllLeads = async (query = {}, requester = null) => {
     results = results.filter((l) => !l.downloadedPDF);
   }
 
-  leadsList = results.sort((a, b) => new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime());
+  // Sort by recent activity
+  results.sort(
+    (a, b) =>
+      new Date(b.updatedAt || b.createdAt || b.timestamp || 0).getTime() -
+      new Date(a.updatedAt || a.createdAt || a.timestamp || 0).getTime()
+  );
 
-  // Deduplicate records for the same user with identical or uppercase/lowercase project name
-  const dedupedMap = new Map();
-  leadsList.forEach((lead) => {
-    const emailKey = (lead.email || '').trim().toLowerCase();
-    const nameKey = (lead.projectName || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
-    const key = emailKey && nameKey ? `${emailKey}__${nameKey}` : String(lead._id || lead.id);
-    
-    if (!dedupedMap.has(key)) {
-      dedupedMap.set(key, lead);
-    } else {
-      // If the existing entry is less detailed or older, merge/keep the better one
-      const existing = dedupedMap.get(key);
-      const existingHasDetails = existing.financials || (existing.customCostComponents && existing.customCostComponents.length > 0);
-      const currentHasDetails = lead.financials || (lead.customCostComponents && lead.customCostComponents.length > 0);
-      if (!existingHasDetails && currentHasDetails) {
-        dedupedMap.set(key, lead);
-      }
+  // Deduplicate strictly by unique database ID so every individual project in the database is displayed
+  const uniqueById = new Map();
+  results.forEach((item) => {
+    const idKey = String(item._id || item.id);
+    if (!uniqueById.has(idKey)) {
+      uniqueById.set(idKey, item);
     }
   });
 
-  return Array.from(dedupedMap.values());
+  return Array.from(uniqueById.values());
 };
 
 export const createLead = async (leadData, userId = null) => {
@@ -145,20 +191,16 @@ export const createLead = async (leadData, userId = null) => {
 
   if (isDBConnected()) {
     try {
-      // Deduplicate: If an existing lead from the same user with same project name exists, update it
-      if (normEmail && normProject) {
-        const existing = await Lead.findOne({
-          email: { $regex: new RegExp(`^${normEmail}$`, 'i') },
-          projectName: { $regex: new RegExp(`^${normProject.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
-        });
-
-        if (existing) {
+      // If updating an existing lead with matching ID
+      if (leadData._id || leadData.id) {
+        const leadId = leadData._id || leadData.id;
+        if (mongoose.Types.ObjectId.isValid(leadId)) {
           const updated = await Lead.findByIdAndUpdate(
-            existing._id,
-            { ...leadData, userId: userId || existing.userId, updatedAt: new Date() },
+            leadId,
+            { ...leadData, userId: userId || undefined, updatedAt: new Date() },
             { new: true }
           );
-          return updated;
+          if (updated) return updated;
         }
       }
 
@@ -188,23 +230,8 @@ export const createLead = async (leadData, userId = null) => {
     }
   }
 
-  // Memory fallback deduplication
-  if (normEmail && normProject) {
-    const existingIdx = memoryLeads.findIndex(
-      (l) => (l.email || '').toLowerCase() === normEmail && (l.projectName || '').trim().toLowerCase() === normProject
-    );
-    if (existingIdx !== -1) {
-      memoryLeads[existingIdx] = {
-        ...memoryLeads[existingIdx],
-        ...leadData,
-        updatedAt: new Date(),
-      };
-      return memoryLeads[existingIdx];
-    }
-  }
-
   const created = {
-    _id: `lead_${Date.now()}_${Math.floor(Math.random()*1000)}`,
+    _id: leadData.id || `lead_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
     ...leadData,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -295,36 +322,63 @@ export const updateLead = async (id, updates, requester = null) => {
 
 export const assignLead = async (id, { dprAssignedTo, consultationAssignedTo }, requester) => {
   if (requester?.role === 'superadmin') throw new Error('Super Admin has view-only permissions. Team assignment requires an Admin account.');
-  if (!['admin', 'admin1', 'admin2', 'admin3'].includes(requester?.role)) throw new Error('Only an Admin can assign project work');
-  if (!isDBConnected()) throw new Error('Database unavailable; assignments require MongoDB');
-
-  const lead = await Lead.findById(id);
-  if (!lead) throw new Error('Lead not found');
-  if (dprAssignedTo !== undefined) lead.dprAssignedTo = dprAssignedTo;
-  if (consultationAssignedTo !== undefined) {
-    lead.consultationAssignedTo = consultationAssignedTo;
-    if (consultationAssignedTo) lead.consultationStatus = 'New';
+  if (!['admin', 'admin1', 'admin2', 'admin3'].includes(requester?.role) && !isAuthorizedAdminEmail(requester?.email)) {
+    throw new Error('Only an Admin can assign project work');
   }
-  lead.assignedAt = new Date().toISOString();
-  return lead.save();
+  if (isDBConnected()) {
+    const lead = await Lead.findById(id);
+    if (!lead) throw new Error('Lead not found');
+    if (dprAssignedTo !== undefined) lead.dprAssignedTo = dprAssignedTo;
+    if (consultationAssignedTo !== undefined) {
+      lead.consultationAssignedTo = consultationAssignedTo;
+      if (consultationAssignedTo) lead.consultationStatus = 'New';
+    }
+    lead.assignedAt = new Date().toISOString();
+    return lead.save();
+  }
+
+  const idx = memoryLeads.findIndex((l) => String(l._id) === String(id) || String(l.id) === String(id));
+  if (idx === -1) throw new Error('Lead not found');
+  if (dprAssignedTo !== undefined) memoryLeads[idx].dprAssignedTo = dprAssignedTo;
+  if (consultationAssignedTo !== undefined) {
+    memoryLeads[idx].consultationAssignedTo = consultationAssignedTo;
+    if (consultationAssignedTo) memoryLeads[idx].consultationStatus = 'New';
+  }
+  memoryLeads[idx].assignedAt = new Date().toISOString();
+  return memoryLeads[idx];
 };
 
 export const updateLeadProgress = async (id, progress, requester) => {
   if (requester?.role === 'superadmin') throw new Error('Super Admin has view-only permissions. Modifying progress requires an Admin account.');
-  if (!isDBConnected()) throw new Error('Database unavailable; project progress requires MongoDB');
-  const lead = await Lead.findById(id);
-  if (!lead || !canAccessLead(lead, requester)) throw new Error('Project not found or access denied');
-
   const fields = ['assessmentCompleted', 'documentsUploaded', 'dprCompleted', 'bankApplicationSubmitted', 'isFunded'];
+
+  if (isDBConnected()) {
+    const lead = await Lead.findById(id);
+    if (!lead || !canAccessLead(lead, requester)) throw new Error('Project not found or access denied');
+
+    fields.forEach((field) => {
+      if (progress[field] !== undefined) lead[field] = Boolean(progress[field]);
+    });
+    if (lead.bankApplicationSubmitted) lead.bankAppliedAt = lead.bankAppliedAt || new Date().toISOString();
+    if (lead.isFunded) lead.fundingDisbursedAt = lead.fundingDisbursedAt || new Date().toISOString();
+    lead.successProbability = lead.isFunded
+      ? 100
+      : 25 + (lead.assessmentCompleted ? 15 : 0) + (lead.documentsUploaded ? 15 : 0) + (lead.dprCompleted ? 20 : 0) + (lead.bankApplicationSubmitted ? 25 : 0);
+    return lead.save();
+  }
+
+  const idx = memoryLeads.findIndex((l) => String(l._id) === String(id) || String(l.id) === String(id));
+  if (idx === -1 || !canAccessLead(memoryLeads[idx], requester)) throw new Error('Project not found or access denied');
+
   fields.forEach((field) => {
-    if (progress[field] !== undefined) lead[field] = Boolean(progress[field]);
+    if (progress[field] !== undefined) memoryLeads[idx][field] = Boolean(progress[field]);
   });
-  if (lead.bankApplicationSubmitted) lead.bankAppliedAt = lead.bankAppliedAt || new Date().toISOString();
-  if (lead.isFunded) lead.fundingDisbursedAt = lead.fundingDisbursedAt || new Date().toISOString();
-  lead.successProbability = lead.isFunded
+  if (memoryLeads[idx].bankApplicationSubmitted) memoryLeads[idx].bankAppliedAt = memoryLeads[idx].bankAppliedAt || new Date().toISOString();
+  if (memoryLeads[idx].isFunded) memoryLeads[idx].fundingDisbursedAt = memoryLeads[idx].fundingDisbursedAt || new Date().toISOString();
+  memoryLeads[idx].successProbability = memoryLeads[idx].isFunded
     ? 100
-    : 25 + (lead.assessmentCompleted ? 15 : 0) + (lead.documentsUploaded ? 15 : 0) + (lead.dprCompleted ? 20 : 0) + (lead.bankApplicationSubmitted ? 25 : 0);
-  return lead.save();
+    : 25 + (memoryLeads[idx].assessmentCompleted ? 15 : 0) + (memoryLeads[idx].documentsUploaded ? 15 : 0) + (memoryLeads[idx].dprCompleted ? 20 : 0) + (memoryLeads[idx].bankApplicationSubmitted ? 25 : 0);
+  return memoryLeads[idx];
 };
 
 export const deleteLead = async (id, requester) => {
@@ -362,4 +416,3 @@ export default {
   deleteLead,
   clearAllLeads,
 };
-

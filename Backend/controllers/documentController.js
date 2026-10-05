@@ -7,7 +7,7 @@ import { sendError, sendSuccess } from '../utils/responseHandler.js';
 
 const storageRoot = path.resolve(
   process.env.DOCUMENT_STORAGE_DIR ||
-  (path.join(process.cwd(), 'Backend', 'storage', 'private'))
+  (path.join(process.cwd(), 'backend', 'storage', 'private'))
 );
 
 const matchesAssignment = (assignment, user, team) => {
