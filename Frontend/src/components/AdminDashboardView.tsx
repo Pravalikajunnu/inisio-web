@@ -50,8 +50,21 @@ interface AdminDashboardViewProps {
   user: AuthUser;
 }
 
+interface AdminProjectRecord {
+  _id: string;
+  promoterName?: string;
+  projectName?: string;
+  industry?: string;
+  location?: string;
+  capexCr?: number;
+  loanCr?: number;
+  status?: string;
+  updatedAt?: string;
+}
+
 export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) => {
   const [leads, setLeads] = useState<LeadRecord[]>([]);
+  const [backendProjects, setBackendProjects] = useState<AdminProjectRecord[]>([]);
   const [usersList, setUsersList] = useState<RegisteredUserRecord[]>([]);
   const [visitorSummary, setVisitorSummary] = useState<VisitorSummary>({
     totalVisits: 0,
@@ -101,11 +114,13 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
 
   const loadData = async () => {
     try {
-      const [backendLeads, backendUsers] = await Promise.all([
+      const [backendLeads, backendUsers, projects] = await Promise.all([
         fetchLeadsFromBackend(),
-        api.users.getAll()
+        api.users.getAll(),
+        api.projects.getAll().catch(() => [])
       ]);
       setLeads(backendLeads);
+      setBackendProjects(projects);
       setUsersList(backendUsers.map((u: any) => ({
         id: u._id || u.id,
         name: u.name || '',
@@ -331,7 +346,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
             >
               <Building2 className="w-3.5 h-3.5" />
               <span>All Projects</span>
-              <span className={`px-1.5 py-0.5 rounded-md text-[10px] ${activeTab === 'all' ? 'bg-zinc-700 text-white' : 'bg-zinc-200 text-zinc-700'}`}>{leads.length}</span>
+              <span className={`px-1.5 py-0.5 rounded-md text-[10px] ${activeTab === 'all' ? 'bg-zinc-700 text-white' : 'bg-zinc-200 text-zinc-700'}`}>{leads.length + backendProjects.length}</span>
             </button>
 
             <button
@@ -436,7 +451,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-200/80 space-y-1">
             <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider block">Total Captured Projects</span>
-            <div className="text-xl font-bold text-zinc-900">{leads.length}</div>
+            <div className="text-xl font-bold text-zinc-900">{leads.length + backendProjects.length}</div>
             <span className="text-[11px] text-blue-700 font-medium">Active Greenfield Pipelines</span>
           </div>
 
@@ -1207,6 +1222,50 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'all' && (
+          <div className="border border-zinc-200 rounded-2xl p-5 bg-white space-y-4">
+            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+              <div>
+                <h2 className="text-sm font-bold text-zinc-900">Greenfield Project Records</h2>
+                <p className="text-xs text-zinc-500">Projects stored in the backend project registry.</p>
+              </div>
+              <span className="text-xs font-semibold text-zinc-500">{backendProjects.length} projects</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[700px] text-left text-xs">
+                <thead>
+                  <tr className="border-b border-zinc-200 text-zinc-400 font-semibold uppercase text-[10px]">
+                    <th className="py-2 px-3">Promoter</th>
+                    <th className="py-2 px-3">Project &amp; Sector</th>
+                    <th className="py-2 px-3">Location</th>
+                    <th className="py-2 px-3">Capex / Debt</th>
+                    <th className="py-2 px-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100 text-zinc-700">
+                  {backendProjects.length === 0 ? (
+                    <tr><td colSpan={5} className="p-6 text-center text-zinc-400">No backend project records found.</td></tr>
+                  ) : backendProjects.map(project => (
+                    <tr key={project._id}>
+                      <td className="py-2.5 px-3 font-semibold text-zinc-900">{project.promoterName || 'N/A'}</td>
+                      <td className="py-2.5 px-3">
+                        <div className="font-semibold text-zinc-900">{project.projectName || 'Greenfield Project'}</div>
+                        <div className="text-[11px] text-zinc-500">{project.industry || 'N/A'}</div>
+                      </td>
+                      <td className="py-2.5 px-3">{project.location || 'India'}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap">
+                        <div>₹ {project.capexCr ?? 0} Cr</div>
+                        <div className="text-blue-600">Debt: ₹ {project.loanCr ?? 0} Cr</div>
+                      </td>
+                      <td className="py-2.5 px-3">{project.status || 'Pending Audit'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}

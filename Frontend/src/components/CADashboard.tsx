@@ -45,7 +45,8 @@ interface CAProjectAudit {
   equityCr: number;
   dscr: number;
   subsidyEligible: boolean;
-  status: 'Pending Audit' | 'CA Approved' | 'Clarification Needed';
+  status: string;
+  source: 'lead' | 'project';
   updatedAt: string;
   stageNumber: number;
   location: string;
@@ -72,7 +73,10 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
   };
 
   const loadAudits = async () => {
-    const leads = await fetchLeadsFromBackend();
+    const [leads, projects] = await Promise.all([
+      fetchLeadsFromBackend(),
+      api.projects.getAll().catch(() => [])
+    ]);
     const mapped: CAProjectAudit[] = leads.map(l => {
       const capex = parseFloat(String(l.totalCostCr || 0)) || 0;
       const loan = parseFloat(String(l.loanRequiredCr || 0)) || 0;
@@ -90,6 +94,7 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
         dscr: Math.round(dscr * 100) / 100,
         subsidyEligible: Boolean(l.riskProfileData),
         status: (l.status === 'CA Approved' ? 'CA Approved' : 'Pending Audit') as any,
+        source: 'lead',
         updatedAt: l.timestamp ? new Date(l.timestamp).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }) : 'Recently',
         stageNumber: l.status === 'CA Approved' ? 4 : 3,
         location: l.location || 'India',
@@ -97,6 +102,24 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
         collateral: l.collateralStatus || 'Factory & Plant Machinery'
       };
     });
+    mapped.push(...projects.map((project: any) => ({
+      id: String(project._id || project.id),
+      promoterName: project.promoterName || 'Promoter',
+      projectName: project.projectName || 'Greenfield Project',
+      industry: project.industry || 'Industrial Manufacturing',
+      capexCr: Number(project.capexCr) || 0,
+      loanCr: Number(project.loanCr) || 0,
+      equityCr: Number(project.equityCr) || 0,
+      dscr: Number(project.dscr) || 0,
+      subsidyEligible: Boolean(project.subsidyEligible),
+      status: project.status || 'Pending Audit',
+      source: 'project' as const,
+      updatedAt: project.updatedAt ? new Date(project.updatedAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }) : 'Recently',
+      stageNumber: project.status === 'CA Approved' ? 4 : 3,
+      location: project.location || 'India',
+      landStatus: 'Industrial Land Allotted',
+      collateral: 'Factory & Plant Machinery'
+    })));
     setAudits(mapped);
     if (mapped.length > 0 && !selectedAudit) {
       setSelectedAudit(mapped[0]);
@@ -134,7 +157,11 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
     setAudits(prev =>
       prev.map(item => (item.id === id ? { ...item, status: 'CA Approved', stageNumber: 4 } : item))
     );
-    api.leads.update(id, { status: 'CA Approved' }).catch(() => triggerToast('Unable to save CA approval.'));
+    const audit = audits.find(item => item.id === id);
+    const auditUpdate = audit?.source === 'project'
+      ? api.projects.updateAudit(id, { status: 'CA Approved' })
+      : api.leads.update(id, { status: 'CA Approved' });
+    auditUpdate.catch(() => triggerToast('Unable to save CA approval.'));
     if (selectedAudit && selectedAudit.id === id) {
       setSelectedAudit(prev => prev ? { ...prev, status: 'CA Approved', stageNumber: 4 } : null);
     }
@@ -372,10 +399,14 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
                               <CheckCircle2 className="w-3 h-3" />
                               <span>Approved</span>
                             </span>
-                          ) : (
+                          ) : item.status === 'Pending Audit' ? (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
                               <Clock className="w-3 h-3" />
                               <span>Pending</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200">
+                              {item.status}
                             </span>
                           )}
                         </td>
