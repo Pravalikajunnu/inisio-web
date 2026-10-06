@@ -16,7 +16,7 @@ import { FloatingContactButtons } from './components/FloatingContactButtons';
 import { DashboardSkeleton, LoadingSpinner } from './components/common';
 import { Shield } from 'lucide-react';
 import { canUserStartAssessment } from './utils/membershipStore';
-import { getStoredLeads } from './utils/leadStore';
+import { getStoredLeads, clearLocalSessionCaches } from './utils/leadStore';
 import { recordPageView } from './utils/visitorStore';
 import { recordUserLogin } from './utils/userStore';
 import { ForbiddenPage } from './components/ForbiddenPage';
@@ -32,11 +32,11 @@ const ProjectAssessmentPage = lazy(() => import('./components/ProjectAssessmentP
 const LatestBlogs = lazy(() => import('./components/LatestBlogs').then(m => ({ default: m.LatestBlogs })));
 const BlogsPage = lazy(() => import('./components/BlogsPage').then(m => ({ default: m.BlogsPage })));
 
-// Code-split modals
-const AuthModal = lazy(() => import('./components/AuthModal').then(m => ({ default: m.AuthModal })));
-const ConsultationModal = lazy(() => import('./components/ConsultationModal').then(m => ({ default: m.ConsultationModal })));
-const AdminLeadsModal = lazy(() => import('./components/AdminLeadsModal').then(m => ({ default: m.AdminLeadsModal })));
-const MembershipPlansModal = lazy(() => import('./components/MembershipPlansModal').then(m => ({ default: m.MembershipPlansModal })));
+// Direct modal imports for stable hooks resolution and instant interaction
+import { AuthModal } from './components/AuthModal';
+import { ConsultationModal } from './components/ConsultationModal';
+import { AdminLeadsModal } from './components/AdminLeadsModal';
+import { MembershipPlansModal } from './components/MembershipPlansModal';
 
 export default function App() {
   const [activeBlogSlug, setActiveBlogSlug] = useState<string>(() => {
@@ -114,7 +114,12 @@ export default function App() {
           'Authorization': `Bearer ${token}`,
         },
       })
-        .then((res) => res.json())
+        .then((res) => {
+          if (res.status === 401 || res.status === 403) {
+            throw new Error('Unauthorized');
+          }
+          return res.json();
+        })
         .then((data) => {
           if (data && data.success && data.data) {
             const user: AuthUser = {
@@ -129,15 +134,19 @@ export default function App() {
             localStorage.setItem('inisio_active_user', JSON.stringify(user));
           } else {
             // Token is expired or invalid on the backend
-            localStorage.removeItem('inisio_auth_token');
-            localStorage.removeItem('inisio_active_user');
-            setCurrentUser(null);
+            handleLogout();
           }
         })
         .catch(() => {
-          // Keep active state if network is temporarily offline
+          // Token invalid or network issue
         });
     }
+
+    const handleAuthExpired = () => {
+      handleLogout();
+    };
+    window.addEventListener('inisio_auth_expired', handleAuthExpired);
+    return () => window.removeEventListener('inisio_auth_expired', handleAuthExpired);
   }, []);
 
   const handleOpenAuth = (
@@ -315,6 +324,7 @@ export default function App() {
     setCurrentUser(null);
     localStorage.removeItem('inisio_active_user');
     localStorage.removeItem('inisio_auth_token');
+    clearLocalSessionCaches();
     setActiveTab('home');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -665,60 +675,53 @@ export default function App() {
           onSelectTab={handleSelectTab}
           onOpenAssessment={() => handleOpenAssessment()}
           onOpenConsultation={() => setConsultationModalOpen(true)}
+          onOpenAdmin={() => setAdminModalOpen(true)}
         />
       </div>
 
-      {/* Interactive Modals (Code-Split / Suspense Loaded) */}
+      {/* Interactive Modals */}
       {authModalOpen && (
-        <Suspense fallback={null}>
-          <AuthModal
-            isOpen={authModalOpen}
-            onClose={() => setAuthModalOpen(false)}
-            onLoginSuccess={handleLoginSuccess}
-            initialMode={authInitialMode}
-            prefilledEmail={authPrefill.email}
-            prefilledName={authPrefill.name}
-            prefilledPhone={authPrefill.phone}
-            initialOtp={authPrefill.otp}
-          />
-        </Suspense>
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          onLoginSuccess={handleLoginSuccess}
+          initialMode={authInitialMode}
+          prefilledEmail={authPrefill.email}
+          prefilledName={authPrefill.name}
+          prefilledPhone={authPrefill.phone}
+          initialOtp={authPrefill.otp}
+        />
       )}
 
       {consultationModalOpen && (
-        <Suspense fallback={null}>
-          <ConsultationModal
-            isOpen={consultationModalOpen}
-            onClose={() => setConsultationModalOpen(false)}
-          />
-        </Suspense>
+        <ConsultationModal
+          isOpen={consultationModalOpen}
+          onClose={() => setConsultationModalOpen(false)}
+        />
       )}
 
       {adminModalOpen && (
-        <Suspense fallback={null}>
-          <AdminLeadsModal
-            isOpen={adminModalOpen}
-            onClose={() => setAdminModalOpen(false)}
-            currentUser={currentUser}
-            onLoginSuccess={(user) => {
-              handleLoginSuccess(user);
-              setActiveTab('admin-dashboard');
-            }}
-            onOpenAdminDashboard={() => setActiveTab('admin-dashboard')}
-          />
-        </Suspense>
+        <AdminLeadsModal
+          isOpen={adminModalOpen}
+          onClose={() => setAdminModalOpen(false)}
+          currentUser={currentUser}
+          onLoginSuccess={(user) => {
+            handleLoginSuccess(user);
+            setActiveTab('admin-dashboard');
+          }}
+          onOpenAdminDashboard={() => setActiveTab('admin-dashboard')}
+        />
       )}
 
       {membershipModalOpen && (
-        <Suspense fallback={null}>
-          <MembershipPlansModal
-            isOpen={membershipModalOpen}
-            onClose={() => setMembershipModalOpen(false)}
-            currentUser={currentUser}
-            onOpenAuth={handleOpenAuth}
-            onOpenConsultation={() => setConsultationModalOpen(true)}
-            initialReason={membershipModalReason}
-          />
-        </Suspense>
+        <MembershipPlansModal
+          isOpen={membershipModalOpen}
+          onClose={() => setMembershipModalOpen(false)}
+          currentUser={currentUser}
+          onOpenAuth={handleOpenAuth}
+          onOpenConsultation={() => setConsultationModalOpen(true)}
+          initialReason={membershipModalReason}
+        />
       )}
 
       {/* Floating Call & WhatsApp Buttons */}

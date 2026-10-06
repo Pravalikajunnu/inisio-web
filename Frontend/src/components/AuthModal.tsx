@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthUser, UserRole } from '../types';
-import { validateIndianMobileNumber } from '../utils/validation';
+import { validateIndianMobileNumber, validatePasswordStrength } from '../utils/validation';
 import {
   X,
   Lock,
@@ -193,8 +193,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
-    if (!newPassword || newPassword.length < 6) {
-      setError('New password must be at least 6 characters');
+    const passCheck = validatePasswordStrength(newPassword, cleanEmail);
+    if (!passCheck.isValid) {
+      setError(passCheck.error);
       setLoading(false);
       return;
     }
@@ -268,13 +269,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
-    if ((mode === 'signup' || mode === 'login') && (!password || password.length < 6)) {
-      setError('Password must be at least 6 characters');
+    if (mode === 'login' && (!password || password.length < 6)) {
+      setError('Please enter your password');
       setLoading(false);
       return;
     }
 
     if (mode === 'signup') {
+      const passCheck = validatePasswordStrength(password, cleanEmail);
+      if (!passCheck.isValid) {
+        setError(passCheck.error);
+        setLoading(false);
+        return;
+      }
+
       const phoneValidation = validateIndianMobileNumber(phone);
       if (!phoneValidation.isValid) {
         setError(phoneValidation.error);
@@ -336,6 +344,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
       if (response.ok && resData.success && resData.data) {
         const userData = resData.data;
+
+        if (userData.requiresVerification || userData.isVerified === false) {
+          setIsVerifyingOtp(true);
+          setSuccessMessage(resData.message || `A 6-digit verification code has been dispatched to ${cleanEmail}. Please check your email.`);
+          setResendCooldown(30);
+          return;
+        }
 
         if (userData.token) {
           localStorage.setItem('inisio_auth_token', userData.token);
@@ -995,3 +1010,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     </div>
   );
 };
+
+export default AuthModal;
+

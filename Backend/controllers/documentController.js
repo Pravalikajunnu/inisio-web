@@ -5,9 +5,13 @@ import Lead from '../models/Lead.js';
 import Project from '../models/Project.js';
 import { sendError, sendSuccess } from '../utils/responseHandler.js';
 
+import fsSync from 'fs';
+
 const storageRoot = path.resolve(
   process.env.DOCUMENT_STORAGE_DIR ||
-  (path.join(process.cwd(), 'backend', 'storage', 'private'))
+  (fsSync.existsSync(path.join(process.cwd(), 'Backend', 'storage', 'private'))
+    ? path.join(process.cwd(), 'Backend', 'storage', 'private')
+    : path.join(process.cwd(), 'backend', 'storage', 'private'))
 );
 
 const matchesAssignment = (assignment, user, team) => {

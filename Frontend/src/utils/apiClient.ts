@@ -84,6 +84,11 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
+      if (response.status === 401 && token) {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('inisio_auth_expired'));
+        }
+      }
       const errorMsg = data?.message || `Request failed with status ${response.status}`;
       throw new Error(errorMsg);
     }

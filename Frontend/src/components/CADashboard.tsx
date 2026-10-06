@@ -68,11 +68,11 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
     setTimeout(() => setShowToast(null), 3500);
   };
 
-  const refreshSubscription = () => {
+  const refreshSubscription = React.useCallback(() => {
     setCaSubscription(getCASubscription(user.email, user.name));
-  };
+  }, [user.email, user.name]);
 
-  const loadAudits = async () => {
+  const loadAudits = React.useCallback(async () => {
     const [leads, projects] = await Promise.all([
       fetchLeadsFromBackend(),
       api.projects.getAll().catch(() => [])
@@ -124,7 +124,7 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
     if (mapped.length > 0 && !selectedAudit) {
       setSelectedAudit(mapped[0]);
     }
-  };
+  }, [selectedAudit]);
 
   useEffect(() => {
     loadAudits().catch(() => {
@@ -140,7 +140,7 @@ export const CADashboard: React.FC<CADashboardProps> = ({ user }) => {
       window.removeEventListener('inisio_lead_added', handleUpdate);
       window.removeEventListener('inisio_ca_subscription_updated', handleSubUpdate);
     };
-  }, []);
+  }, [loadAudits, refreshSubscription]);
 
   const handleApprove = (id: string) => {
     // Check CA assessment permission / rate limit

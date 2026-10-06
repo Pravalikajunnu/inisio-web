@@ -184,16 +184,26 @@ export function getStoredLeads(userEmail?: string): LeadRecord[] {
   }
 }
 
+export function clearLocalSessionCaches(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem('inisio_all_registered_users_v1');
+    localStorage.removeItem('inisio_admin_notifications_v1');
+    localStorage.removeItem('inisio_visitor_summary_v1');
+  } catch (err) {
+    console.error('Error clearing local session caches:', err);
+  }
+}
+
 export async function fetchLeadsFromBackend(email?: string): Promise<LeadRecord[]> {
   try {
-    const localMatches = getStoredLeads(email);
     const url = email ? `/api/leads?email=${encodeURIComponent(email)}` : '/api/leads';
     const response = await fetch(url, { headers: getAuthHeaders() });
     if (response.ok) {
       const data = await response.json();
       if (data && data.data && Array.isArray(data.data)) {
         const formatted: LeadRecord[] = data.data.map((item: any) => normalizeLead({
-          id: item._id || item.id,
+          id: String(item._id || item.id),
           timestamp: item.timestamp || item.createdAt || new Date().toISOString(),
           fullName: item.fullName,
           mobile: item.mobile,
@@ -250,52 +260,17 @@ export async function fetchLeadsFromBackend(email?: string): Promise<LeadRecord[
           fundingDisbursedAt: item.fundingDisbursedAt
         }));
 
-        const merged = [...formatted];
-        localMatches.forEach((localLead) => {
-          const matchingIndex = merged.findIndex((item) => String(item.id) === String(localLead.id) || (
-            item.email && localLead.email && item.email.toLowerCase() === localLead.email.toLowerCase() && item.projectName && localLead.projectName && item.projectName.toLowerCase() === localLead.projectName.toLowerCase()
-          ));
-          if (matchingIndex < 0) {
-            merged.push(localLead);
-            return;
-          }
-
-          const backendLead = merged[matchingIndex];
-          const mergeDocument = <T extends { dataUrl?: string; fileUrl?: string; storageKey?: string }>(backendDocument?: T, localDocument?: T) => {
-            if (!backendDocument && !localDocument) return undefined;
-            return {
-              ...localDocument,
-              ...backendDocument,
-              dataUrl: backendDocument?.dataUrl || localDocument?.dataUrl,
-              fileUrl: backendDocument?.fileUrl || localDocument?.fileUrl,
-              storageKey: backendDocument?.storageKey || localDocument?.storageKey
-            } as T;
-          };
-          merged[matchingIndex] = {
-            ...backendLead,
-            dprFile: mergeDocument(backendLead.dprFile, localLead.dprFile),
-            cmaFile: mergeDocument(backendLead.cmaFile, localLead.cmaFile),
-            uploadedDocuments: [...(backendLead.uploadedDocuments || []), ...(localLead.uploadedDocuments || [])]
-              .reduce((documents: any[], document: any) => {
-                const existing = documents.findIndex(item => item.id === document.id || item.name === document.name);
-                if (existing < 0) documents.push(document);
-                else documents[existing] = mergeDocument(documents[existing], document);
-                return documents;
-              }, [])
-          };
-        });
-
+        // Always update local cache with authoritative data
         if (!email) {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(formatted));
         }
-
-        if (merged.length > 0) return merged;
+        return formatted;
       }
     }
   } catch (err) {
     console.warn('Backend sync deferred to local cache:', err);
   }
-  return [];
+  return getStoredLeads(email);
 }
 
 export async function saveLeadRecord(lead: Omit<LeadRecord, 'id' | 'timestamp'>): Promise<LeadRecord> {

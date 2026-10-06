@@ -398,7 +398,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
         email: prev.email || activeUser?.email || ''
       }));
     }
-  }, [editingProject?.id, defaultIndustry]);
+  }, [editingProject, defaultIndustry, activeUser?.name, activeUser?.phone, activeUser?.email]);
 
   // Auto-fill logged in user info if available and not editing
   React.useEffect(() => {
@@ -417,7 +417,7 @@ export const ProjectAssessmentPage: React.FC<ProjectAssessmentPageProps> = ({
         }
       }
     } catch (e) {}
-  }, [editingProject?.id]);
+  }, [editingProject]);
 
   // Calculate numbers dynamically
   const cost = parseFloat(formData.totalCostCr) || 0;

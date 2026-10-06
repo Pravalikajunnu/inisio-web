@@ -40,7 +40,7 @@ export const ProsyncDashboard: React.FC<ProsyncDashboardProps> = ({ user, onLogo
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const loadData = async () => {
+  const loadData = React.useCallback(async () => {
     try {
       const assignedLeads = await fetchLeadsFromBackend();
       setLeads(assignedLeads.filter((lead) => Boolean(lead.consultationAssignedTo)));
@@ -48,13 +48,13 @@ export const ProsyncDashboard: React.FC<ProsyncDashboardProps> = ({ user, onLogo
       setLeads([]);
       triggerToast('Unable to load consultation projects.');
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadData();
     window.addEventListener('inisio_lead_added', loadData);
     return () => window.removeEventListener('inisio_lead_added', loadData);
-  }, []);
+  }, [loadData]);
 
   const handleUpdateStatus = (leadId: string, status: 'In Progress' | 'Customer Declined' | 'Completed') => {
     api.leads.update(leadId, {

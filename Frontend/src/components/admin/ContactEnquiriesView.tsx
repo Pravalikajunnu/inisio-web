@@ -76,11 +76,7 @@ export const ContactEnquiriesView: React.FC<ContactEnquiriesViewProps> = ({ onTr
   const [editAssignedTo, setEditAssignedTo] = useState<string>('');
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
-  useEffect(() => {
-    fetchEnquiries();
-  }, [page, statusFilter, dateRangeFilter, showArchived]);
-
-  const fetchEnquiries = async () => {
+  const fetchEnquiries = React.useCallback(async () => {
     setLoading(true);
     try {
       const params: Record<string, any> = {
@@ -127,7 +123,11 @@ export const ContactEnquiriesView: React.FC<ContactEnquiriesViewProps> = ({ onTr
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateRangeFilter, onTriggerToast, page, pageSize, searchTerm, showArchived, statusFilter]);
+
+  useEffect(() => {
+    fetchEnquiries();
+  }, [fetchEnquiries]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -71,17 +71,18 @@ export const ProjectFinancialsBreakup: React.FC<ProjectFinancialsBreakupProps> =
     return '₹ Cr';
   };
 
-  const persistedCosts = financials ? [
+  const persistedCosts = React.useMemo(() => financials ? [
     { id: 'financials-machinery', title: 'Plant & Heavy Machinery', amountCr: Number(financials.machineryCostCr) || 0, category: 'Machinery' as const },
     { id: 'financials-civil', title: 'Civil Works & Factory Building', amountCr: Number(financials.civilCostCr) || 0, category: 'Civil' as const },
     { id: 'financials-consultancy', title: 'Consultancy & Pre-operative Expenses', amountCr: Number(financials.consultancyCostCr) || 0, category: 'Consultancy' as const },
     { id: 'financials-other', title: 'Other Project Costs', amountCr: Number(financials.otherCostsCr) || 0, category: 'Other' as const }
-  ] : [];
-  const persistedFinances = financials ? [
+  ] : [], [financials]);
+
+  const persistedFinances = React.useMemo(() => financials ? [
     { id: 'financials-loan', title: 'Institutional Term Debt / Bank Loan', amountCr: Number(financials.termLoanCr) || 0, type: 'Term Debt' as const },
     { id: 'financials-equity', title: 'Promoter Equity Contribution', amountCr: Number(financials.promoterContributionCr) || 0, type: 'Promoter Equity' as const },
     { id: 'financials-other-finance', title: 'Other Sources / Grants', amountCr: Number(financials.otherFinanceCr) || 0, type: 'Other' as const }
-  ] : [];
+  ] : [], [financials]);
 
   // Use saved assessment values first; only empty new projects use editable rows.
   const activeCosts: CustomCostComponent[] = customCosts && customCosts.length > 0 ? customCosts : [
@@ -107,7 +108,7 @@ export const ProjectFinancialsBreakup: React.FC<ProjectFinancialsBreakupProps> =
       prevCostsRef.current = '';
       setCosts(financials ? persistedCosts : []);
     }
-  }, [customCosts, totalCostCr]);
+  }, [customCosts, financials, persistedCosts, totalCostCr]);
 
   useEffect(() => {
     const currentFinancesJson = JSON.stringify(customFinances || []);
@@ -120,7 +121,7 @@ export const ProjectFinancialsBreakup: React.FC<ProjectFinancialsBreakupProps> =
       prevFinancesRef.current = '';
       setFinances(financials ? persistedFinances : []);
     }
-  }, [customFinances, loanRequiredCr, promoterContribCr, totalCostCr]);
+  }, [customFinances, financials, loanRequiredCr, persistedFinances, promoterContribCr, totalCostCr]);
 
   // Modal / Inputs state for adding / editing custom component
   const [isAddingCost, setIsAddingCost] = useState(false);

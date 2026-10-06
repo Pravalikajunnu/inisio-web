@@ -89,31 +89,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
     setTimeout(() => setShowToast(null), 3500);
   };
 
-  useEffect(() => {
-    loadData();
-    
-    const handleUpdate = () => loadData();
-    const handleNotifUpdate = () => setUnreadNotifs(getUnreadNotificationCount());
-    const handleVisitorUpdate = () => setVisitorSummary(getVisitorSummary());
-    const handleUserUpdate = () => setUsersList(getAllRegisteredUsers());
-
-    window.addEventListener('inisio_lead_added', handleUpdate);
-    window.addEventListener('inisio_admin_notification_added', handleNotifUpdate);
-    window.addEventListener('inisio_visitor_logged', handleVisitorUpdate);
-    window.addEventListener('inisio_user_registered_or_logged_in', handleUserUpdate);
-
-    // Initial load
-    loadData();
-
-    return () => {
-      window.removeEventListener('inisio_lead_added', handleUpdate);
-      window.removeEventListener('inisio_admin_notification_added', handleNotifUpdate);
-      window.removeEventListener('inisio_visitor_logged', handleVisitorUpdate);
-      window.removeEventListener('inisio_user_registered_or_logged_in', handleUserUpdate);
-    };
-  }, []);
-
-  const loadData = async () => {
+  const loadData = React.useCallback(async () => {
     const [leadsResult, usersResult, projectsResult] = await Promise.allSettled([
       fetchLeadsFromBackend(),
       api.users.getAll(),
@@ -154,7 +130,28 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({ user }) 
     }
     setVisitorSummary(getVisitorSummary());
     setUnreadNotifs(getUnreadNotificationCount());
-  };
+  }, []);
+
+  useEffect(() => {
+    loadData();
+    
+    const handleUpdate = () => loadData();
+    const handleNotifUpdate = () => setUnreadNotifs(getUnreadNotificationCount());
+    const handleVisitorUpdate = () => setVisitorSummary(getVisitorSummary());
+    const handleUserUpdate = () => setUsersList(getAllRegisteredUsers());
+
+    window.addEventListener('inisio_lead_added', handleUpdate);
+    window.addEventListener('inisio_admin_notification_added', handleNotifUpdate);
+    window.addEventListener('inisio_visitor_logged', handleVisitorUpdate);
+    window.addEventListener('inisio_user_registered_or_logged_in', handleUserUpdate);
+
+    return () => {
+      window.removeEventListener('inisio_lead_added', handleUpdate);
+      window.removeEventListener('inisio_admin_notification_added', handleNotifUpdate);
+      window.removeEventListener('inisio_visitor_logged', handleVisitorUpdate);
+      window.removeEventListener('inisio_user_registered_or_logged_in', handleUserUpdate);
+    };
+  }, [loadData]);
 
   const filteredLeads = leads.filter(l => {
     const fullName = l.fullName || '';

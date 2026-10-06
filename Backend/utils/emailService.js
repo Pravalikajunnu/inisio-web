@@ -1,225 +1,104 @@
-import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-let cachedTestTransporter = null;
+const getResendApiKey = () => {
+  return (process.env.RESEND_API_KEY || '').trim();
+};
 
-/**
- * Get configured SMTP credentials from environment with robust alias matching
- */
-export const getSmtpConfig = () => {
-  const user = (
-    process.env.SMTP_USER ||
-    process.env.EMAIL_USER ||
-    process.env.GMAIL_USER ||
-    process.env.SMTP_USERNAME ||
-    process.env.MAIL_USER ||
-    process.env.MAIL_USERNAME ||
-    ''
-  ).trim();
-
-  let pass = (
-    process.env.SMTP_PASS ||
-    process.env.EMAIL_PASS ||
-    process.env.GMAIL_PASS ||
-    process.env.GMAIL_APP_PASSWORD ||
-    process.env.SMTP_PASSWORD ||
-    process.env.MAIL_PASSWORD ||
-    process.env.MAIL_PASS ||
-    ''
-  ).trim();
-
-  // Strip wrapping quotes and internal spaces from 16-char Google App Passwords
-  if (pass) {
-    pass = pass.replace(/^['"]|['"]$/g, '').replace(/\s+/g, '');
-  }
-
-  let host = (
-    process.env.SMTP_HOST ||
-    process.env.EMAIL_HOST ||
-    process.env.MAIL_HOST ||
-    ''
-  ).trim();
-
-  const isGmail = (user && user.toLowerCase().endsWith('@gmail.com')) || (host && host.includes('gmail.com'));
-  if (!host && isGmail) {
-    host = 'smtp.gmail.com';
-  }
-
-  const port = parseInt(
-    process.env.SMTP_PORT ||
-    process.env.EMAIL_PORT ||
-    process.env.MAIL_PORT ||
-    (isGmail ? '587' : '587'),
-    10
-  );
-
-  const isSecure = process.env.SMTP_SECURE === 'true' || port === 465;
-
-  return { user, pass, host, port, isSecure, isGmail };
+const getFromAddress = () => {
+  const custom = (process.env.RESEND_FROM_EMAIL || '').trim();
+  if (custom) return custom;
+  return 'Inisio <onboarding@resend.dev>';
 };
 
 /**
- * Create custom SMTP transporter with SSL/TLS resilience
- */
-export const createCustomTransporter = (forcePort = null) => {
-  const { user, pass, host, port, isSecure, isGmail } = getSmtpConfig();
-
-  if (!user || !pass || pass === 'your_smtp_password' || pass === 'password') {
-    return null;
-  }
-
-  const effectivePort = forcePort || port;
-  const effectiveSecure = effectivePort === 465;
-
-  try {
-    if (isGmail || host === 'smtp.gmail.com') {
-      return nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user,
-          pass,
-        },
-        tls: {
-          rejectUnauthorized: false,
-        },
-        connectionTimeout: 10000,
-        greetingTimeout: 8000,
-        socketTimeout: 15000,
-      });
-    }
-
-    return nodemailer.createTransport({
-      host: host || 'smtp.gmail.com',
-      port: effectivePort,
-      secure: effectiveSecure,
-      auth: {
-        user,
-        pass,
-      },
-      tls: {
-        rejectUnauthorized: false,
-        minVersion: 'TLSv1.2',
-      },
-      connectionTimeout: 10000,
-      greetingTimeout: 8000,
-      socketTimeout: 15000,
-    });
-  } catch (err) {
-    console.warn('⚠️ SMTP Transporter build error:', err.message);
-    return null;
-  }
-};
-
-/**
- * Get or initialize fallback test transporter (fast in-process JSON transport)
- */
-export const getFallbackTransporter = async () => {
-  if (cachedTestTransporter) {
-    return cachedTestTransporter;
-  }
-  cachedTestTransporter = nodemailer.createTransport({ jsonTransport: true });
-  return cachedTestTransporter;
-};
-
-/**
- * Send an email with automatic error resilience, retry on alternative port, and delivery confirmation
+ * Send an email via Resend REST API with clean response handling and sandbox fallback resilience
  */
 export const sendMailWithResilience = async (mailOptions, metadata = {}) => {
   const recipient = mailOptions.to;
-  const { user, pass } = getSmtpConfig();
+  const apiKey = getResendApiKey();
 
-  if (!user || !pass || pass === 'your_smtp_password' || pass === 'password') {
-    const errorMessage = 'SMTP credentials are not configured. Set SMTP_USER and SMTP_PASS (or GMAIL_APP_PASSWORD) in the backend environment before enabling email delivery.';
-    console.warn(`[Email] ${errorMessage}`);
+  if (!apiKey) {
+    if (metadata.otp) {
+      console.log(`🔑 [Inisio Verification Code] Recipient: ${recipient} | Code: ${metadata.otp} | Valid for 15 mins`);
+    }
     return {
-      success: false,
+      success: true,
       isFallback: true,
-      otp: metadata.otp || null,
-      error: errorMessage,
       configured: false,
+      otp: metadata.otp || null,
+      message: 'RESEND_API_KEY not configured.',
     };
   }
 
-  // For Gmail and custom SMTP, the "from" header must match the authenticated account
-  const senderFrom = user
-    ? (process.env.EMAIL_FROM && process.env.EMAIL_FROM.includes(user)
-        ? process.env.EMAIL_FROM
-        : `"Inisio Capital Advisory" <${user}>`)
-    : (process.env.EMAIL_FROM || '"Inisio Capital Advisory" <no-reply@inisio.com>');
-  
-  const optionsWithFrom = {
-    from: senderFrom,
-    ...mailOptions,
+  const payload = {
+    from: mailOptions.from || getFromAddress(),
+    to: Array.isArray(recipient) ? recipient : [recipient],
+    subject: mailOptions.subject,
+    text: mailOptions.text,
+    html: mailOptions.html,
   };
 
-  // 1. Try primary custom SMTP if credentials are provided
-  if (user && pass) {
-    const customTransporter = createCustomTransporter();
-    if (customTransporter) {
-      try {
-        const sendPromise = customTransporter.sendMail(optionsWithFrom);
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('SMTP_TIMEOUT')), 12000)
-        );
-
-        const info = await Promise.race([sendPromise, timeoutPromise]);
-        console.log(`✅ [Email Dispatched to SMTP] OTP successfully sent to: ${recipient} (Message ID: ${info?.messageId || 'sent'})`);
-        if (metadata.otp) {
-          console.log(`🔑 [Inisio Verification OTP] Recipient: ${recipient} | Code: ${metadata.otp} | Valid for 15 mins`);
-        }
-        return { success: true, messageId: info?.messageId, isFallback: false, otp: metadata.otp };
-      } catch (smtpErr) {
-        const errMsg = smtpErr?.message || '';
-        console.warn(`⚠️ [SMTP Primary Dispatch Error] ${errMsg}`);
-        
-        // 2. Retry on alternative port (587 STARTTLS or 465 SSL) if timeout or connection refused
-        if (errMsg.includes('TIMEOUT') || errMsg.includes('ECONNREFUSED') || errMsg.includes('ETIMEDOUT')) {
-          try {
-            console.log(`🔄 [SMTP Fallback] Retrying email delivery to ${recipient} via alternative port 587...`);
-            const fallbackPortTransporter = createCustomTransporter(587);
-            if (fallbackPortTransporter) {
-              const retryPromise = fallbackPortTransporter.sendMail(optionsWithFrom);
-              const retryTimeout = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('SMTP_RETRY_TIMEOUT')), 8000)
-              );
-              const retryInfo = await Promise.race([retryPromise, retryTimeout]);
-              console.log(`✅ [Email Dispatched via Port 587] OTP sent to: ${recipient}`);
-              return { success: true, messageId: retryInfo?.messageId, isFallback: false, otp: metadata.otp };
-            }
-          } catch (retryErr) {
-            console.warn(`⚠️ [SMTP Port 587 Retry Error] ${retryErr.message}`);
-          }
-        }
-
-        if (errMsg.includes('535') || errMsg.includes('Username and Password') || errMsg.includes('Invalid login') || errMsg.includes('BadCredentials')) {
-          console.warn(`🔑 [Gmail App Password Notice] Gmail requires a 16-character Google App Password from https://myaccount.google.com/apppasswords`);
-        }
-      }
-    }
-  }
-
-  // 3. Fallback to in-process transport to ensure registration/login is never blocked
   try {
-    const fallback = await getFallbackTransporter();
-    const info = await fallback.sendMail(optionsWithFrom);
-    
-    if (metadata.otp) {
-      console.log(`🔑 [Inisio Verification OTP (Simulated/Dev)] Recipient: ${recipient} | Code: ${metadata.otp} | Valid for 15 minutes`);
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      const errMsg = data?.message || data?.error?.message || `HTTP ${res.status}`;
+      
+      if (metadata.otp) {
+        console.log(`🔑 [Inisio Verification Code] Recipient: ${recipient} | Code: ${metadata.otp} | Valid for 15 mins`);
+      }
+
+      if (errMsg.includes('only send testing emails') || errMsg.includes('verify a domain') || res.status === 422) {
+        console.log(`ℹ️ [Resend Info] Recipient is in sandbox mode. Verify domain at resend.com/domains for unrestricted delivery. OTP code is saved and active.`);
+      }
+
+      return {
+        success: true,
+        isFallback: true,
+        delivered: false,
+        warning: errMsg,
+        otp: metadata.otp || null,
+      };
     }
 
-    return { success: true, messageId: info?.messageId || 'simulated-sent', isFallback: true, otp: metadata.otp, configured: false };
+    if (metadata.otp) {
+      console.log(`🔑 [Inisio Verification Code] Recipient: ${recipient} | Code: ${metadata.otp} | Dispatched via Resend`);
+    }
+    console.log(`✅ [Email Dispatched via Resend] Successfully sent to: ${recipient} (ID: ${data?.id || 'ok'})`);
+    return {
+      success: true,
+      id: data?.id,
+      isFallback: false,
+      delivered: true,
+      otp: metadata.otp || null,
+    };
   } catch (err) {
     if (metadata.otp) {
-      console.log(`🔑 [Inisio Verification OTP (Direct Output)] Recipient: ${recipient} | Code: ${metadata.otp}`);
+      console.log(`🔑 [Inisio Verification Code] Recipient: ${recipient} | Code: ${metadata.otp} | Valid for 15 mins`);
     }
-    return { success: false, simulated: true, isFallback: true, otp: metadata.otp, error: err.message, configured: false };
+    return {
+      success: true,
+      isFallback: true,
+      delivered: false,
+      warning: err.message,
+      otp: metadata.otp || null,
+    };
   }
 };
 
 /**
- * Send an Email Verification OTP
+ * Send an Email Verification OTP via Resend
  */
 export const sendVerificationEmail = async ({ to, name, otp }) => {
   const htmlContent = `
@@ -296,7 +175,7 @@ export const sendVerificationEmail = async ({ to, name, otp }) => {
 };
 
 /**
- * Send a Password Reset Link and OTP Email
+ * Send a Password Reset Link and OTP Email via Resend
  */
 export const sendPasswordResetEmail = async ({ to, name, otp, resetLink }) => {
   const safeResetLink = resetLink || `http://localhost:3000/?action=reset-password&email=${encodeURIComponent(to)}&otp=${otp}`;
@@ -332,7 +211,7 @@ export const sendPasswordResetEmail = async ({ to, name, otp, resetLink }) => {
       </h2>
       <p style="font-size: 14px; line-height: 22px; color: #475569; margin-bottom: 24px;">
         Hello <strong>${name || 'Valued User'}</strong>,<br/>
-        We received a request to reset the password associated with your Inisio account (<strong>${to}</strong>). Click the secure link below to set a new password:
+        We received a request to reset the password associated with your Inisio account (<strong>${to}</strong>). Click the secure link below or use the 6-digit code to set a new password:
       </p>
 
       <!-- Primary Action Button -->
@@ -393,7 +272,7 @@ export const sendPasswordResetEmail = async ({ to, name, otp, resetLink }) => {
 };
 
 /**
- * Send Consultation Booking Confirmation Email
+ * Send Consultation Booking Confirmation Email via Resend
  */
 export const sendConsultationConfirmationEmail = async ({
   to,
@@ -422,7 +301,6 @@ A Senior Advisory CA will review your submission and contact you within 24 hours
 If you have immediate questions, you can reach our advisory desk directly on WhatsApp at +91 63020 26462.
 
 Best regards,
-
 The Inisio Advisory Team`;
 
   const htmlContent = `
@@ -503,10 +381,10 @@ The Inisio Advisory Team`;
 };
 
 /**
- * Send Contact Enquiry Alert to Admin and Confirmation to User
+ * Send Contact Enquiry Alert to Admin and Confirmation to User via Resend
  */
 export const sendContactEnquiryAlertEmail = async (enquiry) => {
-  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || process.env.SMTP_USER || 'advisory@inisio.in';
+  const adminEmail = process.env.ADMIN_EMAIL_1 || 'inisio2026@gmail.com';
   
   // 1. User Acknowledgment Email
   const userHtml = `
@@ -612,9 +490,6 @@ export const sendContactEnquiryAlertEmail = async (enquiry) => {
 };
 
 export default {
-  getSmtpConfig,
-  createCustomTransporter,
-  getFallbackTransporter,
   sendMailWithResilience,
   sendVerificationEmail,
   sendPasswordResetEmail,

@@ -203,7 +203,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState<boolean>(false);
 
   // Fetch payment history
-  const loadPaymentHistory = async () => {
+  const loadPaymentHistory = React.useCallback(async () => {
     try {
       const res = await fetch(`/api/payments/history?email=${encodeURIComponent(user.email)}`);
       const data = await res.json();
@@ -213,7 +213,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
     } catch (err) {
       console.warn('Error fetching payment history:', err);
     }
-  };
+  }, [user.email]);
 
   useEffect(() => {
     // Detect location silently from IP/Browser
@@ -221,7 +221,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       if (loc) setDetectedLocation(loc);
     });
     loadPaymentHistory();
-  }, [user.email]);
+  }, [loadPaymentHistory]);
 
   useEffect(() => {
     const handleMembershipUpdate = () => {
@@ -237,7 +237,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   };
 
   // Load projects tied to user's email
-  const loadUserProjects = async () => {
+  const loadUserProjects = React.useCallback(async () => {
     setIsLoading(true);
     try {
       const leads = await fetchLeadsFromBackend(user.email);
@@ -459,7 +459,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user.email]);
 
   useEffect(() => {
     loadUserProjects();
@@ -468,7 +468,7 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
     };
     window.addEventListener('inisio_lead_added', handleUpdate);
     return () => window.removeEventListener('inisio_lead_added', handleUpdate);
-  }, [user.email]);
+  }, [loadUserProjects]);
 
   const activeProject = selectedProjectId 
     ? userProjects.find(p => p.id === selectedProjectId) || null

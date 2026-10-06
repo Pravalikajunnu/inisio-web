@@ -3,6 +3,7 @@ import { getStoredLeads, deleteLeadRecord, clearAllLeads, exportLeadsToCSV, Lead
 import { UserProfileDetailModal } from './UserProfileDetailModal';
 import { LeadEditModal } from './LeadEditModal';
 import { AuthUser } from '../types';
+import { validatePasswordStrength } from '../utils/validation';
 import {
   X,
   Lock,
@@ -41,11 +42,6 @@ interface AdminLeadsModalProps {
   onOpenAdminDashboard?: () => void;
 }
 
-const AUTHORIZED_ADMIN_EMAILS = [
-  'inisio2026@gmail.com',
-  'junnupravalika59@gmail.com'
-];
-
 export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({
   isOpen,
   onClose,
@@ -56,7 +52,6 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({
   // Check if current user is already an authorized admin
   const isAlreadyAdmin = !!(
     currentUser &&
-    AUTHORIZED_ADMIN_EMAILS.includes(currentUser.email?.toLowerCase().trim()) &&
     (currentUser.role === 'admin' || currentUser.role === 'superadmin')
   );
 
@@ -64,7 +59,7 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({
   const [authMode, setAuthMode] = useState<'login' | 'forgot' | 'reset'>('login');
   
   // Login form state
-  const [email, setEmail] = useState<string>('inisio2026@gmail.com');
+  const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
@@ -72,7 +67,7 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({
   const [successMsg, setSuccessMsg] = useState<string>('');
 
   // Password reset state
-  const [resetEmail, setResetEmail] = useState<string>('inisio2026@gmail.com');
+  const [resetEmail, setResetEmail] = useState<string>('');
   const [otpCode, setOtpCode] = useState<string>('');
   const [newPassword, setNewPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
@@ -80,21 +75,32 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({
   // Leads & data state
   const [leads, setLeads] = useState<LeadRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterSource, setFilterSource] = useState<'ALL' | 'PDF' | 'FORM'>('ALL');
+  const [filterSource, setFilterSource] = useState<'ALL' | 'PDF' | 'FORM' | 'CONSULTATION'>('ALL');
   const [selectedLead, setSelectedLead] = useState<LeadRecord | null>(null);
   const [editingLead, setEditingLead] = useState<LeadRecord | null>(null);
 
   const activeAdminUser: AuthUser = currentUser && (currentUser.role === 'admin' || currentUser.role === 'superadmin')
     ? currentUser
     : {
-        id: email === 'junnupravalika59@gmail.com' ? 'user_superadmin_001' : 'user_admin_002',
-        email: email || 'inisio2026@gmail.com',
-        name: email === 'junnupravalika59@gmail.com' ? 'Pravalika Junnu' : 'Inisio Admin Executive',
-        role: email === 'junnupravalika59@gmail.com' ? 'superadmin' : 'admin',
-        company: email === 'junnupravalika59@gmail.com' ? 'Inisio Executive Board' : 'Inisio HQ Operations',
+        id: 'user_admin_active',
+        email: email || 'admin@inisio.com',
+        name: 'Inisio Admin Executive',
+        role: 'admin',
+        company: 'Inisio HQ Operations',
         createdAt: new Date().toISOString(),
         lastLoginAt: new Date().toISOString()
       };
+
+  const loadData = React.useCallback(async () => {
+    try {
+      const live = await fetchLeadsFromBackend();
+      if (live && live.length > 0) {
+        setLeads(live);
+        return;
+      }
+    } catch {}
+    setLeads(getStoredLeads());
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -106,18 +112,7 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({
     const handleUpdate = () => loadData();
     window.addEventListener('inisio_lead_added', handleUpdate);
     return () => window.removeEventListener('inisio_lead_added', handleUpdate);
-  }, [isOpen, currentUser]);
-
-  const loadData = async () => {
-    try {
-      const live = await fetchLeadsFromBackend();
-      if (live && live.length > 0) {
-        setLeads(live);
-        return;
-      }
-    } catch {}
-    setLeads(getStoredLeads());
-  };
+  }, [isOpen, isAlreadyAdmin, loadData]);
 
   if (!isOpen) return null;
 
@@ -128,12 +123,8 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({
     setSuccessMsg('');
 
     const cleanEmail = email.toLowerCase().trim();
-
-    // Enforce strict email restriction
-    if (!AUTHORIZED_ADMIN_EMAILS.includes(cleanEmail)) {
-      setErrorMsg(
-        'Access Denied: The Admin Portal is strictly restricted to inisio2026@gmail.com (Admin) and junnupravalika59@gmail.com (Super Admin). Other users must use the standard User Sign In.'
-      );
+    if (!cleanEmail || !password) {
+      setErrorMsg('Please enter both administrative email and password.');
       return;
     }
 
@@ -179,22 +170,7 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({
         setErrorMsg(data.message || 'Authentication failed. Please check your administrative credentials.');
       }
     } catch (err: any) {
-      // Local fallback for offline/preview resilience
-      if (password.toLowerCase() === cleanEmail || password === 'inisio2026' || password === 'admin' || password === 'Password@123' || password === '6302026462') {
-        const fallbackRole = cleanEmail === 'junnupravalika59@gmail.com' ? 'superadmin' : 'admin';
-        const localUser: AuthUser = {
-          id: cleanEmail === 'junnupravalika59@gmail.com' ? 'user_superadmin_001' : 'user_admin_002',
-          email: cleanEmail,
-          name: cleanEmail === 'junnupravalika59@gmail.com' ? 'Pravalika Junnu' : 'Inisio Admin Executive',
-          role: fallbackRole,
-          company: cleanEmail === 'junnupravalika59@gmail.com' ? 'Inisio Executive Board' : 'Inisio HQ Operations'
-        };
-        localStorage.setItem('inisio_active_user', JSON.stringify(localUser));
-        if (onLoginSuccess) onLoginSuccess(localUser);
-        setIsAuthenticated(true);
-      } else {
-        setErrorMsg(err.message || 'Unable to connect to server. Check your credentials.');
-      }
+      setErrorMsg(err.message || 'Unable to connect to server. Check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -207,9 +183,8 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({
     setSuccessMsg('');
 
     const cleanEmail = resetEmail.toLowerCase().trim();
-
-    if (!AUTHORIZED_ADMIN_EMAILS.includes(cleanEmail)) {
-      setErrorMsg('Access Denied: Only inisio2026@gmail.com and junnupravalika59@gmail.com can reset admin access.');
+    if (!cleanEmail) {
+      setErrorMsg('Please provide your administrative email address.');
       return;
     }
 
@@ -243,8 +218,10 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({
     setErrorMsg('');
     setSuccessMsg('');
 
-    if (newPassword.length < 6) {
-      setErrorMsg('Password must be at least 6 characters.');
+    const cleanEmail = resetEmail.toLowerCase().trim();
+    const passCheck = validatePasswordStrength(newPassword, cleanEmail);
+    if (!passCheck.isValid) {
+      setErrorMsg(passCheck.error);
       return;
     }
 
@@ -260,7 +237,7 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: resetEmail.toLowerCase().trim(),
+          email: cleanEmail,
           otp: otpCode.trim(),
           newPassword
         })
@@ -351,7 +328,7 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-400 font-inter">
-                Strictly restricted to <span className="text-slate-200 font-semibold">junnupravalika59@gmail.com</span> (Super Admin) &amp; <span className="text-slate-200 font-semibold">inisio2026@gmail.com</span> (Admin)
+                Strictly restricted to authorized administrative personnel.
               </p>
             </div>
           </div>
@@ -417,44 +394,19 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({
             {/* 1. Admin Login Form */}
             {authMode === 'login' && (
               <form onSubmit={handleAdminLogin} className="space-y-4 text-left">
-                {/* Email Selector Chips */}
                 <div>
                   <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-                    Authorized Administrative Email *
+                    Administrative Email Address *
                   </label>
-                  <div className="flex gap-2 mb-2">
-                    <button
-                      type="button"
-                      onClick={() => setEmail('inisio2026@gmail.com')}
-                      className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
-                        email === 'inisio2026@gmail.com'
-                          ? 'bg-blue-600/30 border-blue-500 text-blue-300'
-                          : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      inisio2026@gmail.com (Admin)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setEmail('junnupravalika59@gmail.com')}
-                      className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
-                        email === 'junnupravalika59@gmail.com'
-                          ? 'bg-blue-600/30 border-blue-500 text-blue-300'
-                          : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      junnupravalika59@gmail.com (Super Admin)
-                    </button>
-                  </div>
-
                   <div className="relative">
                     <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
                     <input
                       type="email"
                       required
+                      autoFocus
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="admin@email.com"
+                      placeholder="admin@inisio.com"
                       className="w-full pl-9 pr-4 py-2.5 bg-slate-800 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-hidden text-xs"
                     />
                   </div>
@@ -489,7 +441,6 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Enter administrative password"
                       className="w-full pl-9 pr-10 py-2.5 bg-slate-800 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-hidden text-xs"
-                      autoFocus
                     />
                     <button
                       type="button"
@@ -524,41 +475,17 @@ export const AdminLeadsModal: React.FC<AdminLeadsModalProps> = ({
               <form onSubmit={handleForgotPassword} className="space-y-4 text-left">
                 <div>
                   <label className="text-xs font-semibold text-slate-300 block mb-1">
-                    Select Admin Account to Reset *
+                    Administrative Email Address *
                   </label>
-                  <div className="flex gap-2 mb-2">
-                    <button
-                      type="button"
-                      onClick={() => setResetEmail('inisio2026@gmail.com')}
-                      className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
-                        resetEmail === 'inisio2026@gmail.com'
-                          ? 'bg-blue-600/30 border-blue-500 text-blue-300'
-                          : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      inisio2026@gmail.com
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setResetEmail('junnupravalika59@gmail.com')}
-                      className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
-                        resetEmail === 'junnupravalika59@gmail.com'
-                          ? 'bg-blue-600/30 border-blue-500 text-blue-300'
-                          : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      junnupravalika59@gmail.com
-                    </button>
-                  </div>
-
                   <div className="relative">
                     <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
                     <input
                       type="email"
                       required
+                      autoFocus
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}
-                      placeholder="admin@email.com"
+                      placeholder="admin@inisio.com"
                       className="w-full pl-9 pr-4 py-2.5 bg-slate-800 border border-slate-700 text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-hidden text-xs"
                     />
                   </div>

@@ -3,7 +3,8 @@ import {
   TrendingUp,
   MapPin,
   ShieldCheck,
-  PhoneCall
+  PhoneCall,
+  Lock
 } from 'lucide-react';
 
 interface FooterProps {
@@ -17,6 +18,7 @@ export const Footer: React.FC<FooterProps> = ({
   onSelectTab,
   onOpenAssessment,
   onOpenConsultation,
+  onOpenAdmin,
 }) => {
   const handleNav = (tab: string) => {
     if (onSelectTab) {
@@ -130,9 +132,20 @@ export const Footer: React.FC<FooterProps> = ({
 
         {/* Disclaimer & Copyright */}
         <div className="pt-8 border-t border-slate-900 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500 font-inter">
-          <p className="cursor-default select-none">
-            © {new Date().getFullYear()} Inisio Greenfield Advisory Platform. All rights reserved.
-          </p>
+          <div className="flex items-center gap-2 cursor-default select-none">
+            <span>© {new Date().getFullYear()} Inisio Greenfield Advisory Platform. All rights reserved.</span>
+            {onOpenAdmin && (
+              <button
+                type="button"
+                onDoubleClick={onOpenAdmin}
+                title="Internal Portal (Double-click to access)"
+                aria-label="Admin Access"
+                className="text-slate-700 hover:text-slate-400 transition-colors p-1 rounded cursor-default inline-flex items-center justify-center opacity-40 hover:opacity-100 focus:outline-none"
+              >
+                <Lock className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
 
           <div className="flex flex-wrap items-center gap-5 sm:gap-6">
             <a href="#privacy" className="hover:text-slate-400 transition-colors">Privacy Policy</a>

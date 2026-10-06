@@ -26,6 +26,38 @@ export function getAdminNotifications(): AdminNotification[] {
   }
 }
 
+export async function fetchNotificationsFromBackend(): Promise<AdminNotification[]> {
+  try {
+    const token = localStorage.getItem('inisio_auth_token');
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const res = await fetch('/api/notifications', { headers });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.data && Array.isArray(data.data)) {
+        const notifs: AdminNotification[] = data.data.map((item: any) => ({
+          id: item._id || item.id,
+          timestamp: item.timestamp || item.createdAt || new Date().toISOString(),
+          type: item.type || 'PROJECT_MODIFIED',
+          title: item.title,
+          message: item.message,
+          userEmail: item.userEmail,
+          userName: item.userName,
+          projectName: item.projectName,
+          read: Boolean(item.read),
+          metadata: item.metadata,
+        }));
+        localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifs));
+        return notifs;
+      }
+    }
+  } catch (err) {
+    console.warn('Backend notification fetch fallback:', err);
+  }
+  return getAdminNotifications();
+}
+
 export function createAdminNotification(
   notif: Omit<AdminNotification, 'id' | 'timestamp' | 'read'>
 ): AdminNotification {
@@ -46,9 +78,13 @@ export function createAdminNotification(
   }
 
   // Sync to backend API asynchronously
+  const token = localStorage.getItem('inisio_auth_token');
   fetch('/api/notifications', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    },
     body: JSON.stringify(newNotif)
   }).catch((e) => console.log('Async notification persist:', e.message));
 
@@ -61,7 +97,11 @@ export function markNotificationAsRead(id: string): void {
   localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
   window.dispatchEvent(new CustomEvent('inisio_admin_notification_added'));
 
-  fetch(`/api/notifications/${id}/read`, { method: 'PATCH' }).catch(() => {});
+  const token = localStorage.getItem('inisio_auth_token');
+  fetch(`/api/notifications/${id}/read`, {
+    method: 'PATCH',
+    headers: token ? { Authorization: `Bearer ${token}` } : {}
+  }).catch(() => {});
 }
 
 export function markAllNotificationsAsRead(): void {
@@ -70,12 +110,22 @@ export function markAllNotificationsAsRead(): void {
   localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(updated));
   window.dispatchEvent(new CustomEvent('inisio_admin_notification_added'));
 
-  fetch('/api/notifications/read-all', { method: 'PATCH' }).catch(() => {});
+  const token = localStorage.getItem('inisio_auth_token');
+  fetch('/api/notifications/read-all', {
+    method: 'PATCH',
+    headers: token ? { Authorization: `Bearer ${token}` } : {}
+  }).catch(() => {});
 }
 
 export function clearAllNotifications(): void {
   localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify([]));
   window.dispatchEvent(new CustomEvent('inisio_admin_notification_added'));
+
+  const token = localStorage.getItem('inisio_auth_token');
+  fetch('/api/notifications/clear-all', {
+    method: 'DELETE',
+    headers: token ? { Authorization: `Bearer ${token}` } : {}
+  }).catch(() => {});
 }
 
 export function getUnreadNotificationCount(): number {

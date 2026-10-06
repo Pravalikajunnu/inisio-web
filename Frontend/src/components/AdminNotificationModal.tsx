@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AdminNotification, getAdminNotifications, markAllNotificationsAsRead, clearAllNotifications } from '../utils/notificationStore';
+import { AdminNotification, getAdminNotifications, fetchNotificationsFromBackend, markAllNotificationsAsRead, clearAllNotifications } from '../utils/notificationStore';
 import { Bell, X, CheckCircle2, Trash2, ShieldCheck, Activity, Download, FileCheck2, Users, FileText } from 'lucide-react';
 
 interface AdminNotificationModalProps {
@@ -19,8 +19,13 @@ export const AdminNotificationModal: React.FC<AdminNotificationModalProps> = ({ 
     return () => window.removeEventListener('inisio_admin_notification_added', handleUpdate);
   }, [isOpen]);
 
-  const loadNotifications = () => {
-    setNotifications(getAdminNotifications().sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
+  const loadNotifications = async () => {
+    try {
+      const notifs = await fetchNotificationsFromBackend();
+      setNotifications(notifs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
+    } catch {
+      setNotifications(getAdminNotifications().sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
+    }
   };
 
   const handleMarkAllRead = () => {

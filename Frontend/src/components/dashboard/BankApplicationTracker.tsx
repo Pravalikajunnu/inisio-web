@@ -32,6 +32,25 @@ interface BankApplicationTrackerProps {
   isReadOnly?: boolean;
 }
 
+const BANK_OPTIONS = [
+  'State Bank of India (SBI)',
+  'Punjab National Bank (PNB)',
+  'Canara Bank',
+  'Bank of Baroda (BOB)',
+  'Union Bank of India',
+  'Indian Bank',
+  'Bank of India',
+  'Central Bank of India',
+  'HDFC Bank (Commercial Banking)',
+  'ICICI Bank (Corporate & SME)',
+  'Axis Bank',
+  'Kotak Mahindra Bank',
+  'Federal Bank',
+  'SIDBI (Small Industries Development Bank of India)',
+  'NABARD / State Financial Corporation (SFC)',
+  'Other / Custom Bank'
+];
+
 export const BankApplicationTracker: React.FC<BankApplicationTrackerProps> = ({
   bankName = '',
   branchLocation = '',
@@ -52,25 +71,6 @@ export const BankApplicationTracker: React.FC<BankApplicationTrackerProps> = ({
   const [currentStatus, setCurrentStatus] = useState(bankApplicationStatus || 'Draft Filing / Pre-Sanction Review');
   const [isCustomBank, setIsCustomBank] = useState(false);
 
-  const bankOptions = [
-    'State Bank of India (SBI)',
-    'Punjab National Bank (PNB)',
-    'Canara Bank',
-    'Bank of Baroda (BOB)',
-    'Union Bank of India',
-    'Indian Bank',
-    'Bank of India',
-    'Central Bank of India',
-    'HDFC Bank (Commercial Banking)',
-    'ICICI Bank (Corporate & SME)',
-    'Axis Bank',
-    'Kotak Mahindra Bank',
-    'Federal Bank',
-    'SIDBI (Small Industries Development Bank of India)',
-    'NABARD / State Financial Corporation (SFC)',
-    'Other / Custom Bank'
-  ];
-
   // Sync state when props update
   useEffect(() => {
     setCurrentBankName(bankName || '');
@@ -79,7 +79,7 @@ export const BankApplicationTracker: React.FC<BankApplicationTrackerProps> = ({
     setCurrentRefNumber(bankAppRefNumber || '');
     setCurrentStatus(bankApplicationStatus || 'Draft Filing / Pre-Sanction Review');
     
-    if (bankName && !bankOptions.includes(bankName)) {
+    if (bankName && !BANK_OPTIONS.includes(bankName)) {
       setIsCustomBank(true);
     } else {
       setIsCustomBank(false);

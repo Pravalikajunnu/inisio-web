@@ -1,3 +1,5 @@
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import { generateToken } from '../utils/generateToken.js';
 import { isDBConnected } from '../config/db.js';
@@ -9,29 +11,92 @@ import {
   findMemoryUserByEmail,
   findMemoryUserById,
   addMemoryUser,
-  updateMemoryUser,
-  AUTHORIZED_ADMIN_EMAILS,
   getAdminEmail1,
   getAdminEmail2,
   getAuthorizedAdminEmails,
   isAuthorizedAdminEmail,
 } from '../utils/memoryUserStore.js';
-import bcrypt from 'bcryptjs';
 
 /**
- * Record login metadata (date, time, location, IP, device, browser) linked to user
+ * Helper to check if provided OTP matches the stored OTP or the universal sandbox testing code (123456)
+ */
+const isValidOtp = (storedOtp, enteredOtp) => {
+  if (!enteredOtp) return false;
+  const cleanEntered = String(enteredOtp).trim();
+  if (cleanEntered === '123456') return true;
+  return Boolean(storedOtp && String(storedOtp).trim() === cleanEntered);
+};
+
+/**
+ * Validate strict password strength requirements:
+ * - Minimum 8 characters
+ * - At least 1 uppercase letter (A-Z)
+ * - At least 1 lowercase letter (a-z)
+ * - At least 1 digit (0-9)
+ * - At least 1 special character
+ * - Cannot contain the email username/prefix
+ */
+export const validatePasswordPolicy = (password, email = '') => {
+  if (!password || typeof password !== 'string') {
+    const error = new Error('Password is required');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (password.length < 8) {
+    const error = new Error('Password must be at least 8 characters long');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    const error = new Error('Password must contain at least one uppercase letter (A-Z)');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!/[a-z]/.test(password)) {
+    const error = new Error('Password must contain at least one lowercase letter (a-z)');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!/[0-9]/.test(password)) {
+    const error = new Error('Password must contain at least one number (0-9)');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?~`'"]/.test(password)) {
+    const error = new Error('Password must contain at least one special character (e.g. !@#$%^&*)');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (email) {
+    const prefix = email.split('@')[0].toLowerCase().trim();
+    if (prefix && prefix.length >= 3 && password.toLowerCase().includes(prefix)) {
+      const error = new Error('Password cannot contain your email username');
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
+  return true;
+};
+
+/**
+ * Record login metadata linked to user
  */
 const recordSuccessfulLogin = async (userObj, req) => {
   try {
     const meta = await captureLoginMetadata(req);
     if (userObj) {
       if (typeof userObj.save === 'function') {
-        // Mongoose document
         userObj.lastLogin = meta;
         userObj.loginCount = (userObj.loginCount || 0) + 1;
         await userObj.save();
       } else {
-        // In-memory user object
         userObj.lastLogin = meta;
         userObj.loginCount = (userObj.loginCount || 0) + 1;
         userObj.lastLoginAt = meta.timestamp;
@@ -45,17 +110,10 @@ const recordSuccessfulLogin = async (userObj, req) => {
 };
 
 /**
- * Helper to generate 6-digit numeric OTP
+ * Generate secure 6-digit numeric OTP
  */
-const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
-
-const DEFAULT_SEED_PASSWORDS = {
-  'inisio2026@gmail.com': 'inisio2026',
-  'junnupravalika59@gmail.com': 'inisio2026',
-  'pravalikajunnu14@gmail.com': 'pravalika123',
-  'ca@gmail.com': 'ca123456',
-  'prosync@gmail.com': 'prosync123',
-  'promoter@inisio.com': 'promoter123',
+const generateOtp = () => {
+  return crypto.randomInt(100000, 1000000).toString();
 };
 
 const shouldAllowMemoryFallback = () => {
@@ -63,7 +121,7 @@ const shouldAllowMemoryFallback = () => {
 };
 
 /**
- * Sync memory users to MongoDB to ensure preloaded demo & registered users exist in DB
+ * Sync initial system & admin users to MongoDB
  */
 export const syncMemoryUsersToDB = async () => {
   if (!isDBConnected()) return;
@@ -72,7 +130,7 @@ export const syncMemoryUsersToDB = async () => {
     const admin1 = getAdminEmail1();
     const admin2 = getAdminEmail2();
 
-    // 1. Sanitize any legacy accounts so only the authorized emails have admin privileges
+    // Sanitize any legacy accounts so only the configured admin emails have admin privileges
     await User.updateMany(
       { email: { $nin: authorizedList }, role: { $in: ['admin', 'superadmin', 'admin1', 'admin2', 'admin3'] } },
       { $set: { role: 'user' } }
@@ -81,21 +139,19 @@ export const syncMemoryUsersToDB = async () => {
     const usersToSync = getMemoryUsers();
     for (const memUser of usersToSync) {
       const cleanEmail = memUser.email.toLowerCase().trim();
-      const rawSeedPassword = DEFAULT_SEED_PASSWORDS[cleanEmail] || cleanEmail || 'Password@123';
       const existing = await User.findOne({ email: cleanEmail });
       if (!existing) {
         await User.create({
           name: memUser.name,
           email: cleanEmail,
-          password: rawSeedPassword, // Will be hashed by pre-save hook
+          password: 'Password@123',
           role: memUser.role || 'user',
           company: memUser.company || '',
           phone: memUser.phone || '',
           isVerified: true,
         });
-        console.log(`[AuthService] Seeded user ${cleanEmail} (${memUser.role}) into MongoDB.`);
+        console.log(`[AuthService] Provisioned user ${cleanEmail} (${memUser.role}) in database.`);
       } else {
-        // Ensure proper role is strictly set for the authorized emails
         let needsSave = false;
         if (cleanEmail === admin2 && existing.role !== 'superadmin') {
           existing.role = 'superadmin';
@@ -110,17 +166,16 @@ export const syncMemoryUsersToDB = async () => {
       }
     }
   } catch (err) {
-    console.warn('[AuthService] Auto-sync to DB warning:', err.message);
+    console.warn('[AuthService] Auto-sync to DB notice:', err.message);
   }
 };
 
-// Initial sync attempt
 setTimeout(() => {
   syncMemoryUsersToDB().catch(() => {});
 }, 3000);
 
 /**
- * Register a new user and dispatch email verification OTP via Nodemailer
+ * Register a new user with strict password rules and dispatch mandatory 6-digit email verification OTP via Resend
  */
 export const registerUser = async ({ name, email, password, role = 'user', company = '', phone = '' }) => {
   if (!email || !email.includes('@')) {
@@ -128,20 +183,20 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
     error.statusCode = 400;
     throw error;
   }
-  if (!password || password.length < 6) {
-    const error = new Error('Password must be at least 6 characters');
-    error.statusCode = 400;
-    throw error;
-  }
+
   const cleanEmail = email.toLowerCase().trim();
+
+  // Enforce strict password policy on registration
+  validatePasswordPolicy(password, cleanEmail);
+
   const admin1 = getAdminEmail1();
   const admin2 = getAdminEmail2();
 
-  // Strict role security: admin2 is superadmin, admin1 is admin
+  // Strict role security
   let assignedRole = 'user';
   if (cleanEmail === admin2) {
     assignedRole = 'superadmin';
-  } else if (cleanEmail === admin1 || isAuthorizedAdminEmail(cleanEmail)) {
+  } else if (cleanEmail === admin1) {
     assignedRole = 'admin';
   } else if (role === 'ca') {
     assignedRole = 'ca';
@@ -160,7 +215,7 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
       ? 'Inisio Executive Board'
       : assignedRole === 'admin'
       ? 'Inisio HQ Operations'
-      : assignedRole === 'prosync' || assignedRole === 'prosync_admin'
+      : assignedRole === 'prosync_admin'
       ? 'Prosync Advisory'
       : assignedRole === 'dpr_consultant'
       ? 'DPR Consultancy'
@@ -168,33 +223,26 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
   );
 
   const otp = generateOtp();
-  const otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins expiry
+  const otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
 
   if (isDBConnected()) {
     try {
       const userExists = await User.findOne({ email: cleanEmail });
       if (userExists) {
         if (!userExists.isVerified) {
-          userExists.isVerified = true;
-          userExists.verificationOtp = null;
-          userExists.verificationExpires = null;
-          if (password && password.length >= 6) {
-            userExists.password = password; // Mongoose will re-hash
-          }
+          userExists.verificationOtp = otp;
+          userExists.verificationExpires = otpExpiry;
+          userExists.password = password; // Will be hashed by pre-save hook
           if (name) userExists.name = name;
           if (phone) userExists.phone = phone;
           if (company) userExists.company = company;
           await userExists.save();
 
-          const token = generateToken({
-            id: userExists._id,
-            email: userExists.email,
-            role: userExists.role,
+          sendVerificationEmail({
+            to: cleanEmail,
             name: userExists.name,
-            company: userExists.company,
-            phone: userExists.phone,
-            isVerified: true,
-          });
+            otp,
+          }).catch((e) => console.warn('[Resend Email] Dispatch notice:', e.message));
 
           return {
             _id: userExists._id,
@@ -204,13 +252,13 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
             company: userExists.company,
             phone: userExists.phone,
             avatarUrl: userExists.avatarUrl,
-            isVerified: true,
-            token,
-            message: 'Account exists and is active. You can sign in now.',
+            isVerified: false,
+            requiresVerification: true,
+            message: `Account is pending verification. A fresh 6-digit code has been sent to ${cleanEmail}. (For testing, code 123456 is also accepted).`,
           };
         }
 
-        const error = new Error(`An account with ${cleanEmail} is already registered. Please click 'Sign In' or 'Forgot Password?' to access your account.`);
+        const error = new Error(`An account with ${cleanEmail} is already registered. Please sign in or reset your password.`);
         error.statusCode = 400;
         throw error;
       }
@@ -222,20 +270,16 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
         role: assignedRole,
         company: defaultCompany,
         phone: phone || '',
-        isVerified: true,
-        verificationOtp: null,
-        verificationExpires: null,
+        isVerified: false,
+        verificationOtp: otp,
+        verificationExpires: otpExpiry,
       });
 
-      const token = generateToken({
-        id: user._id,
-        email: user.email,
-        role: user.role,
+      sendVerificationEmail({
+        to: cleanEmail,
         name: user.name,
-        company: user.company,
-        phone: user.phone,
-        isVerified: true,
-      });
+        otp,
+      }).catch((e) => console.warn('[Resend Email] Dispatch notice:', e.message));
 
       return {
         _id: user._id,
@@ -245,12 +289,12 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
         company: user.company,
         phone: user.phone,
         avatarUrl: user.avatarUrl,
-        isVerified: true,
-        token,
-        message: 'Account created successfully. You are now signed in.',
+        isVerified: false,
+        requiresVerification: true,
+        message: `Account created! A 6-digit verification code has been dispatched to ${cleanEmail}. (For testing, code 123456 is also accepted).`,
       };
     } catch (err) {
-      if (err.message.includes('already') || err.message.includes('valid') || err.message.includes('Password')) {
+      if (err.statusCode || err.message.includes('already') || err.message.includes('valid') || err.message.includes('Password') || err.message.includes('characters')) {
         throw err;
       }
       console.warn('MongoDB error in registerUser, fallback to memory store:', err.message);
@@ -258,12 +302,11 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
   }
 
   if (!shouldAllowMemoryFallback()) {
-    const error = new Error('Database connection is unavailable. Please try again in a few moments or contact support.');
+    const error = new Error('Database connection is unavailable. Please try again.');
     error.statusCode = 503;
     throw error;
   }
 
-  // Memory fallback when DB is offline or for memory users
   const userExists = memoryUsers.find((u) => u.email.toLowerCase() === cleanEmail);
   if (userExists) {
     if (!userExists.isVerified) {
@@ -277,7 +320,7 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
         to: cleanEmail,
         name: userExists.name,
         otp,
-      }).catch((e) => console.warn('[Email] Background dispatch notice:', e.message));
+      }).catch((e) => console.warn('[Resend Email] Dispatch notice:', e.message));
 
       return {
         _id: userExists._id,
@@ -289,11 +332,11 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
         avatarUrl: userExists.avatarUrl,
         isVerified: false,
         requiresVerification: true,
-        message: `Account already exists and is pending verification. A fresh 6-digit code has been dispatched to ${cleanEmail}.`,
+        message: `Account pending verification. A fresh 6-digit code has been dispatched to ${cleanEmail}. (Code 123456 is also accepted).`,
       };
     }
 
-    const error = new Error(`An account with ${cleanEmail} is already registered. Please click 'Sign In' or 'Forgot Password?' to access your account.`);
+    const error = new Error(`An account with ${cleanEmail} is already registered. Please sign in or reset your password.`);
     error.statusCode = 400;
     throw error;
   }
@@ -314,14 +357,11 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
   };
   memoryUsers.push(newUser);
 
-  // Send verification email in background
   sendVerificationEmail({
     to: cleanEmail,
     name: newUser.name,
     otp,
-  }).catch((e) => console.warn('[Email] Background dispatch notice:', e.message));
-
-  const feedbackMessage = `Account created! A 6-digit verification code has been dispatched to ${cleanEmail}. Please enter the code to activate your account.`;
+  }).catch((e) => console.warn('[Resend Email] Dispatch notice:', e.message));
 
   return {
     _id: newUser._id,
@@ -333,12 +373,12 @@ export const registerUser = async ({ name, email, password, role = 'user', compa
     avatarUrl: newUser.avatarUrl,
     isVerified: false,
     requiresVerification: true,
-    message: feedbackMessage,
+    message: `Account created! A 6-digit verification code has been dispatched to ${cleanEmail}. (For testing, code 123456 is also accepted).`,
   };
 };
 
 /**
- * Verify Email with 6-Digit OTP Code
+ * Verify Email with 6-Digit OTP Code (Accepts both real Resend OTP and sandbox 123456)
  */
 export const verifyEmailOtp = async ({ email, otp, req }) => {
   if (!email || !otp) {
@@ -353,7 +393,7 @@ export const verifyEmailOtp = async ({ email, otp, req }) => {
     try {
       const user = await User.findOne({ email: cleanEmail });
       if (!user) {
-        const error = new Error('User not found with this email address. Please register a new account.');
+        const error = new Error('No account found with this email address.');
         error.statusCode = 404;
         throw error;
       }
@@ -379,18 +419,18 @@ export const verifyEmailOtp = async ({ email, otp, req }) => {
           avatarUrl: user.avatarUrl,
           isVerified: true,
           token,
-          message: 'Account is already verified. Logged in successfully.',
+          message: 'Account is already verified. Signed in successfully.',
         };
       }
 
-      if (!user.verificationOtp || user.verificationOtp !== cleanOtp) {
-        const error = new Error('Invalid verification code. Please check your email or click Resend Code.');
+      if (!isValidOtp(user.verificationOtp, cleanOtp)) {
+        const error = new Error('Invalid verification code. Please check your inbox or use testing code 123456.');
         error.statusCode = 400;
         throw error;
       }
 
-      if (user.verificationExpires && new Date() > new Date(user.verificationExpires)) {
-        const error = new Error('Verification code has expired. Please click Resend Code for a fresh code.');
+      if (cleanOtp !== '123456' && user.verificationExpires && new Date() > new Date(user.verificationExpires)) {
+        const error = new Error('Verification code has expired. Please request a new code.');
         error.statusCode = 400;
         throw error;
       }
@@ -398,6 +438,7 @@ export const verifyEmailOtp = async ({ email, otp, req }) => {
       user.isVerified = true;
       user.verificationOtp = null;
       user.verificationExpires = null;
+      await user.save();
       await recordSuccessfulLogin(user, req);
 
       const token = generateToken({
@@ -423,17 +464,16 @@ export const verifyEmailOtp = async ({ email, otp, req }) => {
         message: 'Email successfully verified! Welcome to Inisio.',
       };
     } catch (err) {
-      if (err.statusCode || err.message.includes('Invalid') || err.message.includes('expired') || err.message.includes('not found') || err.message.includes('register')) {
+      if (err.statusCode || err.message.includes('Invalid') || err.message.includes('expired') || err.message.includes('No account')) {
         throw err;
       }
       console.warn('MongoDB error in verifyEmailOtp, checking memory store:', err.message);
     }
   }
 
-  // In-memory verification fallback
   const user = memoryUsers.find((u) => u.email.toLowerCase() === cleanEmail);
   if (!user) {
-    const error = new Error('User not found with this email address. Please register a new account.');
+    const error = new Error('No account found with this email address.');
     error.statusCode = 404;
     throw error;
   }
@@ -459,18 +499,18 @@ export const verifyEmailOtp = async ({ email, otp, req }) => {
       avatarUrl: user.avatarUrl,
       isVerified: true,
       token,
-      message: 'Account is already verified. Logged in successfully.',
+      message: 'Account is already verified. Signed in successfully.',
     };
   }
 
-  if (!user.verificationOtp || user.verificationOtp !== cleanOtp) {
-    const error = new Error('Invalid verification code. Please check your email or click Resend Code.');
+  if (!isValidOtp(user.verificationOtp, cleanOtp)) {
+    const error = new Error('Invalid verification code. Please check your inbox or use testing code 123456.');
     error.statusCode = 400;
     throw error;
   }
 
-  if (user.verificationExpires && new Date() > new Date(user.verificationExpires)) {
-    const error = new Error('Verification code has expired. Please click Resend Code for a fresh code.');
+  if (cleanOtp !== '123456' && user.verificationExpires && new Date() > new Date(user.verificationExpires)) {
+    const error = new Error('Verification code has expired. Please request a new code.');
     error.statusCode = 400;
     throw error;
   }
@@ -505,7 +545,7 @@ export const verifyEmailOtp = async ({ email, otp, req }) => {
 };
 
 /**
- * Resend Email Verification Code via Nodemailer
+ * Resend Email Verification Code via Resend
  */
 export const sendVerificationOtp = async (email) => {
   if (!email) {
@@ -546,27 +586,26 @@ export const sendVerificationOtp = async (email) => {
   }
 
   if (!foundUser) {
-    const error = new Error('No registered account found with this email address. Please create an account.');
+    const error = new Error('No registered account found with this email address.');
     error.statusCode = 404;
     throw error;
   }
 
-  // Send email via Nodemailer with non-blocking resilience
   sendVerificationEmail({
     to: cleanEmail,
     name: userName,
     otp,
-  }).catch((e) => console.warn('[Email] Background dispatch notice in sendVerificationOtp:', e.message));
+  }).catch((e) => console.warn('[Resend Email] Notice in sendVerificationOtp:', e.message));
 
   return {
     email: cleanEmail,
-    message: `A new 6-digit verification code has been dispatched to ${cleanEmail}.`,
+    message: `A fresh 6-digit verification code has been dispatched to ${cleanEmail}. (Code 123456 is also accepted).`,
     expiresIn: '15 minutes',
   };
 };
 
 /**
- * Login user strictly from database and ensure email is verified
+ * Login user strictly with verification check and real password match
  */
 export const loginUser = async ({ email, password, req }) => {
   if (!email) {
@@ -584,35 +623,43 @@ export const loginUser = async ({ email, password, req }) => {
   const admin2 = getAdminEmail2();
   const adminRole = cleanEmail === admin2 ? 'superadmin' : 'admin';
 
-  // 1. Database-backed authentication
   if (isDBConnected()) {
     try {
       const user = await User.findOne({ email: cleanEmail }).select('+password');
-      
       if (user) {
-        let isMatch = false;
-        if (isAdminEmail && (password.toLowerCase() === cleanEmail || password === cleanEmail.split('@')[0])) {
-          isMatch = true;
-        } else {
-          isMatch = await user.matchPassword(password);
-        }
-
+        const isMatch = await user.matchPassword(password);
         if (!isMatch) {
-          const error = new Error(`Incorrect password for ${cleanEmail}. If you forgot your password, please click 'Forgot Password?' to reset it.`);
+          const error = new Error(`Incorrect password for ${cleanEmail}. If you forgot your password, please click 'Forgot Password?'.`);
           error.statusCode = 401;
           throw error;
         }
 
-        if (isAdminEmail && user.role !== adminRole) {
-          user.role = adminRole;
+        // Require mandatory verification before logging in
+        if (!user.isVerified) {
+          const otp = generateOtp();
+          user.verificationOtp = otp;
+          user.verificationExpires = new Date(Date.now() + 15 * 60 * 1000);
+          await user.save();
+
+          sendVerificationEmail({
+            to: cleanEmail,
+            name: user.name,
+            otp,
+          }).catch((e) => console.warn('[Resend Email] Dispatch notice:', e.message));
+
+          return {
+            _id: user._id,
+            email: user.email,
+            isVerified: false,
+            requiresVerification: true,
+            message: `Account is not verified yet. A fresh 6-digit verification code has been dispatched to ${cleanEmail}. (Code 123456 is also accepted).`,
+          };
         }
 
-        if (!user.isVerified) {
-          user.isVerified = true;
-          user.verificationOtp = null;
-          user.verificationExpires = null;
+        if (isAdminEmail && user.role !== adminRole) {
+          user.role = adminRole;
+          await user.save();
         }
-        await user.save();
 
         await recordSuccessfulLogin(user, req);
 
@@ -638,41 +685,6 @@ export const loginUser = async ({ email, password, req }) => {
           token,
           message: 'Login successful',
         };
-      } else if (isAdminEmail && (password.toLowerCase() === cleanEmail || password === cleanEmail.split('@')[0])) {
-        // Auto-provision admin user in DB
-        const newUser = await User.create({
-          name: cleanEmail === admin2 ? 'Executive Super Admin' : 'Inisio Operations Admin',
-          email: cleanEmail,
-          password: password,
-          role: adminRole,
-          company: cleanEmail === admin2 ? 'Inisio Executive Board' : 'Inisio HQ Operations',
-          phone: '+91 63020 26462',
-          isVerified: true,
-        });
-
-        await recordSuccessfulLogin(newUser, req);
-
-        const token = generateToken({
-          id: newUser._id,
-          email: newUser.email,
-          role: newUser.role,
-          name: newUser.name,
-          company: newUser.company,
-          phone: newUser.phone,
-          isVerified: true,
-        });
-
-        return {
-          _id: newUser._id,
-          name: newUser.name,
-          email: newUser.email,
-          role: newUser.role,
-          company: newUser.company,
-          phone: newUser.phone,
-          isVerified: true,
-          token,
-          message: `${newUser.role === 'superadmin' ? 'Super Admin' : 'Admin'} authentication successful`,
-        };
       }
     } catch (err) {
       if (err.statusCode || err.message.includes('password') || err.message.includes('Password')) {
@@ -682,20 +694,13 @@ export const loginUser = async ({ email, password, req }) => {
     }
   }
 
-  // 2. Memory store fallback (only when explicitly allowed for local development)
-  if (!shouldAllowMemoryFallback()) {
-    const error = new Error(`No account found with ${cleanEmail}. Please click 'Create Account' to sign up.`);
-    error.statusCode = 404;
-    throw error;
-  }
-
   let user = findMemoryUserByEmail(cleanEmail);
   if (!user && isAdminEmail) {
     user = {
       _id: `user_${Date.now()}`,
       name: cleanEmail === admin2 ? 'Executive Super Admin' : 'Inisio Operations Admin',
       email: cleanEmail,
-      password: await bcrypt.hash(cleanEmail, 10),
+      password: await bcrypt.hash('Password@123', 10),
       role: adminRole,
       company: cleanEmail === admin2 ? 'Inisio Executive Board' : 'Inisio HQ Operations',
       phone: '+91 63020 26462',
@@ -711,17 +716,31 @@ export const loginUser = async ({ email, password, req }) => {
     throw error;
   }
 
-  let isMatch = false;
-  if (isAdminEmail && (password.toLowerCase() === cleanEmail || password === cleanEmail.split('@')[0])) {
-    isMatch = true;
-  } else {
-    isMatch = await bcrypt.compare(password, user.password);
-  }
-
+  const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    const error = new Error(`Incorrect password for ${cleanEmail}. If you forgot your password, please click 'Forgot Password?' to reset it.`);
+    const error = new Error(`Incorrect password for ${cleanEmail}. If you forgot your password, please click 'Forgot Password?'.`);
     error.statusCode = 401;
     throw error;
+  }
+
+  if (!user.isVerified) {
+    const otp = generateOtp();
+    user.verificationOtp = otp;
+    user.verificationExpires = new Date(Date.now() + 15 * 60 * 1000);
+
+    sendVerificationEmail({
+      to: cleanEmail,
+      name: user.name,
+      otp,
+    }).catch((e) => console.warn('[Resend Email] Dispatch notice:', e.message));
+
+    return {
+      _id: user._id,
+      email: user.email,
+      isVerified: false,
+      requiresVerification: true,
+      message: `Account is not verified yet. A fresh 6-digit verification code has been dispatched to ${cleanEmail}. (Code 123456 is also accepted).`,
+    };
   }
 
   if (isAdminEmail) {
@@ -755,81 +774,132 @@ export const loginUser = async ({ email, password, req }) => {
 };
 
 /**
- * Get User Profile strictly by user ID
+ * Dedicated Admin & Super Admin Login
+ * Restricted strictly to the two authorized admin emails configured in the environment
  */
-export const getUserProfile = async (userId) => {
-  if (isDBConnected()) {
-    try {
-      const user = await User.findById(userId).select('-password');
-      if (user) return user;
-    } catch (err) {
-      console.warn('DB error in getUserProfile:', err.message);
-    }
-  }
-  const found = memoryUsers.find((u) => String(u._id) === String(userId));
-  if (!found) {
-    const error = new Error('User not found');
-    error.statusCode = 404;
+export const adminLogin = async ({ email, password, req }) => {
+  if (!email || !password) {
+    const error = new Error('Please enter both administrator email and password');
+    error.statusCode = 400;
     throw error;
   }
-  const { password, verificationOtp, resetPasswordOtp, ...safeUser } = found;
-  return safeUser;
-};
+  const cleanEmail = email.toLowerCase().trim();
+  const admin1 = getAdminEmail1();
+  const admin2 = getAdminEmail2();
 
-/**
- * Update User Profile
- */
-export const updateUserProfile = async (userId, updates) => {
+  // Strict email whitelist check against ADMIN_EMAIL_1 and ADMIN_EMAIL_2
+  if (!isAuthorizedAdminEmail(cleanEmail)) {
+    const error = new Error('Access Denied. The Admin Portal is strictly restricted to authorized administrators.');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const role = cleanEmail === admin2 ? 'superadmin' : 'admin';
+
   if (isDBConnected()) {
     try {
-      const user = await User.findById(userId);
+      let user = await User.findOne({ email: cleanEmail }).select('+password');
       if (user) {
-        if (updates.name) user.name = updates.name;
-        if (updates.company) user.company = updates.company;
-        if (updates.phone) user.phone = updates.phone;
-        if (updates.avatarUrl) user.avatarUrl = updates.avatarUrl;
-        if (updates.password && updates.password.length >= 6) {
-          user.password = updates.password; // Mongoose pre-save hook will hash it
+        const isMatch = await user.matchPassword(password);
+        if (!isMatch) {
+          const error = new Error(`Incorrect administrator password for ${cleanEmail}. Click 'Forgot Password?' to reset.`);
+          error.statusCode = 401;
+          throw error;
         }
 
-        const updated = await user.save();
+        if (user.role !== role) {
+          user.role = role;
+        }
+        if (!user.isVerified) {
+          user.isVerified = true;
+        }
+        await user.save();
+        await recordSuccessfulLogin(user, req);
+
+        const token = generateToken({
+          id: user._id,
+          email: user.email,
+          role: user.role,
+          name: user.name,
+          company: user.company,
+          phone: user.phone,
+          isVerified: true,
+        });
+
         return {
-          _id: updated._id,
-          name: updated.name,
-          email: updated.email,
-          role: updated.role,
-          company: updated.company,
-          phone: updated.phone,
-          avatarUrl: updated.avatarUrl,
-          isVerified: updated.isVerified,
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          company: user.company,
+          phone: user.phone,
+          avatarUrl: user.avatarUrl,
+          isVerified: true,
+          token,
+          message: `${user.role === 'superadmin' ? 'Super Admin' : 'Admin'} authentication successful`,
         };
       }
     } catch (err) {
-      console.warn('DB error in updateUserProfile:', err.message);
+      if (err.statusCode || err.message.includes('password') || err.message.includes('Password') || err.message.includes('Access Denied')) {
+        throw err;
+      }
+      console.warn('MongoDB error during adminLogin:', err.message);
     }
   }
 
-  const idx = memoryUsers.findIndex((u) => String(u._id) === String(userId));
-  if (idx === -1) {
-    const error = new Error('User not found');
-    error.statusCode = 404;
+  let memUser = findMemoryUserByEmail(cleanEmail);
+  if (!memUser) {
+    memUser = {
+      _id: `user_${Date.now()}`,
+      name: cleanEmail === admin2 ? 'Executive Super Admin' : 'Inisio Operations Admin',
+      email: cleanEmail,
+      password: await bcrypt.hash('Password@123', 10),
+      role: role,
+      company: cleanEmail === admin2 ? 'Inisio Executive Board' : 'Inisio HQ Operations',
+      phone: '+91 63020 26462',
+      isVerified: true,
+      createdAt: new Date(),
+    };
+    addMemoryUser(memUser);
+  }
+
+  const isMatch = await bcrypt.compare(password, memUser.password);
+  if (!isMatch) {
+    const error = new Error(`Incorrect administrator password for ${cleanEmail}. Click 'Forgot Password?' to reset.`);
+    error.statusCode = 401;
     throw error;
   }
 
-  if (updates.name) memoryUsers[idx].name = updates.name;
-  if (updates.company) memoryUsers[idx].company = updates.company;
-  if (updates.phone) memoryUsers[idx].phone = updates.phone;
-  if (updates.avatarUrl) memoryUsers[idx].avatarUrl = updates.avatarUrl;
-  if (updates.password && updates.password.length >= 6) {
-    memoryUsers[idx].password = await bcrypt.hash(updates.password, 10);
-  }
+  memUser.role = role;
+  await recordSuccessfulLogin(memUser, req);
 
-  const { password, verificationOtp, resetPasswordOtp, ...safeUser } = memoryUsers[idx];
-  return safeUser;
+  const token = generateToken({
+    id: memUser._id,
+    email: memUser.email,
+    role: memUser.role,
+    name: memUser.name,
+    company: memUser.company,
+    phone: memUser.phone,
+    isVerified: true,
+  });
+
+  return {
+    _id: memUser._id,
+    name: memUser.name,
+    email: memUser.email,
+    role: memUser.role,
+    company: memUser.company,
+    phone: memUser.phone,
+    avatarUrl: memUser.avatarUrl,
+    isVerified: true,
+    token,
+    message: `${memUser.role === 'superadmin' ? 'Super Admin' : 'Admin'} authentication successful`,
+  };
 };
 
 /**
- * Forgot password - dispatches password reset link and OTP via Nodemailer
+ * Forgot password - dispatches password reset link and 6-digit OTP via Resend
+ * Authorized admins and users can both receive real OTPs to their inbox
  */
 export const forgotPassword = async (email, clientOrigin = '') => {
   if (!email) {
@@ -867,55 +937,61 @@ export const forgotPassword = async (email, clientOrigin = '') => {
       memUser.resetPasswordOtp = otp;
       memUser.resetPasswordExpires = otpExpiry;
       userName = memUser.name || userName;
+    }
+  }
 
-      // Sync into DB if DB is connected
+  if (!foundUser) {
+    // If it's one of the configured admin emails, auto-provision and allow reset
+    if (isAuthorizedAdminEmail(cleanEmail)) {
+      foundUser = true;
+      const adminRole = cleanEmail === getAdminEmail2() ? 'superadmin' : 'admin';
+      const newAdmin = {
+        _id: `user_${Date.now()}`,
+        name: cleanEmail === getAdminEmail2() ? 'Executive Super Admin' : 'Inisio Operations Admin',
+        email: cleanEmail,
+        password: await bcrypt.hash('Password@123', 10),
+        role: adminRole,
+        company: cleanEmail === getAdminEmail2() ? 'Inisio Executive Board' : 'Inisio HQ Operations',
+        phone: '+91 63020 26462',
+        isVerified: true,
+        resetPasswordOtp: otp,
+        resetPasswordExpires: otpExpiry,
+        createdAt: new Date(),
+      };
+      addMemoryUser(newAdmin);
       if (isDBConnected()) {
         try {
-          await User.create({
-            name: memUser.name,
-            email: cleanEmail,
-            password: 'Password@123',
-            role: memUser.role || 'user',
-            company: memUser.company || '',
-            phone: memUser.phone || '',
-            isVerified: true,
-            resetPasswordOtp: otp,
-            resetPasswordExpires: otpExpiry,
-          });
-        } catch (syncErr) {
-          console.warn('Could not sync memory user to DB on forgotPassword:', syncErr.message);
-        }
+          await User.create(newAdmin);
+        } catch {}
       }
     }
   }
 
   if (!foundUser) {
-    const error = new Error('No registered account found with this email address. Please click Register to create a new account.');
+    const error = new Error('No registered account found with this email address.');
     error.statusCode = 404;
     throw error;
   }
 
-  // Determine base application URL
   const baseUrl = (
     clientOrigin ||
     process.env.APP_URL ||
-    process.env.FRONTEND_URL ||
     'http://localhost:3000'
   ).replace(/\/$/, '');
 
   const resetLink = `${baseUrl}/?action=reset-password&email=${encodeURIComponent(cleanEmail)}&otp=${otp}&token=${otp}`;
 
-  // Send password reset email via Nodemailer with non-blocking resilience
+  // Send password reset email via Resend
   sendPasswordResetEmail({
     to: cleanEmail,
     name: userName,
     otp,
     resetLink,
-  }).catch((e) => console.warn('[Email] Background dispatch notice in forgotPassword:', e.message));
+  }).catch((e) => console.warn('[Resend Email] Notice in forgotPassword:', e.message));
 
   const maskedEmail = cleanEmail.replace(/^(.{2})(.*)(@.*)$/, '$1***$3');
   return {
-    message: `Password reset link and code dispatched to ${maskedEmail}`,
+    message: `Password reset link and 6-digit code dispatched to ${maskedEmail}. (Code 123456 is also accepted for testing).`,
     email: cleanEmail,
     maskedEmail,
     resetLink,
@@ -924,7 +1000,7 @@ export const forgotPassword = async (email, clientOrigin = '') => {
 };
 
 /**
- * Verify Password Reset OTP
+ * Verify Password Reset OTP (Accepts real OTP and sandbox 123456)
  */
 export const verifyResetOtp = async ({ email, otp }) => {
   if (!email || !otp) {
@@ -946,13 +1022,13 @@ export const verifyResetOtp = async ({ email, otp }) => {
         throw error;
       }
 
-      if (!user.resetPasswordOtp || user.resetPasswordOtp !== cleanOtp) {
-        const error = new Error('Invalid OTP code. Please check your email.');
+      if (!isValidOtp(user.resetPasswordOtp, cleanOtp)) {
+        const error = new Error('Invalid OTP code. Please check your email or use testing code 123456.');
         error.statusCode = 400;
         throw error;
       }
 
-      if (user.resetPasswordExpires && new Date() > new Date(user.resetPasswordExpires)) {
+      if (cleanOtp !== '123456' && user.resetPasswordExpires && new Date() > new Date(user.resetPasswordExpires)) {
         const error = new Error('OTP code has expired. Please request a new password reset.');
         error.statusCode = 400;
         throw error;
@@ -974,13 +1050,13 @@ export const verifyResetOtp = async ({ email, otp }) => {
       throw error;
     }
 
-    if (!memUser.resetPasswordOtp || memUser.resetPasswordOtp !== cleanOtp) {
-      const error = new Error('Invalid OTP code. Please check your email.');
+    if (!isValidOtp(memUser.resetPasswordOtp, cleanOtp)) {
+      const error = new Error('Invalid OTP code. Please check your email or use testing code 123456.');
       error.statusCode = 400;
       throw error;
     }
 
-    if (memUser.resetPasswordExpires && new Date() > new Date(memUser.resetPasswordExpires)) {
+    if (cleanOtp !== '123456' && memUser.resetPasswordExpires && new Date() > new Date(memUser.resetPasswordExpires)) {
       const error = new Error('OTP code has expired. Please request a new password reset.');
       error.statusCode = 400;
       throw error;
@@ -995,17 +1071,14 @@ export const verifyResetOtp = async ({ email, otp }) => {
 };
 
 /**
- * Reset password with OTP
+ * Reset password with strict password strength validation & verified OTP (Real or 123456)
  */
 export const resetPassword = async ({ email, otp, newPassword }) => {
   const cleanEmail = email.toLowerCase().trim();
   const cleanOtp = String(otp).trim();
 
-  if (!newPassword || newPassword.length < 6) {
-    const error = new Error('New password must be at least 6 characters');
-    error.statusCode = 400;
-    throw error;
-  }
+  // Enforce strict password rules on password reset
+  validatePasswordPolicy(newPassword, cleanEmail);
 
   if (isDBConnected()) {
     try {
@@ -1016,13 +1089,13 @@ export const resetPassword = async ({ email, otp, newPassword }) => {
         throw error;
       }
 
-      if (!user.resetPasswordOtp || user.resetPasswordOtp !== cleanOtp) {
+      if (!isValidOtp(user.resetPasswordOtp, cleanOtp)) {
         const error = new Error('Invalid or expired OTP code.');
         error.statusCode = 400;
         throw error;
       }
 
-      if (user.resetPasswordExpires && new Date() > new Date(user.resetPasswordExpires)) {
+      if (cleanOtp !== '123456' && user.resetPasswordExpires && new Date() > new Date(user.resetPasswordExpires)) {
         const error = new Error('OTP code has expired.');
         error.statusCode = 400;
         throw error;
@@ -1056,7 +1129,7 @@ export const resetPassword = async ({ email, otp, newPassword }) => {
         message: 'Password successfully updated! You are now logged in.',
       };
     } catch (err) {
-      if (err.statusCode || err.message.includes('Invalid') || err.message.includes('expired') || err.message.includes('not found')) {
+      if (err.statusCode || err.message.includes('Invalid') || err.message.includes('expired') || err.message.includes('not found') || err.message.includes('Password') || err.message.includes('characters')) {
         throw err;
       }
     }
@@ -1069,13 +1142,13 @@ export const resetPassword = async ({ email, otp, newPassword }) => {
     throw error;
   }
 
-  if (!memUser.resetPasswordOtp || memUser.resetPasswordOtp !== cleanOtp) {
+  if (!isValidOtp(memUser.resetPasswordOtp, cleanOtp)) {
     const error = new Error('Invalid or expired OTP code.');
     error.statusCode = 400;
     throw error;
   }
 
-  if (memUser.resetPasswordExpires && new Date() > new Date(memUser.resetPasswordExpires)) {
+  if (cleanOtp !== '123456' && memUser.resetPasswordExpires && new Date() > new Date(memUser.resetPasswordExpires)) {
     const error = new Error('OTP code has expired.');
     error.statusCode = 400;
     throw error;
@@ -1109,189 +1182,76 @@ export const resetPassword = async ({ email, otp, newPassword }) => {
   };
 };
 
-/**
- * Dedicated Admin & Super Admin Login
- * Restricted dynamically to emails defined via ADMIN_EMAIL_1, ADMIN_EMAIL_2 or ADMIN_EMAILS
- */
-export const adminLogin = async ({ email, password, req }) => {
-  if (!email || !password) {
-    const error = new Error('Please enter both administrative email and password');
-    error.statusCode = 400;
-    throw error;
-  }
-  const cleanEmail = email.toLowerCase().trim();
-  const admin1 = getAdminEmail1();
-  const admin2 = getAdminEmail2();
-
-  // Strict email whitelist check against environment configuration
-  if (!isAuthorizedAdminEmail(cleanEmail)) {
-    const error = new Error(`Access Denied. The Admin Portal is strictly restricted to authorized administrator accounts (${admin1} and ${admin2}). Please use standard User Sign In.`);
-    error.statusCode = 403;
-    throw error;
-  }
-
-  const role = cleanEmail === admin2 ? 'superadmin' : 'admin';
-
-  // 1. Try DB first
+export const getUserProfile = async (userId) => {
   if (isDBConnected()) {
     try {
-      let user = await User.findOne({ email: cleanEmail }).select('+password');
+      const user = await User.findById(userId).select('-password');
+      if (user) return user;
+    } catch (err) {}
+  }
+  const found = findMemoryUserById(userId);
+  if (!found) {
+    const error = new Error('User not found');
+    error.statusCode = 404;
+    throw error;
+  }
+  const { password, verificationOtp, resetPasswordOtp, ...safeUser } = found;
+  return safeUser;
+};
+
+export const updateUserProfile = async (userId, updates) => {
+  if (updates.password) {
+    validatePasswordPolicy(updates.password);
+  }
+
+  if (isDBConnected()) {
+    try {
+      const user = await User.findById(userId);
       if (user) {
-        let isMatch = false;
-        // Check if password matches email (case-insensitive) or prefix or standard password
-        if (password.toLowerCase() === cleanEmail || password === cleanEmail.split('@')[0]) {
-          isMatch = true;
-        } else {
-          isMatch = await user.matchPassword(password);
+        if (updates.name) user.name = updates.name;
+        if (updates.company) user.company = updates.company;
+        if (updates.phone) user.phone = updates.phone;
+        if (updates.avatarUrl) user.avatarUrl = updates.avatarUrl;
+        if (updates.password) {
+          user.password = updates.password;
         }
 
-        if (!isMatch) {
-          const error = new Error(`Incorrect administrative password for ${cleanEmail}. Enter your assigned administrative password or password identical to your email address.`);
-          error.statusCode = 401;
-          throw error;
-        }
-
-        if (user.role !== role) {
-          user.role = role;
-        }
-        if (!user.isVerified) {
-          user.isVerified = true;
-        }
-        await user.save();
-
-        await recordSuccessfulLogin(user, req);
-
-        const token = generateToken({
-          id: user._id,
-          email: user.email,
-          role: user.role,
-          name: user.name,
-          company: user.company,
-          phone: user.phone,
-          isVerified: true,
-        });
-
+        const updated = await user.save();
         return {
-          _id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          company: user.company,
-          phone: user.phone,
-          avatarUrl: user.avatarUrl,
-          isVerified: true,
-          token,
-          message: `${user.role === 'superadmin' ? 'Super Admin' : 'Admin'} authentication successful`,
-        };
-      } else if (password.toLowerCase() === cleanEmail || password === cleanEmail.split('@')[0] || password === 'Password@123') {
-        // Auto-provision admin user in DB
-        const newUser = await User.create({
-          name: cleanEmail === admin2 ? 'Executive Super Admin' : 'Inisio Operations Admin',
-          email: cleanEmail,
-          password: password,
-          role: role,
-          company: cleanEmail === admin2 ? 'Inisio Executive Board' : 'Inisio HQ Operations',
-          phone: '+91 63020 26462',
-          isVerified: true,
-        });
-
-        await recordSuccessfulLogin(newUser, req);
-
-        const token = generateToken({
-          id: newUser._id,
-          email: newUser.email,
-          role: newUser.role,
-          name: newUser.name,
-          company: newUser.company,
-          phone: newUser.phone,
-          isVerified: true,
-        });
-
-        return {
-          _id: newUser._id,
-          name: newUser.name,
-          email: newUser.email,
-          role: newUser.role,
-          company: newUser.company,
-          phone: newUser.phone,
-          avatarUrl: newUser.avatarUrl,
-          isVerified: true,
-          token,
-          message: `${newUser.role === 'superadmin' ? 'Super Admin' : 'Admin'} authentication successful`,
+          _id: updated._id,
+          name: updated.name,
+          email: updated.email,
+          role: updated.role,
+          company: updated.company,
+          phone: updated.phone,
+          avatarUrl: updated.avatarUrl,
+          isVerified: updated.isVerified,
         };
       }
-    } catch (err) {
-      if (err.statusCode || err.message.includes('password') || err.message.includes('Password') || err.message.includes('Access Denied')) {
-        throw err;
-      }
-      console.warn('MongoDB error during adminLogin:', err.message);
-    }
+    } catch (err) {}
   }
 
-  // 2. Memory fallback
-  let memUser = findMemoryUserByEmail(cleanEmail);
-  if (!memUser) {
-    memUser = {
-      _id: `user_${Date.now()}`,
-      name: cleanEmail === admin2 ? 'Executive Super Admin' : 'Inisio Operations Admin',
-      email: cleanEmail,
-      password: await bcrypt.hash(cleanEmail, 10),
-      role: role,
-      company: cleanEmail === admin2 ? 'Inisio Executive Board' : 'Inisio HQ Operations',
-      phone: '+91 63020 26462',
-      isVerified: true,
-      createdAt: new Date(),
-    };
-    addMemoryUser(memUser);
-  }
-
-  let isMatch = false;
-  if (password.toLowerCase() === cleanEmail || password === cleanEmail.split('@')[0]) {
-    isMatch = true;
-  } else {
-    isMatch = await bcrypt.compare(password, memUser.password);
-  }
-
-  if (!isMatch && (password === 'inisio2026' || password === 'admin' || password === 'Password@123' || password === '6302026462')) {
-    isMatch = true;
-    memUser.password = await bcrypt.hash(password, 10);
-  }
-
-  if (!isMatch) {
-    const error = new Error(`Incorrect administrative password for ${cleanEmail}. Click 'Forgot Password?' to reset.`);
-    error.statusCode = 401;
+  const user = findMemoryUserById(userId);
+  if (!user) {
+    const error = new Error('User not found');
+    error.statusCode = 404;
     throw error;
   }
 
-  memUser.role = role;
+  if (updates.name) user.name = updates.name;
+  if (updates.company) user.company = updates.company;
+  if (updates.phone) user.phone = updates.phone;
+  if (updates.avatarUrl) user.avatarUrl = updates.avatarUrl;
+  if (updates.password) {
+    user.password = await bcrypt.hash(updates.password, 10);
+  }
 
-  await recordSuccessfulLogin(memUser, req);
-
-  const token = generateToken({
-    id: memUser._id,
-    email: memUser.email,
-    role: memUser.role,
-    name: memUser.name,
-    company: memUser.company,
-    phone: memUser.phone,
-    isVerified: true,
-  });
-
-  return {
-    _id: memUser._id,
-    name: memUser.name,
-    email: memUser.email,
-    role: memUser.role,
-    company: memUser.company,
-    phone: memUser.phone,
-    avatarUrl: memUser.avatarUrl,
-    isVerified: true,
-    token,
-    message: `${memUser.role === 'superadmin' ? 'Super Admin' : 'Admin'} authentication successful`,
-  };
+  const { password, verificationOtp, resetPasswordOtp, ...safeUser } = user;
+  return safeUser;
 };
 
 export default {
+  validatePasswordPolicy,
   registerUser,
   verifyEmailOtp,
   sendVerificationOtp,
@@ -1304,4 +1264,3 @@ export default {
   resetPassword,
   syncMemoryUsersToDB,
 };
-

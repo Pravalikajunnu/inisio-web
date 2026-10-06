@@ -37,3 +37,46 @@ export function validateIndianMobileNumber(mobile: string): { isValid: boolean; 
 
   return { isValid: true, error: '' };
 }
+
+/**
+ * Validates strict password strength rules:
+ * - Minimum 8 characters
+ * - At least 1 uppercase letter
+ * - At least 1 lowercase letter
+ * - At least 1 numeric digit
+ * - At least 1 special character
+ */
+export function validatePasswordStrength(password: string, email: string = ''): { isValid: boolean; error: string } {
+  if (!password) {
+    return { isValid: false, error: 'Password is required' };
+  }
+
+  if (password.length < 8) {
+    return { isValid: false, error: 'Password must be at least 8 characters long' };
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    return { isValid: false, error: 'Password must contain at least one uppercase letter (A-Z)' };
+  }
+
+  if (!/[a-z]/.test(password)) {
+    return { isValid: false, error: 'Password must contain at least one lowercase letter (a-z)' };
+  }
+
+  if (!/[0-9]/.test(password)) {
+    return { isValid: false, error: 'Password must contain at least one number (0-9)' };
+  }
+
+  if (!/[!@#$%^&*()_+\-=\[\]{}|;:,.<>?~`'"]/.test(password)) {
+    return { isValid: false, error: 'Password must contain at least one special character (e.g. !@#$%^&*)' };
+  }
+
+  if (email) {
+    const prefix = email.split('@')[0].toLowerCase().trim();
+    if (prefix && prefix.length >= 3 && password.toLowerCase().includes(prefix)) {
+      return { isValid: false, error: 'Password cannot contain your email username' };
+    }
+  }
+
+  return { isValid: true, error: '' };
+}
